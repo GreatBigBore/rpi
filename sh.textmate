@@ -1,0 +1,86 @@
+{	scopeName = 'source.s';
+	fileTypes = ( 's' );
+	foldingStartMarker = '^procedure\s+[^;]*?;';
+	foldingStopMarker = '(?:^end\s+[^;]*?)|(?:@forward);';
+	patterns = (
+		{	name = 'constant.numeric.decimal.s';
+			match = '\b[0-9]+\b';
+		},
+		{	name = 'constant.numeric.hex.s';
+			match = '\$[0-9A-Fa-f_]+';
+		},
+		{	name = 'constant.language.boolean.true.s';
+			match = '\btrue\b';
+		},
+		{	name = 'constant.language.boolean.false.s';
+			match = '\bfalse\b';
+		},
+		{	name = 'constant.language.null.s';
+			match = '\bnull\b';
+		},
+		{	name = 'comment.block.documentation.s';
+			begin = '/\*\*(?!/)';
+			end = '\*/';
+			captures = { 0 = { name = 'punctuation.definition.comment.s'; }; };
+		},
+		{	name = 'comment.block.s';
+			begin = '/\*';
+			end = '\*/';
+			captures = { 0 = { name = 'punctuation.definition.comment.s'; }; };
+		},
+		{	name = 'comment.line.double-slash.s';
+			match = '(@).*$\n?';
+			captures = { 1 = { name = 'punctuation.definition.comment.s'; }; };
+		},
+		{	name = 'meta.function.prototype.s';
+			match = '\b(ldr|svc|mov)\b';
+			captures = {
+				1 = { name = 'keyword.control.s'; };
+				2 = { name = 'variable.other.s'; };
+			};
+		},
+		{	name = 'meta.function.prototype.s';
+			comment = 'Catch labels in jmp instructions, eg, "^ jmp foo;"';
+			match = '^[^:\s]+\b([a-zA-Z_][a-zA-Z0-9_]+);';
+			captures = { 1 = { name = 'entity.name.function.s'; }; };
+		},
+		{	name = 'storage.control.s';
+			match = '\s*\b(pointer to)';
+		},
+		{	name = 'meta.function.prototype.s';
+			match = '\s*\b(var|d?word|kernel|static|begin|end|type|const|readonly|storage|typename|record|endrecord|enum|boolean|(?:uns|int)(?:8|16|32)|procedure|proc|string|char)\b(\s+([a-zA-Z_][a-zA-Z0-9_]*)\b)?';
+			captures = {
+				1 = { name = 'storage.control.s'; };
+				2 = { name = 'variable.other.s'; };
+			};
+		},
+		{	name = 'constant.language.s';
+			match = '\b(r\d{1,2})\b';
+		},
+		{	name = 'variable.other.s';
+			comment = 'Catch variable declarations & definitions and jmp labels';
+			match = '\b([a-zA-Z_][a-zA-Z0-9_]*):';
+		},
+		{	name = 'support.function.s';
+			match = '\b((?:stdin|stdout|console|arg|str|conv|fileio|rand|filesys|chars|mem)\..+?\b)';
+		},
+		{	name = 'string.quoted.double.s';
+			begin = '"';
+			end = '"';
+			patterns = (
+				{	name = 'constant.character.escape.s';
+					match = '\\.';
+				},
+			);
+		},
+		{	name = 'meta.brace.curly.s';
+			match = '\{|\}';
+		},
+		{	name = 'meta.brace.round.s';
+			match = '\(|\)';
+		},
+		{	name = 'meta.brace.square.s';
+			match = '\[|\]';
+		},
+	);
+}
