@@ -41,49 +41,22 @@
  *	f. pass the address of number32 into displayValue
  */
 
-.section .bss
+	.global main
+	.func main
+	
+main:
+	stmfd SP!, {lr}
+	ldr r0, =string
+	bl printf
+	ldmfd sp!, {pc}
+	
+_exit:
+	mov pc, lr
+	
+.data
 
-.comm buffer, 48	     @ reserve 48 byte buffer
+string: .asciz "Hello, World\n";
 
-.section .data
-
-msg:
-	.ascii	"** Greeter **\nDammit, enter your name! -> "
-	msgLen = . - msg
-
-msg2:
-	.ascii	"Hello "
-	msg2Len = . - msg2
-
-.section .text
-
-.globl _start
-_start:
-
-mov r0, $1		    @ print program's opening message	
-ldr r1, =msg
-ldr r2, =msgLen
-mov r7, $4
-svc $0
-
-mov r7, $3		    @ read syscall
-mov r0, $1		
-ldr r1, =buffer
-mov r2, $0x30
-svc $0
-
-mov r0, $1		    @ print msg2
-ldr r1, =msg2
-ldr r2, =msg2Len
-mov r7, $4
-svc $0
-
-mov r0, $1		    @ now print the user input
-ldr r1, =buffer
-mov r2, $0x30
-mov r7, $4
-svc $0
-
-mov r7, $1	            @ exit syscall
-svc $0		            @ wake kernel
-.end
+@ Not sure yet what this stuff is about
+values: .byte 1, 2, 3, 4, 5, 6, 7, 8, 9
+endvalues:
