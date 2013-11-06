@@ -45,26 +45,24 @@
 	.func main
 	
 main:
-	stmfd sp!, {lr}		@ sp = r13, lr = r14
-	ldr r0, =msgHello
-	bl printf
-	
-	stmfd sp!, {lr}
-	ldr r0, #0
-	ldr r1, =fmtInt8
-	bl fscanf
-	bl printf
-	
-	ldmfd sp!, {pc}		@pc = r15
+	push {lr}
+	sub sp, sp, #4
+	ldr r0, addr_format
+	mov r1, sp
+	bl scanf
+	ldr r2, [sp]
+	ldr r3, addr_number
+	str r2, [r3]
+	add sp, sp, #4
+	pop {pc}
 	
 _exit:
-	mov pc, lr
-	
+	mov pc, lr	@ I'm almost certain this instruction is never reached
+
+	addr_format: .word scanformat
+	addr_number: .word number
+
 .data
-
-msgHello: .asciz "Hello, World\nEnter a number: ";
-fmtInt8: .asciz "%d";
-
-@ Not sure yet what this stuff is about
-values: .byte 1, 2, 3, 4, 5, 6, 7, 8, 9
-endvalues:
+	number: .word 0
+	scanformat: .asciz "%d"
+	
