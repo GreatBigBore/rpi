@@ -5,7 +5,7 @@
  * created on			05 November 2013
  * last modified on		05 November 2013
  *
- * Write, compile, and execute a complete [MIPS] program that does the following:
+ * Write, compile, and execute a complete [ARM] program that does the following:
  *
  * 1. uses only low-level decisions
  * 2. contains a static int8 variable named number8
@@ -45,17 +45,25 @@
 	.func main
 	
 main:
-	stmfd SP!, {lr}
-	ldr r0, =string
+	stmfd sp!, {lr}		@ sp = r13, lr = r14
+	ldr r0, =msgHello
 	bl printf
-	ldmfd sp!, {pc}
+	
+	stmfd sp!, {lr}
+	ldr r0, #0
+	ldr r1, =fmtInt8
+	bl fscanf
+	bl printf
+	
+	ldmfd sp!, {pc}		@pc = r15
 	
 _exit:
 	mov pc, lr
 	
 .data
 
-string: .asciz "Hello, World\n";
+msgHello: .asciz "Hello, World\nEnter a number: ";
+fmtInt8: .asciz "%d";
 
 @ Not sure yet what this stuff is about
 values: .byte 1, 2, 3, 4, 5, 6, 7, 8, 9
