@@ -51,9 +51,14 @@ main:
 	mov r1, sp
 	bl scanf
 	ldr r2, [sp]
-	ldr r3, addr_number
-	str r2, [r3]
+@	ldr r3, addr_number
+@	str r2, [r3]
 	add sp, sp, #4
+	
+	ldr r0, =msgResult
+	mov r1, r2
+	bl printf
+	
 	pop {pc}
 	
 _exit:
@@ -65,4 +70,5 @@ _exit:
 .data
 	number: .word 0
 	scanformat: .asciz "%d"
+	msgResult: .asciz "You entered %d.\n"
 	
