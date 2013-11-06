@@ -1,7 +1,7 @@
 PROGRAMS = SansIf
 
-ifneq ($(MAKECMDGOALS,))
-	PROGRAMS = $(MAKECMDGOALS)
+ifneq ($(MAKECMDGOALS),)
+PROGRAMS = $(MAKECMDGOALS)
 endif
 
 all: $(PROGRAMS)
