@@ -19,5 +19,5 @@ _start:
 	svc 0
 	
 .data
-	string: .ascii "Hellow World String\n"
+	string: .ascii "Hello World String\n"
 	
