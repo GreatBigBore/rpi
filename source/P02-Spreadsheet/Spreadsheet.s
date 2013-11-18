@@ -47,22 +47,39 @@
 
 .section .data
 
-msgGreeting: .ascii "Greetings, data analyzer."
-LmsgGreeting: .- msgGreeting
+msgGreeting: .ascii "Greetings, data analyzer.\r\n"
+LmsgGreeting = . - msgGreeting
 
 .section .text
 
 	.global main
-	.func main
-	
+
 main:
+	bl clearScreen
 
 	mov r0, $1
 	ldr r1, =msgGreeting
 	ldr r2, =LmsgGreeting
-	mov r7, $4				@ output text
+	mov r7, $4		@ output text
 	svc $0
 
-	mov r7, $1	            @ exit syscall
-	svc $0		            @ wake kernel
-.end
+	mov r7, $1		@ exit syscall
+	svc 0			@ wake kernel
+
+.section .data
+
+msgClearScreen: .ascii "\033[2J\033[H"
+LmsgClearScreen = . - msgClearScreen
+
+.section .text
+
+clearScreen:
+	mov r0, $1
+	ldr r1, =msgClearScreen
+	ldr r2, =LmsgClearScreen
+	mov r7, $4
+	svc $0
+	mov pc, lr
+
+	.end
+
