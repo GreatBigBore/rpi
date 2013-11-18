@@ -48,7 +48,7 @@
 			match = '\s*\b(pointer to)';
 		},
 		{	name = 'meta.function.prototype.s';
-			match = '\s*\b(var|d?word|kernel|static|begin|end|type|const|readonly|storage|typename|record|endrecord|enum|boolean|(?:uns|int)(?:8|16|32)|procedure|proc|string|char)\b(\s+([a-zA-Z_][a-zA-Z0-9_]*)\b)?';
+			match = '\s*\b(section|comm|data|bss|ascii|text|globa?l|func|var|d?word|kernel|static|type|const|readonly|storage|typename|record|endrecord|enum|boolean|(?:uns|int)(?:8|16|32)|procedure|proc|string|char)\b(\s+([a-zA-Z_][a-zA-Z0-9_]*)\b)?';
 			captures = {
 				1 = { name = 'storage.control.s'; };
 				2 = { name = 'variable.other.s'; };
