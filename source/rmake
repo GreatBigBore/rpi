@@ -1,4 +1,4 @@
 #!/bin/bash
 clear
-cc $1.s -o ../exec/$1
+cc $1.s -o ../../exec/$1
 
