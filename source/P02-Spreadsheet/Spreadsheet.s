@@ -47,8 +47,8 @@
 
 .section .data
 
-msgGreeting: .ascii "Greetings, data analyzer.\r\n"
-LmsgGreeting = . - msgGreeting
+msgGreeting: .asciz "Greetings, data analyzer.\r\n"
+msgSetupIntro: .asciz "To set up, enter spreadsheet size and data width.\r\n"
 
 .section .text
 
@@ -57,11 +57,11 @@ LmsgGreeting = . - msgGreeting
 main:
 	bl clearScreen
 
-	mov r0, $1
-	ldr r1, =msgGreeting
-	ldr r2, =LmsgGreeting
-	mov r7, $4		@ output text
-	svc $0
+	ldr r0, =msgGreeting
+	bl printf
+
+	ldr r0, =msgSetupIntro
+	bl printf
 
 	mov r7, $1		@ exit syscall
 	svc 0			@ wake kernel
@@ -69,16 +69,16 @@ main:
 .section .data
 
 msgClearScreen: .ascii "\033[2J\033[H"
-LmsgClearScreen = . - msgClearScreen
+L_msgClearScreen = . - msgClearScreen
 
 .section .text
 
 clearScreen:
 	mov r0, $1
 	ldr r1, =msgClearScreen
-	ldr r2, =LmsgClearScreen
+	ldr r2, =L_msgClearScreen
 	mov r7, $4
-	svc $0
+	svc 0
 	mov pc, lr
 
 	.end
