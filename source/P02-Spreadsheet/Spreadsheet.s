@@ -43,27 +43,29 @@
 @*/
 .section .bss
 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ clearScreen()
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-testMode:			.word 0
-numberOfCellsInSpreadsheet:	.word 0
-cellWidthInBytes:		.word 0
+msgClearScreen: .ascii "\033[2J\033[H"
+L_msgClearScreen = . - msgClearScreen
 
-formula:			.word 0
-representationMode:		.word 0
-menuMode:			.word 0
-cellToEdit:			.word 0
+.section .text
 
-spreadsheetData:		.word 47, 48, 49, 50, 51, 19, 18, 17, 16, 15
-offsetOfResultCell:		.word 0
+clearScreen:
+	push {r7}
+	mov r0, $1
+	ldr r1, =msgClearScreen
+	ldr r2, =L_msgClearScreen
+	mov r7, $4
+	svc 0
+	pop {r7}
+	mov pc, lr
 
-operationsFunction:		.word 0
-
-msgGreeting: .asciz "Greetings, data analyzer.\r\n"
-msgSetupIntro: .asciz "To set up, enter spreadsheet size and data width.\r\n"
-
-percentD: .asciz "%d\r\n"
-
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ displaySheet()
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
 displaySheet:
@@ -88,6 +90,60 @@ loopBottom:
 
 loopExit:
 	pop {pc}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getMenuSelection()
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+msgEnterAnything:	.asciz "Enter something! -> "
+scanString:		.asciz "%d"
+scanResult:		.word 0
+msgYouEntered:		.asciz "You entered %d\r\n" 
+
+.section .text
+getMenuSelection:
+	push {lr}
+
+	ldr r0, =msgEnterAnything
+	bl printf
+
+	ldr r0, =scanString
+	ldr r1, =scanResult
+	bl scanf
+
+	ldr r0, =msgYouEntered
+	ldr r1, =scanResult
+	ldr r1, [r1]
+	bl printf
+
+	pop {pc}
+	
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ main
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+testMode:			.word 0
+numberOfCellsInSpreadsheet:	.word 0
+cellWidthInBytes:		.word 0
+
+formula:			.word 0
+representationMode:		.word 0
+menuMode:			.word 0
+cellToEdit:			.word 0
+overflowFlag:			.word 0
+
+spreadsheetData:		.word 47, 48, 49, 50, 51, 19, 18, 17, 16, 15
+offsetOfResultCell:		.word 0
+
+operationsFunction:		.word 0
+
+msgGreeting:	.asciz "Greetings, data analyzer.\r\n"
+msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
+
+percentD: .asciz "%d\r\n"
+
+.section .text
 
 	.global main
 
@@ -116,46 +172,5 @@ main:
 	mov r7, $1		@ exit syscall
 	svc 0			@ wake kernel
 
-.section .data
-
-msgClearScreen: .ascii "\033[2J\033[H"
-L_msgClearScreen = . - msgClearScreen
-
-.section .text
-
-clearScreen:
-	push {r7}
-	mov r0, $1
-	ldr r1, =msgClearScreen
-	ldr r2, =L_msgClearScreen
-	mov r7, $4
-	svc 0
-	pop {r7}
-	mov pc, lr
-
-.section .data
-msgEnterAnything: .asciz "Enter something! -> "
-scanString: .asciz "%d"
-scanResult: .word 0
-msgYouEntered: .asciz "You entered %d\r\n" 
-
-.section .text
-getMenuSelection:
-	push {lr}
-
-	ldr r0, =msgEnterAnything
-	bl printf
-
-	ldr r0, =scanString
-	ldr r1, =scanResult
-	bl scanf
-
-	ldr r0, =msgYouEntered
-	ldr r1, =scanResult
-	ldr r1, [r1]
-	bl printf
-
-	pop {pc}
-	
 	.end
 
