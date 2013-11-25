@@ -41,6 +41,29 @@
 @* 10. allow the user to toggle between binary, decimal, and hexadecimal presentations of the values in all
 @*		of the cells (including the calculation result cell) -- default is decimal
 @*/
+.equ testMode, 1
+
+.equ q_reject,	0
+.equ q_accept,	1
+
+.equ r_reject,	0
+.equ r_accept,	1
+
+.equ menuMode_main,			0
+.equ menuMode_changeFormula,		1
+.equ menuMode_changeDataRepresentation,	2
+.equ menuMode_getCellToEdit,		3
+.equ menuMode_getNewValueForCell,	4
+
+.equ formula_sum,	0
+.equ formula_average,	1
+.equ formula_minimum,	2
+.equ formula_maximum,	3
+
+.equ representationMode_hex, 0
+.equ representationMode_dec, 1
+.equ representationMode_bin, 2
+
 .section .bss
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -71,41 +94,48 @@ clearScreen:
 displaySheet:
 	push {lr}
 
-loopInit:
+.L1_loopInit:
 	ldr r5, =spreadsheetData
 	mov r4, #0
 
-loopTop:
+.L1_loopTop:
 	cmp r4, #10
-	bhs loopExit
+	bhs .L1_loopExit
 
 	ldr r0, =percentD
 	ldr r1, [r5]
 	bl printf
 
-loopBottom:
+.L1_loopBottom:
 	add r5, r5, #4
 	add r4, r4, #1
-	b loopTop
+	b .L1_loopTop
 
-loopExit:
+.L1_loopExit:
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getMenuSelection()
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
+
 msgEnterAnything:	.asciz "Enter something! -> "
 scanString:		.asciz "%d"
 scanResult:		.word 0
 msgYouEntered:		.asciz "You entered %d\r\n" 
 
 .section .text
+
 getMenuSelection:
 	push {lr}
 
-	ldr r0, =msgEnterAnything
-	bl printf
+	mov r4, r0	@ testMode
+	mov r5, r1	@ minimum
+	mov r6, r2	@ maximum
+	mov r7, r3	@ accept or reject 'q'
+	mov r8, sp
+	add r8, #8
+	ldr r8, [r8]	@ accept or reject 'r'
 
 	ldr r0, =scanString
 	ldr r1, =scanResult
@@ -116,8 +146,40 @@ getMenuSelection:
 	ldr r1, [r1]
 	bl printf
 
+	add sp, #4
 	pop {pc}
 	
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getSpreadsheetSpecs
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.equ minimumCellCount, 2
+.equ maximumCellCount, 10
+
+.section .data
+
+msgEnterSpreadsheetSize:	.asciz "Enter the number of cells for the spreadsheet [2, 10] or 'Q' to quit\r\n"
+msgDataWidthOptions:		.asciz "Data width options (enter 'Q' to quit):\r\n"
+msgSeparator:			.asciz "---------------------------------------\r\n"
+msgSelectDataWidth:		.asciz "Select data width:\r\n"
+msgPrompt:			.asciz "-> "
+
+dataWidthOptions:		.asciz "8 bits - range is [-128, 127]", "16 bits - range is [-32768, 32767]", "32 bits - range is [-2147483648, 2147483647]"
+
+.section .text
+
+getSpreadsheetSpecs:
+	push {lr}
+
+	mov r0, #r_reject
+	push {r0}
+	mov r0, #testMode
+	mov r1, #minimumCellCount
+	mov r2, #maximumCellCount
+	mov r3, #q_accept
+	bl getMenuSelection
+
+	pop {pc}
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ main
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -138,7 +200,7 @@ offsetOfResultCell:		.word 0
 
 operationsFunction:		.word 0
 
-msgGreeting:	.asciz "Greetings, data analyzer.\r\n"
+msgGreeting:	.asciz "Greetings, data analyzer.\r\n\r\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
 
 percentD: .asciz "%d\r\n"
@@ -150,24 +212,27 @@ percentD: .asciz "%d\r\n"
 main:
 	bl clearScreen
 
+greet:
 	ldr r0, =msgGreeting
 	bl printf
 
+showSetupIntro:
+	mov r0, #menuMode_main
+	ldr r1, =menuMode
+	str r0, [r1]
+
+	mov r0, #formula_sum
+	ldr r1, =formula
+	str r0, [r1]
+
+	mov r0, #representationMode_dec
+	ldr r1, =representationMode
+	str r0, [r1]
+
 	ldr r0, =msgSetupIntro
 	bl printf
 
-	bl displaySheet
-
-	ldr r0, =msgSetupIntro
-	mov r1, #0x31
-	strb r1, [r0]
-	@mov r1, #0
-	@add r0, r0, #1
-	@strb r1, [r0]
-	ldr r0, =msgSetupIntro
-	bl printf
-
-	bl getMenuSelection
+	bl getSpreadsheetSpecs 
 
 	mov r7, $1		@ exit syscall
 	svc 0			@ wake kernel
