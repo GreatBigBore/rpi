@@ -1,9 +1,19 @@
 #include "stdio.h"
 
-void main() {
-	char inputData[20];
+void testFunction(i) {
+	int j = 0x71;
 
-	printf("Hello, world!\nEnter a number: ");
-	fgets(inputData, 20, stdin);
-	printf("You entered %s\n", inputData);
+barf:
+	if(i == 12) {
+		goto darf;
+	}
+carf:
+	printf("this is a test function %d\n\r", i);
+darf:
+	printf("Another test\n\r");
+}
+
+void main() {
+	printf("Hello, world!\n\r");
+	testFunction(0x23);
 }
