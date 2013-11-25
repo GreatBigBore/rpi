@@ -1,4 +1,4 @@
-@/*
+
 @* Spreadsheet
 @*
 @* written by			Rob Bishop
@@ -43,14 +43,51 @@
 @*/
 .section .bss
 
-.comm buffer, 48	     @ reserve 48 byte buffer
-
 .section .data
+
+testMode:			.word 0
+numberOfCellsInSpreadsheet:	.word 0
+cellWidthInBytes:		.word 0
+
+formula:			.word 0
+representationMode:		.word 0
+menuMode:			.word 0
+cellToEdit:			.word 0
+
+spreadsheetData:		.word 47, 48, 49, 50, 51, 19, 18, 17, 16, 15
+offsetOfResultCell:		.word 0
+
+operationsFunction:		.word 0
 
 msgGreeting: .asciz "Greetings, data analyzer.\r\n"
 msgSetupIntro: .asciz "To set up, enter spreadsheet size and data width.\r\n"
 
+percentD: .asciz "%d\r\n"
+
 .section .text
+
+displaySheet:
+	push {lr}
+
+loopInit:
+	ldr r5, =spreadsheetData
+	mov r4, #0
+
+loopTop:
+	cmp r4, #10
+	bhs loopExit
+
+	ldr r0, =percentD
+	ldr r1, [r5]
+	bl printf
+
+loopBottom:
+	add r5, r5, #4
+	add r4, r4, #1
+	b loopTop
+
+loopExit:
+	pop {pc}
 
 	.global main
 
@@ -63,6 +100,19 @@ main:
 	ldr r0, =msgSetupIntro
 	bl printf
 
+	bl displaySheet
+
+	ldr r0, =msgSetupIntro
+	mov r1, #0x31
+	strb r1, [r0]
+	@mov r1, #0
+	@add r0, r0, #1
+	@strb r1, [r0]
+	ldr r0, =msgSetupIntro
+	bl printf
+
+	bl getMenuSelection
+
 	mov r7, $1		@ exit syscall
 	svc 0			@ wake kernel
 
@@ -74,12 +124,38 @@ L_msgClearScreen = . - msgClearScreen
 .section .text
 
 clearScreen:
+	push {r7}
 	mov r0, $1
 	ldr r1, =msgClearScreen
 	ldr r2, =L_msgClearScreen
 	mov r7, $4
 	svc 0
+	pop {r7}
 	mov pc, lr
 
+.section .data
+msgEnterAnything: .asciz "Enter something! -> "
+scanString: .asciz "%d"
+scanResult: .word 0
+msgYouEntered: .asciz "You entered %d\r\n" 
+
+.section .text
+getMenuSelection:
+	push {lr}
+
+	ldr r0, =msgEnterAnything
+	bl printf
+
+	ldr r0, =scanString
+	ldr r1, =scanResult
+	bl scanf
+
+	ldr r0, =msgYouEntered
+	ldr r1, =scanResult
+	ldr r1, [r1]
+	bl printf
+
+	pop {pc}
+	
 	.end
 
