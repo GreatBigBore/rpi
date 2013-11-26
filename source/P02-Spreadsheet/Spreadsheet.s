@@ -40,10 +40,13 @@
 @* 10. allow the user to toggle between binary, decimal, and hexadecimal presentations of the values in all
 @*		of the cells (including the calculation result cell) -- default is decimal
 @*/
+.equ inputStatus_inputOk,			0
+.equ inputStatus_acceptedControlCharacter,	1
+
 .equ q_reject,	0
 .equ q_accept,	1
 
-.equ r_reject,	0xCE
+.equ r_reject,	0
 .equ r_accept,	1
 
 .equ menuMode_main,			0
@@ -117,8 +120,10 @@ displaySheet:
 .section .data
 
 msgEnterAnything:	.asciz "Enter something! -> "
-scanString:		.asciz "%d"
-scanResult:		.word 0
+scanString:		.asciz "%2s"
+scanResult:		.asciz "  "
+sscanString:		.asciz "%d"
+sscanResult:		.word 0
 msgYouEntered:		.asciz "You entered %d\r\n"
 hex1:			.asciz "Test mode = 0x%08X\r\n"
 hex2:			.asciz "Min = 0x%08X\r\n"
@@ -126,6 +131,8 @@ hex3:			.asciz "Max = 0x%08X\r\n"
 hex4:			.asciz "q = 0x%08X\r\n"
 hex5:			.asciz "r = 0x%08X\r\n"
 hex6:			.asciz "At 0x%08X = 0x%08X\r\n"
+debug1: .asciz "Here1 %s\r\n"
+debug2: .asciz "here2 %d\r\n"
 
 .section .text
 
@@ -142,35 +149,43 @@ getMenuSelection:
 	add r8, #24
 	ldr r8, [r8]	@ accept or reject 'r'
 
-	ldr r0, =hex1
-	mov r1, r4
-	bl printf
-
-	ldr r0, =hex2
-	mov r1, r5
-	bl printf
-
-	ldr r0, =hex3
-	mov r1, r6
-	bl printf
-
-	ldr r0, =hex4
-	mov r1, r7
-	bl printf
-
-	ldr r0, =hex5
-	mov r1, r8
-	bl printf
-
 	ldr r0, =scanString
 	ldr r1, =scanResult
 	bl scanf
 
-	ldr r0, =msgYouEntered
+	ldr r0, =scanResult
+	ldr r1, =sscanString
+	ldr r2, =sscanResult
+	bl sscanf
+
 	ldr r1, =scanResult
+	ldr r1, [r1]
+	mov r2, #0xFF
+	lsl r2, #8
+	add r2, #0xFF
+	add r1, r2
+	orr r1, #0x20
+	cmp r1, #'q'
+	bne .L2_checkR
+
+	cmp r7, #q_accept
+	bne .L2_yuck	
+
+	mov r1, #inputStatus_acceptedControlCharacter
+	b .L2_epilogue
+
+.L2_checkR:
+	cmp r1, #'r'
+	bne .L2_inputOk
+
+.L2_inputOk:
+	ldr r0, =msgYouEntered
+	ldr r1, =sscanResult
 	ldr r1, [r1]
 	bl printf
 
+.L2_yuck:
+.L2_epilogue:
 	pop {r4 - r8}
 	pop {lr}
 	add sp, #4
@@ -196,6 +211,11 @@ dataWidthOptions:		.asciz "8 bits - range is [-128, 127]", "16 bits - range is [
 
 getSpreadsheetSpecs:
 	push {lr}
+
+	ldr r0, =msgEnterSpreadsheetSize
+	bl printf
+	ldr r0, =msgPrompt
+	bl printf
 
 	mov r0, #r_reject
 	push {r0}
