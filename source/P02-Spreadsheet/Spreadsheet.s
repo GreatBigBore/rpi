@@ -1,4 +1,3 @@
-
 @* Spreadsheet
 @*
 @* written by			Rob Bishop
@@ -41,12 +40,10 @@
 @* 10. allow the user to toggle between binary, decimal, and hexadecimal presentations of the values in all
 @*		of the cells (including the calculation result cell) -- default is decimal
 @*/
-.equ testMode, 1
-
 .equ q_reject,	0
 .equ q_accept,	1
 
-.equ r_reject,	0
+.equ r_reject,	0xCE
 .equ r_accept,	1
 
 .equ menuMode_main,			0
@@ -122,20 +119,48 @@ displaySheet:
 msgEnterAnything:	.asciz "Enter something! -> "
 scanString:		.asciz "%d"
 scanResult:		.word 0
-msgYouEntered:		.asciz "You entered %d\r\n" 
+msgYouEntered:		.asciz "You entered %d\r\n"
+hex1:			.asciz "Test mode = 0x%08X\r\n"
+hex2:			.asciz "Min = 0x%08X\r\n"
+hex3:			.asciz "Max = 0x%08X\r\n"
+hex4:			.asciz "q = 0x%08X\r\n"
+hex5:			.asciz "r = 0x%08X\r\n"
+hex6:			.asciz "At 0x%08X = 0x%08X\r\n"
 
 .section .text
 
 getMenuSelection:
 	push {lr}
+	push {r4 - r8}
 
 	mov r4, r0	@ testMode
 	mov r5, r1	@ minimum
 	mov r6, r2	@ maximum
 	mov r7, r3	@ accept or reject 'q'
+
 	mov r8, sp
-	add r8, #8
+	add r8, #24
 	ldr r8, [r8]	@ accept or reject 'r'
+
+	ldr r0, =hex1
+	mov r1, r4
+	bl printf
+
+	ldr r0, =hex2
+	mov r1, r5
+	bl printf
+
+	ldr r0, =hex3
+	mov r1, r6
+	bl printf
+
+	ldr r0, =hex4
+	mov r1, r7
+	bl printf
+
+	ldr r0, =hex5
+	mov r1, r8
+	bl printf
 
 	ldr r0, =scanString
 	ldr r1, =scanResult
@@ -146,8 +171,10 @@ getMenuSelection:
 	ldr r1, [r1]
 	bl printf
 
+	pop {r4 - r8}
+	pop {lr}
 	add sp, #4
-	pop {pc}
+	bx lr
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getSpreadsheetSpecs
@@ -172,7 +199,7 @@ getSpreadsheetSpecs:
 
 	mov r0, #r_reject
 	push {r0}
-	mov r0, #testMode
+	mov r0, #0 @testMode
 	mov r1, #minimumCellCount
 	mov r2, #maximumCellCount
 	mov r3, #q_accept
@@ -210,6 +237,10 @@ percentD: .asciz "%d\r\n"
 	.global main
 
 main:
+	mov r0, #1
+	ldr r1, =testMode
+	str r0, [r1]
+
 	bl clearScreen
 
 greet:
