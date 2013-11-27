@@ -124,6 +124,7 @@ scanString:		.asciz "%2s"
 scanResult:		.asciz "  "
 sscanString:		.asciz "%d"
 sscanResult:		.word 0
+msgYuck:		.asciz "%s? Yuck! Try again!\r\n-> "
 msgYouEntered:		.asciz "You entered %d\r\n"
 hex1:			.asciz "Test mode = 0x%08X\r\n"
 hex2:			.asciz "Min = 0x%08X\r\n"
@@ -131,7 +132,7 @@ hex3:			.asciz "Max = 0x%08X\r\n"
 hex4:			.asciz "q = 0x%08X\r\n"
 hex5:			.asciz "r = 0x%08X\r\n"
 hex6:			.asciz "At 0x%08X = 0x%08X\r\n"
-debug1: .asciz "Here1 %s\r\n"
+debug1: .asciz "Here1 0x%08X 0x%08X\r\n"
 debug2: .asciz "here2 %d\r\n"
 
 .section .text
@@ -149,9 +150,15 @@ getMenuSelection:
 	add r8, #24
 	ldr r8, [r8]	@ accept or reject 'r'
 
+.L2_tryAgain:
 	ldr r0, =scanString
 	ldr r1, =scanResult
 	bl scanf
+
+	ldr r0, =scanResult
+	mov r1, #0
+	mov r2, #10
+	bl strtol
 
 	ldr r0, =scanResult
 	ldr r1, =sscanString
@@ -163,28 +170,42 @@ getMenuSelection:
 	mov r2, #0xFF
 	lsl r2, #8
 	add r2, #0xFF
-	add r1, r2
+	and r1, r2
 	orr r1, #0x20
+
 	cmp r1, #'q'
 	bne .L2_checkR
 
 	cmp r7, #q_accept
 	bne .L2_yuck	
-
-	mov r1, #inputStatus_acceptedControlCharacter
-	b .L2_epilogue
+	b .L2_acceptControlCharacter
 
 .L2_checkR:
 	cmp r1, #'r'
-	bne .L2_inputOk
+	bne .L2_notQnotR
 
-.L2_inputOk:
-	ldr r0, =msgYouEntered
+	cmp r8, #r_accept
+	bne .L2_yuck
+	b .L2_acceptControlCharacter
+
+.L2_notQnotR:
 	ldr r1, =sscanResult
 	ldr r1, [r1]
-	bl printf
+	cmp r1, r5	@ Check against min
+	blo .L2_yuck
+
+	cmp r1, r6	@ Check against max
+	bls .L2_epilogue
 
 .L2_yuck:
+	ldr r0, =msgYuck
+	ldr r1, =scanResult
+	bl printf
+	b .L2_tryAgain
+ 
+.L2_acceptControlCharacter:
+	mov r1, #inputStatus_acceptedControlCharacter
+
 .L2_epilogue:
 	pop {r4 - r8}
 	pop {lr}
@@ -225,6 +246,10 @@ getSpreadsheetSpecs:
 	mov r3, #q_accept
 	bl getMenuSelection
 
+	cmp r1, #inputStatus_acceptedControlCharacter
+	beq epilogue
+
+epilogue:
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -249,6 +274,7 @@ operationsFunction:		.word 0
 
 msgGreeting:	.asciz "Greetings, data analyzer.\r\n\r\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
+msgByeNow:	.asciz "'Bye now!\r\n"
 
 percentD: .asciz "%d\r\n"
 
@@ -284,6 +310,13 @@ showSetupIntro:
 	bl printf
 
 	bl getSpreadsheetSpecs 
+
+	cmp r1, #inputStatus_acceptedControlCharacter
+	beq actionQuit 
+
+actionQuit:
+	ldr r0, =msgByeNow
+	bl printf
 
 	mov r7, $1		@ exit syscall
 	svc 0			@ wake kernel
