@@ -64,8 +64,6 @@
 .equ representationMode_dec, 1
 .equ representationMode_bin, 2
 
-.section .bss
-
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ clearScreen()
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -189,13 +187,16 @@ getMenuSelection:
 	b .L2_acceptControlCharacter
 
 .L2_notQnotR:
-	ldr r1, =sscanResult
-	ldr r1, [r1]
-	cmp r1, r5	@ Check against min
+	ldr r0, =sscanResult
+	ldr r0, [r0]
+	cmp r0, r5	@ Check against min
 	blo .L2_yuck
 
-	cmp r1, r6	@ Check against max
-	bls .L2_epilogue
+	cmp r0, r6	@ Check against max
+	bhi .L2_yuck
+
+	mov r1, #inputStatus_inputOk
+	b .L2_epilogue
 
 .L2_yuck:
 	ldr r0, =msgYuck
@@ -220,13 +221,21 @@ getMenuSelection:
 
 .section .data
 
+.L2_debug1: .asciz "sscanResult = 0x%08X\r\n"
+
 msgEnterSpreadsheetSize:	.asciz "Enter the number of cells for the spreadsheet [2, 10] or 'Q' to quit\r\n"
 msgDataWidthOptions:		.asciz "Data width options (enter 'Q' to quit):\r\n"
 msgSeparator:			.asciz "---------------------------------------\r\n"
 msgSelectDataWidth:		.asciz "Select data width:\r\n"
 msgPrompt:			.asciz "-> "
 
-dataWidthOptions:		.asciz "8 bits - range is [-128, 127]", "16 bits - range is [-32768, 32767]", "32 bits - range is [-2147483648, 2147483647]"
+dwo8:	.asciz "8 bits - range is [-128, 127]"
+dwo16:	.asciz "16 bits - range is [-32768, 32767]"
+dwo32:	.asciz "32 bits - range is [-2147483648, 2147483647]"
+
+.align 3
+dataWidthOptions: .word dwo8, dwo16, dwo32
+.equ numberOfDataWidthOptions, 3
 
 .section .text
 
@@ -240,7 +249,8 @@ getSpreadsheetSpecs:
 
 	mov r0, #r_reject
 	push {r0}
-	mov r0, #0 @testMode
+	ldr r0, =testMode
+	ldr r0, [r0]
 	mov r1, #minimumCellCount
 	mov r2, #maximumCellCount
 	mov r3, #q_accept
@@ -249,7 +259,88 @@ getSpreadsheetSpecs:
 	cmp r1, #inputStatus_acceptedControlCharacter
 	beq epilogue
 
+	ldr r1, =numberOfCellsInSpreadsheet
+	str r0, [r1]
+
+	bl newline
+
+	ldr r0, =msgDataWidthOptions
+	bl printf
+	ldr r0, =msgSeparator
+	bl printf
+
+	ldr r0, =dataWidthOptions
+	mov r1, #numberOfDataWidthOptions
+	bl showList
+
+	mov r0, #r_reject
+	push {r0}
+	ldr r0, =testMode
+	ldr r0, [r0]
+	mov r1, #1
+	mov r2, #3
+	mov r3, #q_accept
+	bl getMenuSelection
+
+	cmp r1, #inputStatus_acceptedControlCharacter
+	beq epilogue
+
+	sub r0, #1	@ Convert 1-based to 0-based
+	mov r1, #1	@ Will be data width
+	lsl r1, r0	@ Now r1 has the data width in bytes
+	ldr r0, =cellWidthInBytes
+	str r1, [r0]
+
 epilogue:
+	mov r0, #0
+	mov r1, #inputStatus_inputOk
+	pop {pc}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ newline
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+msgNewline: .asciz "\r\n"
+
+.section .text
+newline:
+	push {lr}
+	ldr r0, =msgNewline
+	bl printf
+	pop {pc}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ showList
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+msgListElement: .asciz "%d. %s\r\n"
+.L3_debug1: .asciz "r4 = 0x%08X, r5 = 0x%08X, r6 = 0x%08X\r\n"
+
+.section .text
+
+showList:
+	push {lr}
+	push {r4 - r6}
+
+	mov r4, r0	@ list offset
+	mov r5, r1	@ number of elements
+
+.L3_loopInit:
+	mov r6, #0
+
+.L3_loopTop:
+	add r6, r6, #1
+	ldr r0, =msgListElement
+	mov r1, r6
+	ldr r2, [r4]
+	bl printf
+
+	add r4, r4, #4
+	subs r5, r5, #1
+	bne .L3_loopTop
+
+	pop {r4 - r6}
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -277,6 +368,9 @@ msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
 msgByeNow:	.asciz "'Bye now!\r\n"
 
 percentD: .asciz "%d\r\n"
+
+msgTriumph: .asciz "%d cells in spreadsheet; %d bytes per cell\r\n"
+.L0_debug1: .asciz "r0 = 0x%08X, r1 = 0x%08X\r\n"
 
 .section .text
 
@@ -313,6 +407,13 @@ showSetupIntro:
 
 	cmp r1, #inputStatus_acceptedControlCharacter
 	beq actionQuit 
+
+	ldr r0, =msgTriumph
+	ldr r1, =numberOfCellsInSpreadsheet
+	ldr r1, [r1]
+	ldr r2, =cellWidthInBytes
+	ldr r2, [r2]
+	bl printf
 
 actionQuit:
 	ldr r0, =msgByeNow
