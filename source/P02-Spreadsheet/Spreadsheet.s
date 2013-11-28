@@ -64,6 +64,12 @@
 .equ representationMode_dec, 1
 .equ representationMode_bin, 2
 
+.equ operation_store, 0
+
+.section .data
+
+msgPrompt: .asciz "-> "
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ calcSheetSumAverage
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -235,7 +241,6 @@ msgEnterSpreadsheetSize:	.asciz "Enter the number of cells for the spreadsheet [
 msgDataWidthOptions:		.asciz "Data width options (enter 'Q' to quit):\r\n"
 msgSeparator:			.asciz "---------------------------------------\r\n"
 msgSelectDataWidth:		.asciz "Select data width:\r\n"
-msgPrompt:			.asciz "-> "
 
 dwo8:	.asciz "8 bits - range is [-128, 127]"
 dwo16:	.asciz "16 bits - range is [-32768, 32767]"
@@ -280,6 +285,8 @@ getSpreadsheetSpecs:
 	ldr r0, =dataWidthOptions
 	mov r1, #numberOfDataWidthOptions
 	bl showList
+	ldr r0, =msgPrompt
+	bl printf
 
 	mov r0, #r_reject
 	push {r0}
@@ -325,6 +332,9 @@ newline:
 @		usually index of target cell
 @	r3 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .text
+.align 3	@ in case there's an issue with jumping to this via register
+
 operations8:
 .ops8_store:
 	add r1, r2
@@ -367,10 +377,6 @@ operations32:
 @	r1/7 = sheet base address
 @	r2/8 = cell count
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-.L4_debug1: .asciz "Made it! r1 = 0x%08X, r2 = 0x%08X, r3 = 0x%08X\r\n"
-
 .section .text
 
 resetSheet:
@@ -388,21 +394,16 @@ resetSheet:
 	cmp r4, r8
 	bhs .L4_loopExit
 
-	ldr r0, =.L4_debug1
-	push {r4 - r6}
-	pop {r1 - r3}
-	bl printf
-
-	@mov r0, r7	@ base address of array
-	@mov r1, r4	@ index of target cell
-	@bl r6		@ store the zero
+	mov r0, #0	@ data to store
+	mov r1, r7	@ base address of array
+	mov r2, r4	@ index of target cell
+	blx r6		@ store the zero
 
 .L4_loopBottom:
 	add r4, #1
-	b .L4_init
+	b .L4_top
 
 .L4_loopExit:
-
 	pop {r4 - r8}
 	pop {pc}
 	
@@ -478,6 +479,8 @@ percentD: .asciz "%d\r\n"
 
 msgTriumph: .asciz "%d cells in spreadsheet; %d bytes per cell; buffer at 0x%08X\r\n"
 .L0_debug1: .asciz "r0 = 0x%08X, r1 = 0x%08X\r\n"
+.L0_debug2: .asciz "Jump table at 0x%08X, first word = 0x%08X\r\n"
+.L0_debug3: .asciz "Ops8 @ 0x%08X?\r\n"
 
 .section .text
 
@@ -516,7 +519,11 @@ showSetupIntro:
 	beq actionQuit 
 
 	ldr r0, =operationsJumpTable
-	add r1, r0, r2, lsl #2
+	ldr r2, =cellWidthInBytes
+	ldr r2, [r2]
+	lsr r2, #1		@ convert 1, 2, 4 to 0, 1, 2
+	add r1, r0, r2, lsl #2	@ convert 0, 1, 2 to 0, 4, 8 for offset into jump table
+	ldr r1, [r1]
 	ldr r0, =operationsFunction
 	str r1, [r0]
 
