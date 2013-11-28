@@ -65,6 +65,14 @@
 .equ representationMode_bin, 2
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ calcSheetSumAverage
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .text
+
+calcSheetSumAverage:
+calcSheetMinMax:
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ clearScreen()
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
@@ -310,6 +318,95 @@ newline:
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ operations8
+@	r0 = accumulator/source
+@	r1 = sheet base address
+@	r2 = multi-purpose;
+@		usually index of target cell
+@	r3 = operation
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+operations8:
+.ops8_store:
+	add r1, r2
+	strb r0, [r1]
+	b .ops8_epilogue
+
+.ops8_epilogue:
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ operations16
+@	r0 = accumulator/source
+@	r1 = sheet base address
+@	r2 = multi-purpose;
+@		usually index of target cell
+@	r3 = operation
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+operations16:
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ operations32
+@	r0 = accumulator/source
+@	r1 = sheet base address
+@	r2 = multi-purpose;
+@		usually index of target cell
+@	r3 = operation
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+operations32:
+.ops32_store:
+	add r1, r2
+	str r0, [r1]
+	b .ops32_epilogue
+
+.ops32_epilogue:
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ resetSheet
+@	r0/6 = operations function
+@	r1/7 = sheet base address
+@	r2/8 = cell count
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L4_debug1: .asciz "Made it! r1 = 0x%08X, r2 = 0x%08X, r3 = 0x%08X\r\n"
+
+.section .text
+
+resetSheet:
+	push {lr}
+	push {r4 - r8}
+
+	@ Is there a better way to copy registers?
+	push {r0 - r2}
+	pop {r6 - r8}
+
+.L4_init:
+	mov r4, #0
+
+.L4_top:
+	cmp r4, r8
+	bhs .L4_loopExit
+
+	ldr r0, =.L4_debug1
+	push {r4 - r6}
+	pop {r1 - r3}
+	bl printf
+
+	@mov r0, r7	@ base address of array
+	@mov r1, r4	@ index of target cell
+	@bl r6		@ store the zero
+
+.L4_loopBottom:
+	add r4, #1
+	b .L4_init
+
+.L4_loopExit:
+
+	pop {r4 - r8}
+	pop {pc}
+	
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ showList
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
@@ -359,9 +456,19 @@ cellToEdit:			.word 0
 overflowFlag:			.word 0
 
 spreadsheetData:		.word 47, 48, 49, 50, 51, 19, 18, 17, 16, 15
-offsetOfResultCell:		.word 0
+spreadsheetDataBuffer:		.word 0
 
 operationsFunction:		.word 0
+
+.align 8
+
+operationsJumpTable:	.word operations8, operations16, operations32
+
+formulaParametersTable:
+.L0_parametersSum:	.word formula_sum, calcSheetSumAverage
+.L0_parametersAverage:	.word formula_average, calcSheetSumAverage
+.L0_parametersMin:	.word formula_minimum, calcSheetMinMax
+.L0_parametersMax:	.word formula_maximum, calcSheetMinMax
 
 msgGreeting:	.asciz "Greetings, data analyzer.\r\n\r\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
@@ -369,7 +476,7 @@ msgByeNow:	.asciz "'Bye now!\r\n"
 
 percentD: .asciz "%d\r\n"
 
-msgTriumph: .asciz "%d cells in spreadsheet; %d bytes per cell\r\n"
+msgTriumph: .asciz "%d cells in spreadsheet; %d bytes per cell; buffer at 0x%08X\r\n"
 .L0_debug1: .asciz "r0 = 0x%08X, r1 = 0x%08X\r\n"
 
 .section .text
@@ -408,12 +515,36 @@ showSetupIntro:
 	cmp r1, #inputStatus_acceptedControlCharacter
 	beq actionQuit 
 
+	ldr r0, =operationsJumpTable
+	add r1, r0, r2, lsl #2
+	ldr r0, =operationsFunction
+	str r1, [r0]
+
+	ldr r0, =cellWidthInBytes
+	ldr r0, [r0]
+	ldr r1, =numberOfCellsInSpreadsheet
+	add r1, #1	@ Make room for result cell
+	mul r0, r1, r0
+	bl malloc
+	ldr r1, =spreadsheetDataBuffer
+	str r0, [r1]
+
 	ldr r0, =msgTriumph
 	ldr r1, =numberOfCellsInSpreadsheet
 	ldr r1, [r1]
 	ldr r2, =cellWidthInBytes
 	ldr r2, [r2]
+	ldr r3, =spreadsheetDataBuffer
+	ldr r3, [r3]
 	bl printf
+
+	ldr r0, =operationsFunction
+	ldr r0, [r0]
+	ldr r1, =spreadsheetDataBuffer
+	ldr r1, [r1]
+	ldr r2, =numberOfCellsInSpreadsheet
+	ldr r2, [r2]
+	bl resetSheet
 
 actionQuit:
 	ldr r0, =msgByeNow
