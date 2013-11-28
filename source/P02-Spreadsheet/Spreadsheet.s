@@ -65,6 +65,7 @@
 .equ representationMode_bin, 2
 
 .equ operation_store, 0
+.equ operation_display, 1
 
 .section .data
 
@@ -100,30 +101,37 @@ clearScreen:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
+@	r0/4 - ops function
+@	r1/5 - spreadsheet data
+@	r2/6 - number of cells to display
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
 displaySheet:
 	push {lr}
+	push {r4 - r6}
+
+	push {r0 - r2}
+	pop {r4 - r6}
 
 .L1_loopInit:
-	ldr r5, =spreadsheetData
-	mov r4, #0
+	mov r7, #0
 
 .L1_loopTop:
-	cmp r4, #10
+	cmp r7, r6
 	bhs .L1_loopExit
 
-	ldr r0, =percentD
-	ldr r1, [r5]
-	bl printf
+	mov r1, r5
+	mov r2, r7
+	mov r3, #operation_display
+	blx r4
 
 .L1_loopBottom:
-	add r5, r5, #4
-	add r4, r4, #1
+	add r7, r7, #1
 	b .L1_loopTop
 
 .L1_loopExit:
+	pop {r4 - r6}
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -332,16 +340,37 @@ newline:
 @		usually index of target cell
 @	r3 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.ops8_formatDec: .asciz "%d\r\n"
+.ops8_jumpTable: .word .ops8_store, .ops8_display
+
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
 operations8:
+	push {lr}
+
+	cmp r3, #operation_store
+	beq .ops8_store
+	cmp r3, #operation_display
+	beq .ops8_display
+	b .ops8_epilogue
+
 .ops8_store:
 	add r1, r2
 	strb r0, [r1]
 	b .ops8_epilogue
 
+.ops8_display:
+	ldr r0, =.ops8_formatDec
+	add r1, r2	@ r1 = address of cell
+	ldr r1, [r1]	@ r1 = data from cell
+	sxtb r1, r1	@ tricky; extend the single byte into all of r1
+	bl printf
+
 .ops8_epilogue:
+	pop {lr}
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -362,13 +391,36 @@ operations16:
 @		usually index of target cell
 @	r3 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.ops32_formatDec: .asciz "%d\r\n"
+.ops32_jumpTable: .word .ops32_store, .ops32_display
+
+.section .text
+.align 3	@ in case there's an issue with jumping to this via register
+
 operations32:
+	push {lr}
+
+	cmp r3, #operation_store
+	beq .ops32_store
+	cmp r3, #operation_display
+	beq .ops32_display
+	b .ops32_epilogue
+
 .ops32_store:
-	add r1, r2
+	add r1, r2, lsl #2
 	str r0, [r1]
 	b .ops32_epilogue
 
+.ops32_display:
+	ldr r0, =.ops32_formatDec
+	add r1, r2, lsl #2	@ r1 = address of cell
+	ldr r1, [r1]		@ r1 = data from cell
+	bl printf
+
 .ops32_epilogue:
+	pop {lr}
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -394,9 +446,10 @@ resetSheet:
 	cmp r4, r8
 	bhs .L4_loopExit
 
-	mov r0, #0	@ data to store
+	mov r0, #-27	@ data to store
 	mov r1, r7	@ base address of array
 	mov r2, r4	@ index of target cell
+	mov r3, #operation_store
 	blx r6		@ store the zero
 
 .L4_loopBottom:
@@ -475,7 +528,7 @@ msgGreeting:	.asciz "Greetings, data analyzer.\r\n\r\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
 msgByeNow:	.asciz "'Bye now!\r\n"
 
-percentD: .asciz "%d\r\n"
+percentD: .asciz "0x%08X\r\n"
 
 msgTriumph: .asciz "%d cells in spreadsheet; %d bytes per cell; buffer at 0x%08X\r\n"
 .L0_debug1: .asciz "r0 = 0x%08X, r1 = 0x%08X\r\n"
@@ -552,6 +605,14 @@ showSetupIntro:
 	ldr r2, =numberOfCellsInSpreadsheet
 	ldr r2, [r2]
 	bl resetSheet
+
+	ldr r0, =operationsFunction
+	ldr r0, [r0]
+	ldr r1, =spreadsheetDataBuffer
+	ldr r1, [r1]
+	ldr r2, =numberOfCellsInSpreadsheet
+	ldr r2, [r2]
+	bl displaySheet
 
 actionQuit:
 	ldr r0, =msgByeNow
