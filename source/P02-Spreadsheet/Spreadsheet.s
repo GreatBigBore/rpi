@@ -384,7 +384,41 @@ operations8:
 @		usually index of target cell
 @	r3 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.ops16_formatDec: .asciz "%d\r\n"
+.ops16_jumpTable: .word .ops16_store, .ops16_display
+
+.section .text
+.align 3	@ in case there's an issue with jumping to this via register
+
 operations16:
+	push {lr}
+	push {r4 - r7}
+
+	push {r0 - r3}
+	pop  {r4 - r7}
+
+	ldr r3, =.ops16_jumpTable
+	add r3, r3, r7, lsl #2	@ r7 = offset from beginning of jump table
+	ldr r3, [r3]
+	bx r3
+
+.ops16_store:
+	add r1, r2, lsl #1
+	strh r0, [r1]
+	b .ops16_epilogue
+
+.ops16_display:
+	ldr r0, =.ops16_formatDec
+	add r1, r2, lsl #1	@ r1 = address of cell
+	ldrsh r1, [r1]		@ r1 = data from cell
+	bl printf
+
+.ops16_epilogue:
+	pop {r4 - r7}
+	pop {lr}
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations32
