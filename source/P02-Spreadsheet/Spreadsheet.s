@@ -368,8 +368,7 @@ operations8:
 .ops8_display:
 	ldr r0, =.ops8_formatDec
 	add r1, r2	@ r1 = address of cell
-	ldr r1, [r1]	@ r1 = data from cell
-	sxtb r1, r1	@ tricky; extend the single byte into all of r1
+	ldrsb r1, [r1]	@ r1 = data from cell
 	bl printf
 
 .ops8_epilogue:
