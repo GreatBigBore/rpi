@@ -67,9 +67,7 @@
 .equ operation_store, 0
 .equ operation_display, 1
 
-.section .data
-
-msgPrompt: .asciz "-> "
+.equ longestCalculationString, 9
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ calcSheetSumAverage
@@ -101,38 +99,97 @@ clearScreen:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
-@	r0/4 - ops function
-@	r1/5 - spreadsheet data
-@	r2/6 - number of cells to display
+@
+@ stack:
+@	representation mode
+@	formula
+@	overflow accumulator
+@
+@	a/v1 - ops function
+@	a/v2 - spreadsheet data
+@	a/v3 - number of cells to display
+@	a/v4 - data width
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L1_msgSpreadsheetHeader:	.asciz "Simple spreadsheet\r\n"
+.L1_cellNumber:			.asciz "%9d. "
+
+.L1_msgFormula:	.asciz "%9s: "
+.L1_fSum:	.asciz "Sum"
+.L1_fAverage:	.asciz "Average"
+.L1_fMinimum:	.asciz "Minimum"
+.L1_fMaximum:	.asciz "Maximum"
+.L1_formulas:	.word .L1_fSum, .L1_fAverage, .L1_fMinimum, .L1_fMaximum
+
+.L1_msgDataWidth:	.asciz "%d-bit signed integer mode\r\n\r\n"
+.L1_msgOverflow:	.asciz "[ERROR]"
+
 .section .text
+.align 3
 
 displaySheet:
-	push {lr}
-	push {r4 - r6}
+	push {fp}
+	mov fp, sp
 
-	push {r0 - r2}
-	pop {r4 - r6}
+	push {lr}
+	push {v1 - v6}
+
+	push {a1 - a4}	@ transfer argument registers...
+	pop {v1 - v4}	@ to local variable registers
+
+	ldr a1, =.L1_msgSpreadsheetHeader
+	bl printf
+
+	ldr a1, =.L1_msgDataWidth
+	mov a2, v4, lsl #3	@ convert data width in bytes to width in bits
+	bl printf
 
 .L1_loopInit:
-	mov r7, #0
+	mov v6, #0
 
 .L1_loopTop:
-	cmp r7, r6
+	cmp v6, v3
 	bhs .L1_loopExit
 
-	mov r1, r5
-	mov r2, r7
-	mov r3, #operation_display
-	blx r4
+	ldr a1, =.L1_cellNumber
+	add a2, v6, #1
+	bl printf
+
+	mov a2, v2	@ spreadsheet
+	mov a3, v6	@ cell index
+	mov a4, #operation_display
+	blx v1		@ display current cell per data width 
 
 .L1_loopBottom:
-	add r7, r7, #1
+	add v6, v6, #1
 	b .L1_loopTop
 
 .L1_loopExit:
-	pop {r4 - r6}
-	pop {pc}
+	bl newline
+
+	add r1, fp, #8		@ r1 -> formula indicator
+	ldr r1, [r1]		@ r1 = formula indicator
+	ldr r0, =.L1_formulas
+	add r0, r1, lsl #2	@ r0 -> formula message pointer
+	ldr r1, [r0]		@ r1 -> formula message
+	ldr r0, =.L1_msgFormula
+	bl printf
+
+	mov a2, v2	@ spreadsheet
+	mov a3, v6	@ "index" of result cell 
+	mov a4, #operation_display
+	blx v1		@ display result cell per data width
+
+	bl newline
+
+	pop {v1 - v6}
+	pop {lr}
+
+	mov sp, fp
+	pop {fp}
+	add sp, #12
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getMenuSelection()
@@ -235,6 +292,42 @@ getMenuSelection:
 	add sp, #4
 	bx lr
 	
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getMainSelection
+@	stack: 
+@		testMode
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L5_msgInstructions:	.asciz "Options (enter 'Q' to quit):\r\n"
+.L5_msgSeparator:	.asciz "----------------------------\r\n"
+
+mo_editCell:		.asciz "Edit cell"
+mo_changeFormula:	.asciz "Change formula"
+mo_changeDataRep:	.asciz "Change data representation"
+mo_resetSpreadsheet:	.asciz "Reset sheet"
+mo_randomValues:	.asciz "Fill cells with random values"
+
+menuOptions: .word mo_editCell, mo_changeFormula, mo_changeDataRep
+		.word mo_resetSpreadsheet, mo_randomValues
+
+.equ menuOptionsCount, 5
+
+.section .text
+.align 3
+
+getMainSelection:
+
+	mov r0, #q_accept
+	mov r1, #r_reject
+	push {r0, r1}
+	ldr r0, =.L5_msgInstructions
+	ldr r1, =.L5_msgSeparator
+	ldr r2, =menuOptions
+	mov r3, #menuOptionsCount
+	bl runMenu
+	bx lr
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getSpreadsheetSpecs
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -342,7 +435,7 @@ newline:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.ops8_formatDec: .asciz "%d\r\n"
+.ops8_formatDec: .asciz "% 4d\r\n"
 .ops8_jumpTable: .word .ops8_store, .ops8_display
 
 .section .text
@@ -386,7 +479,7 @@ operations8:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.ops16_formatDec: .asciz "%d\r\n"
+.ops16_formatDec: .asciz "% 6d\r\n"
 .ops16_jumpTable: .word .ops16_store, .ops16_display
 
 .section .text
@@ -430,7 +523,7 @@ operations16:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.ops32_formatDec: .asciz "%d\r\n"
+.ops32_formatDec: .asciz "% 11d\r\n"
 .ops32_jumpTable: .word .ops32_store, .ops32_display
 
 .section .text
@@ -443,7 +536,7 @@ operations32:
 	push {r0 - r3}
 	pop  {r4 - r7}
 
-	ldr r3, =.ops8_jumpTable
+	ldr r3, =.ops32_jumpTable
 	add r3, r3, r7, lsl #2	@ r7 = offset from beginning of jump table
 	ldr r3, [r3]
 	bx r3
@@ -463,6 +556,26 @@ operations32:
 	pop {r4 - r7}
 	pop {lr}
 	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ promptForSelection 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+msgEnterSelection:	.asciz "Enter a selection"
+msgPrompt:		.asciz "-> "
+
+.section .text
+.align 3
+
+promptForSelection:
+	push {lr}
+	bl newline
+	ldr r0, =msgEnterSelection
+	bl printf
+	ldr r0, =msgPrompt
+	bl printf
+	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ resetSheet
@@ -501,6 +614,58 @@ resetSheet:
 	pop {r4 - r8}
 	pop {pc}
 	
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ runMenu
+@
+@ stack:
+@	testMode
+@	q accept/reject
+@	r accept/reject
+@
+@ registers:
+@	r0/4 instructions message
+@	r1/5 separator
+@	r2/6 menu options table
+@	r3/7 number of options in table
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+runMenu:
+	push {fp}
+	mov fp, sp
+
+	push {lr}
+	push {r4 - r8}
+
+	push {r0 - r3}	@ transfer scratch regs...
+	pop  {r4 - r7}	@ to variable regs
+
+	mov r0, r4	@ instructions
+	bl printf
+	mov r0, r5	@ separator
+	bl printf
+
+	mov r0, r6	@ menu options
+	mov r1, r7	@ number of options available
+	bl showList
+
+	bl promptForSelection
+
+	@ getMenuSelection needs work on its parameter handling
+	add r0, fp, #8	@ q accept/reject
+	ldr r3, [r0]
+	add r0, fp, #12	@ test mode
+	ldr r0, [r0]
+	mov r1, #1	@ minimum selection
+	mov r2, r7	@ number of options in menu is max selection
+	bl getMenuSelection
+
+	pop {r4 - r8}
+	pop {lr}
+
+	mov sp, fp
+	pop {fp}
+	add sp, #12
+	bx lr
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ showList
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -544,7 +709,7 @@ testMode:			.word 0
 numberOfCellsInSpreadsheet:	.word 0
 cellWidthInBytes:		.word 0
 
-formula:			.word 0
+formula:			.word 1
 representationMode:		.word 0
 menuMode:			.word 0
 cellToEdit:			.word 0
@@ -558,6 +723,8 @@ operationsFunction:		.word 0
 .align 8
 
 operationsJumpTable:	.word operations8, operations16, operations32
+menuModeJumpTable:	.word menuMain, menuChangeFormula, menuChangeDataRepresentation
+				.word menuGetCellToEdit, menuGetNewValueForCell
 
 formulaParametersTable:
 .L0_parametersSum:	.word formula_sum, calcSheetSumAverage
@@ -630,15 +797,6 @@ showSetupIntro:
 	ldr r1, =spreadsheetDataBuffer
 	str r0, [r1]
 
-	ldr r0, =msgTriumph
-	ldr r1, =numberOfCellsInSpreadsheet
-	ldr r1, [r1]
-	ldr r2, =cellWidthInBytes
-	ldr r2, [r2]
-	ldr r3, =spreadsheetDataBuffer
-	ldr r3, [r3]
-	bl printf
-
 	ldr r0, =operationsFunction
 	ldr r0, [r0]
 	ldr r1, =spreadsheetDataBuffer
@@ -647,14 +805,67 @@ showSetupIntro:
 	ldr r2, [r2]
 	bl resetSheet
 
+redisplaySheet:
+	bl clearScreen 
+
+	ldr r0, =representationMode
+	ldr r0, [r0]
+	push {r0}
+	ldr r0, =formula
+	ldr r0, [r0]
+	push {r0}
+	ldr r0, =overflowFlag
+	ldr r0, [r0]
+	push {r0}
 	ldr r0, =operationsFunction
 	ldr r0, [r0]
 	ldr r1, =spreadsheetDataBuffer
 	ldr r1, [r1]
 	ldr r2, =numberOfCellsInSpreadsheet
 	ldr r2, [r2]
+	ldr r3, =cellWidthInBytes
+	ldr r3, [r3]
 	bl displaySheet
 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Main Menu
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+menuMain:
+	ldr r0, =testMode
+	ldr r0, [r0]
+	push {r0}
+	bl getMainSelection
+
+	cmp r1, #inputStatus_acceptedControlCharacter
+	beq actionQuit 
+	b actionSwitch
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Change Formula Menu
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+menuChangeFormula:
+	b returnToMain 
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Change data representation menu
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+menuChangeDataRepresentation:
+	b returnToMain
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Get cell to edit menu
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+menuGetCellToEdit:
+	b returnToMain
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Get new value for cell menu
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+menuGetNewValueForCell:
+	b returnToMain
+
+actionSwitch:
+returnToMain:
 actionQuit:
 	ldr r0, =msgByeNow
 	bl printf
