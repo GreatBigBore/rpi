@@ -350,12 +350,15 @@ newline:
 
 operations8:
 	push {lr}
+	push {r4 - r7}
 
-	cmp r3, #operation_store
-	beq .ops8_store
-	cmp r3, #operation_display
-	beq .ops8_display
-	b .ops8_epilogue
+	push {r0 - r3}
+	pop  {r4 - r7}
+
+	ldr r3, =.ops8_jumpTable
+	add r3, r3, r7, lsl #2	@ r7 = offset from beginning of jump table
+	ldr r3, [r3]
+	bx r3
 
 .ops8_store:
 	add r1, r2
@@ -370,6 +373,7 @@ operations8:
 	bl printf
 
 .ops8_epilogue:
+	pop {r4 - r7}
 	pop {lr}
 	bx lr
 
@@ -401,12 +405,15 @@ operations16:
 
 operations32:
 	push {lr}
+	push {r4 - r7}
 
-	cmp r3, #operation_store
-	beq .ops32_store
-	cmp r3, #operation_display
-	beq .ops32_display
-	b .ops32_epilogue
+	push {r0 - r3}
+	pop  {r4 - r7}
+
+	ldr r3, =.ops8_jumpTable
+	add r3, r3, r7, lsl #2	@ r7 = offset from beginning of jump table
+	ldr r3, [r3]
+	bx r3
 
 .ops32_store:
 	add r1, r2, lsl #2
@@ -420,6 +427,7 @@ operations32:
 	bl printf
 
 .ops32_epilogue:
+	pop {r4 - r7}
 	pop {lr}
 	bx lr
 
