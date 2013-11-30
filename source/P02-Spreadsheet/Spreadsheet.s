@@ -101,9 +101,9 @@ clearScreen:
 @ displaySheet()
 @
 @ stack:
-@	representation mode
-@	formula
-@	overflow accumulator
+@	+12 representation mode
+@	 +8 formula
+@	 +4 overflow accumulator
 @
 @	a/v1 - ops function
 @	a/v2 - spreadsheet data
@@ -190,107 +190,6 @@ displaySheet:
 	pop {fp}
 	add sp, #12
 	bx lr
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ getMenuSelection()
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-msgEnterAnything:	.asciz "Enter something! -> "
-scanString:		.asciz "%2s"
-scanResult:		.asciz "  "
-sscanString:		.asciz "%d"
-sscanResult:		.word 0
-msgYuck:		.asciz "%s? Yuck! Try again!\r\n-> "
-msgYouEntered:		.asciz "You entered %d\r\n"
-hex1:			.asciz "Test mode = 0x%08X\r\n"
-hex2:			.asciz "Min = 0x%08X\r\n"
-hex3:			.asciz "Max = 0x%08X\r\n"
-hex4:			.asciz "q = 0x%08X\r\n"
-hex5:			.asciz "r = 0x%08X\r\n"
-hex6:			.asciz "At 0x%08X = 0x%08X\r\n"
-debug1: .asciz "Here1 0x%08X 0x%08X\r\n"
-debug2: .asciz "here2 %d\r\n"
-
-.section .text
-
-getMenuSelection:
-	push {lr}
-	push {r4 - r8}
-
-	mov r4, r0	@ testMode
-	mov r5, r1	@ minimum
-	mov r6, r2	@ maximum
-	mov r7, r3	@ accept or reject 'q'
-
-	mov r8, sp
-	add r8, #24
-	ldr r8, [r8]	@ accept or reject 'r'
-
-.L2_tryAgain:
-	ldr r0, =scanString
-	ldr r1, =scanResult
-	bl scanf
-
-	ldr r0, =scanResult
-	mov r1, #0
-	mov r2, #10
-	bl strtol
-
-	ldr r0, =scanResult
-	ldr r1, =sscanString
-	ldr r2, =sscanResult
-	bl sscanf
-
-	ldr r1, =scanResult
-	ldr r1, [r1]
-	mov r2, #0xFF
-	lsl r2, #8
-	add r2, #0xFF
-	and r1, r2
-	orr r1, #0x20
-
-	cmp r1, #'q'
-	bne .L2_checkR
-
-	cmp r7, #q_accept
-	bne .L2_yuck	
-	b .L2_acceptControlCharacter
-
-.L2_checkR:
-	cmp r1, #'r'
-	bne .L2_notQnotR
-
-	cmp r8, #r_accept
-	bne .L2_yuck
-	b .L2_acceptControlCharacter
-
-.L2_notQnotR:
-	ldr r0, =sscanResult
-	ldr r0, [r0]
-	cmp r0, r5	@ Check against min
-	blo .L2_yuck
-
-	cmp r0, r6	@ Check against max
-	bhi .L2_yuck
-
-	mov r1, #inputStatus_inputOk
-	b .L2_epilogue
-
-.L2_yuck:
-	ldr r0, =msgYuck
-	ldr r1, =scanResult
-	bl printf
-	b .L2_tryAgain
- 
-.L2_acceptControlCharacter:
-	mov r1, #inputStatus_acceptedControlCharacter
-
-.L2_epilogue:
-	pop {r4 - r8}
-	pop {lr}
-	add sp, #4
-	bx lr
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getMainSelection
@@ -317,15 +216,108 @@ menuOptions: .word mo_editCell, mo_changeFormula, mo_changeDataRep
 .align 3
 
 getMainSelection:
-
-	mov r0, #q_accept
-	mov r1, #r_reject
-	push {r0, r1}
-	ldr r0, =.L5_msgInstructions
-	ldr r1, =.L5_msgSeparator
-	ldr r2, =menuOptions
-	mov r3, #menuOptionsCount
+	push {lr}
+	ldr r0, =testMode
+	ldr r0, [r0]
+	mov r1, #q_accept
+	mov r2, #r_reject
+	push {r0 - r2}
+	ldr a1, =.L5_msgInstructions
+	ldr a2, =.L5_msgSeparator
+	ldr a3, =menuOptions
+	mov a4, #menuOptionsCount
 	bl runMenu
+	pop {lr}
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getMenuSelection
+@
+@ stack:
+@	+4/v5 accept/reject 'r'
+@
+@ registers:
+@	a/v1 test mode
+@	a/v2 minimum acceptable input
+@	a/v3 maximum acceptable input
+@	a/v4 accept/reject 'q'
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+scanString:		.asciz "%2s"
+scanResult:		.asciz "  "
+msgYuck:		.asciz "%s? Yuck! Try again!\r\n-> "
+
+.section .text
+
+getMenuSelection:
+	push {fp}
+	mov fp, sp
+
+	push {lr}
+	push {v1 - v6}
+
+	push {a1 - a4}	@ Transfer args to...
+	pop  {v1 - v4}	@ local variable regs
+
+	add v5, fp, #4	@ accept/reject 'r'
+	ldr v5, [v5]
+
+.L2_tryAgain:
+	ldr r0, =scanString
+	ldr r1, =scanResult
+	bl scanf
+
+	ldr r1, =scanResult
+	ldrh r1, [r1]		@ get only 2 bytes to check for "q\0" or "r\0"
+	orr r1, #0x20
+
+	cmp r1, #'q'
+	bne .L2_checkR
+
+	cmp v4, #q_accept
+	bne .L2_yuck	
+	b .L2_acceptControlCharacter
+
+.L2_checkR:
+	cmp r1, #'r'
+	bne .L2_notQnotR
+
+	cmp v5, #r_accept
+	bne .L2_yuck
+	b .L2_acceptControlCharacter
+
+.L2_notQnotR:
+	ldr r0, =scanResult
+	mov r1, #0
+	mov r2, #10
+	bl strtol
+
+	cmp r0, v2	@ Check against min
+	blo .L2_yuck
+
+	cmp r0, v3	@ Check against max
+	bhi .L2_yuck
+
+	mov r1, #inputStatus_inputOk
+	b .L2_epilogue
+
+.L2_yuck:
+	ldr r0, =msgYuck
+	ldr r1, =scanResult
+	bl printf
+	b .L2_tryAgain
+ 
+.L2_acceptControlCharacter:
+	mov r1, #inputStatus_acceptedControlCharacter
+
+.L2_epilogue:
+	pop {v1 - v6}
+	pop {lr}
+
+	mov sp, fp
+	pop {fp}
+	add sp, #4
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -335,8 +327,6 @@ getMainSelection:
 .equ maximumCellCount, 10
 
 .section .data
-
-.L2_debug1: .asciz "sscanResult = 0x%08X\r\n"
 
 msgEnterSpreadsheetSize:	.asciz "Enter the number of cells for the spreadsheet [2, 10] or 'Q' to quit\r\n"
 msgDataWidthOptions:		.asciz "Data width options (enter 'Q' to quit):\r\n"
@@ -407,9 +397,10 @@ getSpreadsheetSpecs:
 	ldr r0, =cellWidthInBytes
 	str r1, [r0]
 
-epilogue:
 	mov r0, #0
 	mov r1, #inputStatus_inputOk
+
+epilogue:
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -578,6 +569,42 @@ promptForSelection:
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ randomFill
+@	a/v1 = operations function
+@	a/v2 = sheet base address
+@	a/v3 = cell count
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+randomFill:
+	push {lr}
+	push {v1 - v6}
+
+	push {a1 - a3}	@ Transfer arguments to...
+	pop  {v1 - v3}	@ local variables
+
+.L6_loopInit:
+	mov v6, #0
+
+.L6_loopTop:
+	cmp v6, v3
+	bhs .L6_loopExit
+
+	bl rand		@ a1 (r0)  = random value
+	ror a1, #16	@ if RAND_MAX is 2^32 - 1 then I can fake a full range
+	mov a2, v2	@ sheet base address
+	mov a3, v6	@ current cell index
+	mov r3, #operation_store
+	blx v1		@ store a1
+
+.L6_loopBottom:
+	add v6, #1
+	b .L6_loopTop
+
+.L6_loopExit:
+
+	pop {v1 - v6}
+	pop {pc}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ resetSheet
 @	r0/6 = operations function
 @	r1/7 = sheet base address
@@ -633,10 +660,10 @@ runMenu:
 	mov fp, sp
 
 	push {lr}
-	push {r4 - r8}
+	push {v1 - v6}
 
-	push {r0 - r3}	@ transfer scratch regs...
-	pop  {r4 - r7}	@ to variable regs
+	push {a1 - a4}	@ transfer scratch regs...
+	pop  {v1 - v4}	@ to variable regs
 
 	mov r0, r4	@ instructions
 	bl printf
@@ -649,16 +676,18 @@ runMenu:
 
 	bl promptForSelection
 
-	@ getMenuSelection needs work on its parameter handling
-	add r0, fp, #8	@ q accept/reject
-	ldr r3, [r0]
-	add r0, fp, #12	@ test mode
-	ldr r0, [r0]
-	mov r1, #1	@ minimum selection
-	mov r2, r7	@ number of options in menu is max selection
+	add v6, fp, #4	@ r accept/reject
+	ldr v6, [v6]
+	push {v6}
+	add v6, fp, #12	@ test mode
+	ldr a1, [v6]
+	mov a2, #1	@ minimum selection
+	mov a3, v4	@ maximum selection
+	add v6, fp, #8	@ q accept/reject
+	ldr a4, [v6]
 	bl getMenuSelection
 
-	pop {r4 - r8}
+	pop {v1 - v6}
 	pop {lr}
 
 	mov sp, fp
@@ -709,7 +738,7 @@ testMode:			.word 0
 numberOfCellsInSpreadsheet:	.word 0
 cellWidthInBytes:		.word 0
 
-formula:			.word 1
+formula:			.word 0
 representationMode:		.word 0
 menuMode:			.word 0
 cellToEdit:			.word 0
@@ -722,9 +751,21 @@ operationsFunction:		.word 0
 
 .align 8
 
+actionsJumpTable:
+			.word actionEditCell
+			.word actionChangeFormula
+			.word actionChangeDataRepresentation
+			.word actionResetSpreadsheet
+			.word actionFillRandom
+
 operationsJumpTable:	.word operations8, operations16, operations32
-menuModeJumpTable:	.word menuMain, menuChangeFormula, menuChangeDataRepresentation
-				.word menuGetCellToEdit, menuGetNewValueForCell
+
+menuModeJumpTable:
+			.word menuMain
+			.word menuChangeFormula
+			.word menuChangeDataRepresentation
+			.word menuGetCellToEdit
+			.word menuGetNewValueForCell
 
 formulaParametersTable:
 .L0_parametersSum:	.word formula_sum, calcSheetSumAverage
@@ -751,6 +792,10 @@ main:
 	mov r0, #1
 	ldr r1, =testMode
 	str r0, [r1]
+
+	mov r0, #0
+	bl time
+	bl srand
 
 	bl clearScreen
 
@@ -805,6 +850,7 @@ showSetupIntro:
 	ldr r2, [r2]
 	bl resetSheet
 
+recalculateSheet:
 redisplaySheet:
 	bl clearScreen 
 
@@ -826,6 +872,13 @@ redisplaySheet:
 	ldr r3, =cellWidthInBytes
 	ldr r3, [r3]
 	bl displaySheet
+
+	ldr r0, =menuMode
+	ldr r0, [r0]		@ r0 = menu mode
+	ldr r1, =menuModeJumpTable
+	add r1, r1, r0, lsl #2	@ r1 -> jump target for current menu
+	ldr r0, [r1]		@ r0 = jump target
+	bx r0
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Main Menu
@@ -865,6 +918,34 @@ menuGetNewValueForCell:
 	b returnToMain
 
 actionSwitch:
+	sub r0, #1			@ user menu selection to 0-based
+	ldr r1, =actionsJumpTable
+	add r0, r1, r0, lsl #2
+	ldr r0, [r0]
+	bx r0
+
+actionEditCell:
+	b returnToMain
+
+actionChangeFormula:
+	b returnToMain
+
+actionChangeDataRepresentation:
+	b returnToMain
+
+actionResetSpreadsheet:
+	b returnToMain
+
+actionFillRandom:
+	ldr a1, =operationsFunction
+	ldr a1, [a1]
+	ldr a2, =spreadsheetDataBuffer
+	ldr a2, [a2]
+	ldr a3, =numberOfCellsInSpreadsheet
+	ldr a3, [a3]
+	bl randomFill
+	b recalculateSheet
+
 returnToMain:
 actionQuit:
 	ldr r0, =msgByeNow
