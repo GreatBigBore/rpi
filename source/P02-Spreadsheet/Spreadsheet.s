@@ -588,8 +588,17 @@ randomFill:
 	cmp v6, v3
 	bhs .L6_loopExit
 
-	bl rand		@ a1 (r0)  = random value
-	ror a1, #16	@ if RAND_MAX is 2^32 - 1 then I can fake a full range
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ Something strange happens with rand that 
+	@ causes me to get all positive values when
+	@ working with 16-bit cells. The ror is
+	@ there to mix things up a bit and hopefully
+	@ give me both positive and negative values
+	@ in a random, or at least apparently random
+	@ distribution. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	bl rand		@ returns rand in a1 (r0)
+	ror a1, #1	@ because I want a full range
 	mov a2, v2	@ sheet base address
 	mov a3, v6	@ current cell index
 	mov r3, #operation_store
@@ -776,13 +785,6 @@ formulaParametersTable:
 msgGreeting:	.asciz "Greetings, data analyzer.\r\n\r\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
 msgByeNow:	.asciz "'Bye now!\r\n"
-
-percentD: .asciz "0x%08X\r\n"
-
-msgTriumph: .asciz "%d cells in spreadsheet; %d bytes per cell; buffer at 0x%08X\r\n"
-.L0_debug1: .asciz "r0 = 0x%08X, r1 = 0x%08X\r\n"
-.L0_debug2: .asciz "Jump table at 0x%08X, first word = 0x%08X\r\n"
-.L0_debug3: .asciz "Ops8 @ 0x%08X?\r\n"
 
 .section .text
 
