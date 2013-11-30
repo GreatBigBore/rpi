@@ -69,17 +69,83 @@
 
 .equ longestCalculationString, 9
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ calcSheetMinMax
+@
+@ stack:
+@	+4: unused but required so
+@		main can call minmax
+@		and sumavg with the
+@		same mechanism
+@
+@ registers:
+@	a/v1: operations function
+@	a/v2: spreadsheet address
+@	a/v3: number of cells in sheet
+@	a/v4: operation - min or max
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .text
+
+calcSheetMinMax:
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v6}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	cmp v4, #formula_min
+	beq .L7_initForMin
+
+	mov a1, #operation_initAForMax
+	blx v1
+
+	mov v5, #formula_max
+	b .L7_loopInit
+
+.L7_initForMin:
+	mov a1, #operation_initAForMin
+	blx v1
+
+	mov v5, #formula_min
+
+.L7_loopInit:
+	mov v6, #0
+
+.L7_loopTop:
+	cmp v6, v3
+	bhs .L7_loopExit
+
+	mov a1, v4	@ operation min/max
+	blx v1
+
+.L7_loopBottom:
+	add v6, #1
+	b .L7_loopInit
+
+.L7_loopExit:
+
+	pop {v1 - v6}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	add sp, #4	@ clear caller's stack parameters
+	bx lr		@ return
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ calcSheetSumAverage
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
 calcSheetSumAverage:
-calcSheetMinMax:
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ clearScreen()
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 msgClearScreen: .ascii "\033[2J\033[H"
@@ -97,7 +163,7 @@ clearScreen:
 	pop {r7}
 	mov pc, lr
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
 @
 @ stack:
@@ -109,7 +175,7 @@ clearScreen:
 @	a/v2 - spreadsheet data
 @	a/v3 - number of cells to display
 @	a/v4 - data width
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 .L1_msgSpreadsheetHeader:	.asciz "Simple spreadsheet\r\n"
@@ -191,11 +257,11 @@ displaySheet:
 	add sp, #12
 	bx lr
 	
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getMainSelection
 @	stack: 
 @		testMode
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 .L5_msgInstructions:	.asciz "Options (enter 'Q' to quit):\r\n"
@@ -230,7 +296,7 @@ getMainSelection:
 	pop {lr}
 	bx lr
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getMenuSelection
 @
 @ stack:
@@ -241,7 +307,7 @@ getMainSelection:
 @	a/v2 minimum acceptable input
 @	a/v3 maximum acceptable input
 @	a/v4 accept/reject 'q'
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 scanString:		.asciz "%2s"
@@ -320,9 +386,9 @@ getMenuSelection:
 	add sp, #4
 	bx lr
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getSpreadsheetSpecs
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .equ minimumCellCount, 2
 .equ maximumCellCount, 10
 
@@ -403,9 +469,9 @@ getSpreadsheetSpecs:
 epilogue:
 	pop {pc}
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ newline
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 msgNewline: .asciz "\r\n"
 
@@ -416,14 +482,14 @@ newline:
 	bl printf
 	pop {pc}
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations8
-@	r0 = accumulator/source
-@	r1 = sheet base address
-@	r2 = multi-purpose;
+@	a1 = accumulator/source
+@	a2 = sheet base address
+@	a3 = multi-purpose;
 @		usually index of target cell
-@	r3 = operation
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@	a4 = operation
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 .ops8_formatDec: .asciz "% 4d\r\n"
@@ -460,14 +526,14 @@ operations8:
 	pop {lr}
 	bx lr
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations16
 @	r0 = accumulator/source
 @	r1 = sheet base address
 @	r2 = multi-purpose;
 @		usually index of target cell
 @	r3 = operation
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 .ops16_formatDec: .asciz "% 6d\r\n"
@@ -504,14 +570,14 @@ operations16:
 	pop {lr}
 	bx lr
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations32
 @	r0 = accumulator/source
 @	r1 = sheet base address
 @	r2 = multi-purpose;
 @		usually index of target cell
 @	r3 = operation
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 .ops32_formatDec: .asciz "% 11d\r\n"
@@ -548,9 +614,9 @@ operations32:
 	pop {lr}
 	bx lr
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ promptForSelection 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 msgEnterSelection:	.asciz "Enter a selection"
@@ -568,12 +634,12 @@ promptForSelection:
 	bl printf
 	pop {pc}
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ randomFill
 @	a/v1 = operations function
 @	a/v2 = sheet base address
 @	a/v3 = cell count
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 randomFill:
 	push {lr}
 	push {v1 - v6}
@@ -588,7 +654,7 @@ randomFill:
 	cmp v6, v3
 	bhs .L6_loopExit
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@ Something strange happens with rand that 
 	@ causes me to get all positive values when
 	@ working with 16-bit cells. The ror is
@@ -596,7 +662,7 @@ randomFill:
 	@ give me both positive and negative values
 	@ in a random, or at least apparently random
 	@ distribution. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	bl rand		@ returns rand in a1 (r0)
 	ror a1, #1	@ because I want a full range
 	mov a2, v2	@ sheet base address
@@ -613,12 +679,12 @@ randomFill:
 	pop {v1 - v6}
 	pop {pc}
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ resetSheet
 @	r0/6 = operations function
 @	r1/7 = sheet base address
 @	r2/8 = cell count
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
 resetSheet:
@@ -650,7 +716,7 @@ resetSheet:
 	pop {r4 - r8}
 	pop {pc}
 	
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ runMenu
 @
 @ stack:
@@ -663,7 +729,7 @@ resetSheet:
 @	r1/5 separator
 @	r2/6 menu options table
 @	r3/7 number of options in table
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 runMenu:
 	push {fp}
 	mov fp, sp
@@ -704,9 +770,9 @@ runMenu:
 	add sp, #12
 	bx lr
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ showList
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 msgListElement: .asciz "%d. %s\r\n"
@@ -738,9 +804,9 @@ showList:
 	pop {r4 - r6}
 	pop {pc}
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ main
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 testMode:			.word 0
@@ -882,9 +948,9 @@ redisplaySheet:
 	ldr r0, [r1]		@ r0 = jump target
 	bx r0
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Main Menu
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuMain:
 	ldr r0, =testMode
 	ldr r0, [r0]
@@ -895,27 +961,43 @@ menuMain:
 	beq actionQuit 
 	b actionSwitch
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Change Formula Menu
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuChangeFormula:
-	b returnToMain 
+	ldr r0, =testMode
+	ldr r0, [r0]
+	bl getFormula
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	cmp r1, #inputStatus_acceptedControlCharacter
+	bne setFormula
+
+	cmp r0, #'q'
+	beq actionQuit
+	cmp r0, #'r'
+	beq returnToMain
+
+setFormula:
+	sub r0, #1
+	ldr r1, =formula
+	str r0, [r1]
+	b recalculateAndReturnToMain 
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Change data representation menu
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuChangeDataRepresentation:
 	b returnToMain
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Get cell to edit menu
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuGetCellToEdit:
 	b returnToMain
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Get new value for cell menu
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuGetNewValueForCell:
 	b returnToMain
 
@@ -930,7 +1012,10 @@ actionEditCell:
 	b returnToMain
 
 actionChangeFormula:
-	b returnToMain
+	ldr r0, =menuMode
+	mov r1, #menuMode_changeFormula
+	str r1, [r0]
+	b redisplaySheet
 
 actionChangeDataRepresentation:
 	b returnToMain
@@ -946,6 +1031,12 @@ actionFillRandom:
 	ldr a3, =numberOfCellsInSpreadsheet
 	ldr a3, [a3]
 	bl randomFill
+	b recalculateSheet
+
+recalculateAndReturnToMain:
+	ldr r0, =menuMode
+	mov r1, #menuMode_main
+	str r1, [r0]
 	b recalculateSheet
 
 returnToMain:
