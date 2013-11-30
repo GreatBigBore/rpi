@@ -66,6 +66,10 @@
 
 .equ operation_store, 0
 .equ operation_display, 1
+.equ operation_initAForMin, 2
+.equ operation_initAForMax, 3
+.equ operation_min, 4
+.equ operation_max, 5
 
 .equ longestCalculationString, 9
 
@@ -96,37 +100,40 @@ calcSheetMinMax:
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
 
-	cmp v4, #formula_min
+	cmp v4, #formula_minimum
 	beq .L7_initForMin
 
-	mov a1, #operation_initAForMax
-	blx v1
+	mov a4, #operation_initAForMax
+	blx v1		@ init A for max
 
-	mov v5, #formula_max
+	mov a4, #operation_max
 	b .L7_loopInit
 
 .L7_initForMin:
 	mov a1, #operation_initAForMin
-	blx v1
+	blx v1		@ init A for min
 
-	mov v5, #formula_min
+	mov a4, #operation_min
 
 .L7_loopInit:
 	mov v6, #0
+	mov v1, r0	@ init from the initA result
 
 .L7_loopTop:
 	cmp v6, v3
 	bhs .L7_loopExit
 
-	mov a1, v4	@ operation min/max
-	blx v1
+	mov a1, v1	@ current min/max
+	mov a2, v2	@ sheet address
+	mov a3, v6	@ cell index
+	blx v1		@ get min/max between curr and a1
+	mov v1, r0	@ save comparison result
 
 .L7_loopBottom:
 	add v6, #1
 	b .L7_loopInit
 
 .L7_loopExit:
-
 	pop {v1 - v6}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
@@ -258,6 +265,53 @@ displaySheet:
 	bx lr
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getFormula
+@	stack: 
+@		testMode
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L8_msgInstructions:
+	.asciz "Formula options (enter 'Q' to quit, 'R' to return to the main menu):\r\n"
+.L8_msgSeparator:
+	.asciz "--------------------------------------------------------------------\r\n"
+
+.L8_moSum:	.asciz "Sum"
+.L8_moAverage:	.asciz "Average"
+.L8_moMinimum:	.asciz "Minimum"
+.L8_moMaximum:	.asciz "Maximum"
+
+.L8_menuOptions: .word .L8_moSum, .L8_moAverage, .L8_moMinimum, .L8_moMaximum
+.equ .L8_menuOptionsCount, 4
+.section .text
+.align 3
+
+getFormula:
+	push {fp}
+	mov fp, sp
+
+	push {lr}
+	push {v1 - v6}
+
+	add r0, fp, #4	@ test mode
+	ldr r0, [r0]
+	mov r1, #q_accept
+	mov r2, #r_accept
+	push {r0 - r2}
+	ldr a1, =.L8_msgInstructions
+	ldr a2, =.L8_msgSeparator
+	ldr a3, =.L8_menuOptions
+	mov a4, #.L8_menuOptionsCount
+	bl runMenu
+
+	pop {v1 - v6}
+	pop {lr}
+	mov sp, fp
+	pop {fp}
+	add sp, #4
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getMainSelection
 @	stack: 
 @		testMode
@@ -307,6 +361,10 @@ getMainSelection:
 @	a/v2 minimum acceptable input
 @	a/v3 maximum acceptable input
 @	a/v4 accept/reject 'q'
+@
+@ returns:
+@	r0 user input
+@	r1 input status
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -334,11 +392,11 @@ getMenuSelection:
 	ldr r1, =scanResult
 	bl scanf
 
-	ldr r1, =scanResult
-	ldrh r1, [r1]		@ get only 2 bytes to check for "q\0" or "r\0"
-	orr r1, #0x20
+	ldr r0, =scanResult
+	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
+	orr r0, #0x20
 
-	cmp r1, #'q'
+	cmp r0, #'q'
 	bne .L2_checkR
 
 	cmp v4, #q_accept
@@ -346,7 +404,7 @@ getMenuSelection:
 	b .L2_acceptControlCharacter
 
 .L2_checkR:
-	cmp r1, #'r'
+	cmp r0, #'r'
 	bne .L2_notQnotR
 
 	cmp v5, #r_accept
@@ -484,45 +542,69 @@ newline:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations8
-@	a1 = accumulator/source
-@	a2 = sheet base address
-@	a3 = multi-purpose;
+@	a/v1 = accumulator/source
+@	a/v2 = sheet base address
+@	a/v3 = multi-purpose;
 @		usually index of target cell
-@	a4 = operation
+@	a/v4 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
 .ops8_formatDec: .asciz "% 4d\r\n"
-.ops8_jumpTable: .word .ops8_store, .ops8_display
+.ops8_jumpTable:	.word .ops8_store, .ops8_display, .ops8_initAForMin
+			.word .ops8_initAForMax, .ops8_min, .ops8_max
 
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
 operations8:
 	push {lr}
-	push {r4 - r7}
+	push {v1 - v6}
 
-	push {r0 - r3}
-	pop  {r4 - r7}
+	push {a1 - a4}
+	pop  {v1 - v4}
 
-	ldr r3, =.ops8_jumpTable
-	add r3, r3, r7, lsl #2	@ r7 = offset from beginning of jump table
-	ldr r3, [r3]
-	bx r3
+	ldr r0, =.ops8_jumpTable
+	add r0, r0, v4, lsl #2	@ v4 = offset from beginning of jump table
+	ldr r0, [r0]
+	bx r0
+
+.ops8_display:
+	ldr r0, =.ops8_formatDec
+	add r1, v2, v3	@ r1 = address of cell
+	ldrsb r1, [r1]	@ r1 = data from cell
+	bl printf
+	b .ops8_epilogue
+
+.ops8_initAForMax:
+	mov r0, #0x80		@ lowest possible 8-bit signed value
+	b .ops8_epilogue
+
+.ops8_initAForMin:
+	mov r0, #0x7F		@ highest possible 8-bit signed value
+	b .ops8_epilogue
+
+.ops8_max:
+	add r1, v2, v3	@ r1 = address of cell
+	ldrsb r1, [r1]	@ r1 = data from cell
+	cmp v1, r1
+	movlt r0, r1 
+	b .ops8_epilogue
+
+.ops8_min:
+	add r1, v2, v3	@ r1 = address of cell
+	ldrsb r1, [r1]	@ r1 = data from cell
+	cmp v1, r1
+	movgt r0, r1
+	b .ops8_epilogue
 
 .ops8_store:
 	add r1, r2
 	strb r0, [r1]
 	b .ops8_epilogue
 
-.ops8_display:
-	ldr r0, =.ops8_formatDec
-	add r1, r2	@ r1 = address of cell
-	ldrsb r1, [r1]	@ r1 = data from cell
-	bl printf
-
 .ops8_epilogue:
-	pop {r4 - r7}
+	pop {v1 - v6}
 	pop {lr}
 	bx lr
 
@@ -965,8 +1047,9 @@ menuMain:
 @ Change Formula Menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuChangeFormula:
-	ldr r0, =testMode
-	ldr r0, [r0]
+	ldr a1, =testMode
+	ldr a1, [a1]
+	push {a1}
 	bl getFormula
 
 	cmp r1, #inputStatus_acceptedControlCharacter
@@ -1040,6 +1123,11 @@ recalculateAndReturnToMain:
 	b recalculateSheet
 
 returnToMain:
+	ldr r0, =menuMode
+	mov r1, #menuMode_main
+	str r1, [r0]
+	b redisplaySheet
+
 actionQuit:
 	ldr r0, =msgByeNow
 	bl printf
