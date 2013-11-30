@@ -49,21 +49,6 @@
 .equ r_reject,	0
 .equ r_accept,	1
 
-.equ menuMode_main,			0
-.equ menuMode_changeFormula,		1
-.equ menuMode_changeDataRepresentation,	2
-.equ menuMode_getCellToEdit,		3
-.equ menuMode_getNewValueForCell,	4
-
-.equ formula_sum,	0
-.equ formula_average,	1
-.equ formula_minimum,	2
-.equ formula_maximum,	3
-
-.equ representationMode_hex, 0
-.equ representationMode_dec, 1
-.equ representationMode_bin, 2
-
 .equ operation_store, 0
 .equ operation_display, 1
 .equ operation_initAForMin, 2
@@ -174,7 +159,7 @@ clearScreen:
 @ displaySheet()
 @
 @ stack:
-@	+12 representation mode
+@	+12 presentation mode
 @	 +8 formula
 @	 +4 overflow accumulator
 @
@@ -310,6 +295,52 @@ getFormula:
 	pop {fp}
 	add sp, #4
 	bx lr
+	
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getPresentation
+@	stack: 
+@		testMode
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L9_msgInstructions:
+	.asciz "Presentation options (enter 'Q' to quit, 'R' to return to the main menu):\r\n"
+.L9_msgSeparator:
+	.asciz "---------------------------------------------------------------------------\r\n"
+
+.L9_moBinary:	.asciz "Binary"
+.L9_moDecimal:	.asciz "Decimal"
+.L9_moHex:	.asciz "Hex"
+
+.L9_menuOptions: .word .L9_moBinary, .L9_moDecimal, .L9_moHex
+.equ .L9_menuOptionsCount, 3
+.section .text
+.align 3
+
+getPresentation:
+	push {fp}
+	mov fp, sp
+
+	push {lr}
+	push {v1 - v6}
+
+	add r0, fp, #4	@ test mode
+	ldr r0, [r0]
+	mov r1, #q_accept
+	mov r2, #r_accept
+	push {r0 - r2}
+	ldr a1, =.L9_msgInstructions
+	ldr a2, =.L9_msgSeparator
+	ldr a3, =.L9_menuOptions
+	mov a4, #.L9_menuOptionsCount
+	bl runMenu
+
+	pop {v1 - v6}
+	pop {lr}
+	mov sp, fp
+	pop {fp}
+	add sp, #4
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getMainSelection
@@ -323,7 +354,7 @@ getFormula:
 
 mo_editCell:		.asciz "Edit cell"
 mo_changeFormula:	.asciz "Change formula"
-mo_changeDataRep:	.asciz "Change data representation"
+mo_changeDataRep:	.asciz "Change data presentation"
 mo_resetSpreadsheet:	.asciz "Reset sheet"
 mo_randomValues:	.asciz "Fill cells with random values"
 
@@ -599,8 +630,8 @@ operations8:
 	b .ops8_epilogue
 
 .ops8_store:
-	add r1, r2
-	strb r0, [r1]
+	add v2, v3
+	strb v1, [v2]
 	b .ops8_epilogue
 
 .ops8_epilogue:
@@ -736,15 +767,12 @@ randomFill:
 	cmp v6, v3
 	bhs .L6_loopExit
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@ Something strange happens with rand that 
-	@ causes me to get all positive values when
-	@ working with 16-bit cells. The ror is
-	@ there to mix things up a bit and hopefully
-	@ give me both positive and negative values
-	@ in a random, or at least apparently random
-	@ distribution. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ Something strange happens with rand that causes me to get all
+	@ positive values when working with 16-bit cells. The ror is there to
+	@ mix things up a bit and hopefully give me both positive and negative
+	@ values in a random, or at least apparently random distribution. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	bl rand		@ returns rand in a1 (r0)
 	ror a1, #1	@ because I want a full range
 	mov a2, v2	@ sheet base address
@@ -891,12 +919,16 @@ showList:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
+.equ presentation_hex, 0
+.equ presentation_dec, 1
+.equ presentation_bin, 2
+
 testMode:			.word 0
 numberOfCellsInSpreadsheet:	.word 0
 cellWidthInBytes:		.word 0
 
 formula:			.word 0
-representationMode:		.word 0
+presentation:			.word 0
 menuMode:			.word 0
 cellToEdit:			.word 0
 overflowFlag:			.word 0
@@ -911,18 +943,29 @@ operationsFunction:		.word 0
 actionsJumpTable:
 			.word actionEditCell
 			.word actionChangeFormula
-			.word actionChangeDataRepresentation
+			.word actionChangePresentation
 			.word actionResetSpreadsheet
 			.word actionFillRandom
 
 operationsJumpTable:	.word operations8, operations16, operations32
 
+.equ menuMode_main,			0
+.equ menuMode_changeFormula,		1
+.equ menuMode_changePresentation,	2
+.equ menuMode_getCellToEdit,		3
+.equ menuMode_getNewValueForCell,	4
+
 menuModeJumpTable:
 			.word menuMain
 			.word menuChangeFormula
-			.word menuChangeDataRepresentation
+			.word menuChangePresentation
 			.word menuGetCellToEdit
 			.word menuGetNewValueForCell
+
+.equ formula_sum,	0
+.equ formula_average,	1
+.equ formula_minimum,	2
+.equ formula_maximum,	3
 
 formulaParametersTable:
 .L0_parametersSum:	.word formula_sum, calcSheetSumAverage
@@ -962,8 +1005,8 @@ showSetupIntro:
 	ldr r1, =formula
 	str r0, [r1]
 
-	mov r0, #representationMode_dec
-	ldr r1, =representationMode
+	mov r0, #presentation_dec
+	ldr r1, =presentation
 	str r0, [r1]
 
 	ldr r0, =msgSetupIntro
@@ -1004,7 +1047,7 @@ recalculateSheet:
 redisplaySheet:
 	bl clearScreen 
 
-	ldr r0, =representationMode
+	ldr r0, =presentation
 	ldr r0, [r0]
 	push {r0}
 	ldr r0, =formula
@@ -1067,9 +1110,26 @@ setFormula:
 	b recalculateAndReturnToMain 
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ Change data representation menu
+@ Change data presentation menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-menuChangeDataRepresentation:
+menuChangePresentation:
+	ldr a1, =testMode
+	ldr a1, [a1]
+	push {a1}
+	bl getPresentation
+
+	cmp r1, #inputStatus_acceptedControlCharacter
+	bne setPresentation
+
+	cmp r0, #'q'
+	beq actionQuit
+	cmp r0, #'r'
+	beq returnToMain
+
+setPresentation:
+	sub r0, #1
+	ldr r1, =formula
+	str r0, [r1]
 	b returnToMain
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1100,8 +1160,11 @@ actionChangeFormula:
 	str r1, [r0]
 	b redisplaySheet
 
-actionChangeDataRepresentation:
-	b returnToMain
+actionChangePresentation:
+	ldr r0, =menuMode
+	mov r1, #menuMode_changePresentation
+	str r1, [r0]
+	b redisplaySheet
 
 actionResetSpreadsheet:
 	b returnToMain
