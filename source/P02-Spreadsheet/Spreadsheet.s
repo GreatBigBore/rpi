@@ -214,6 +214,8 @@ displaySheet:
 	add a2, v6, #1
 	bl printf
 
+	add a1, fp, #12	@ a1 -> presentation indicator
+	ldr a1, [a1]	@ a1 = presentation indicator
 	mov a2, v2	@ spreadsheet
 	mov a3, v6	@ cell index
 	mov a4, #operation_display
@@ -582,6 +584,8 @@ newline:
 .section .data
 
 .ops8_formatDec: .asciz "% 4d\r\n"
+.ops8_formatHex: .asciz "%02X\r\n"
+
 .ops8_jumpTable:	.word .ops8_store, .ops8_display, .ops8_initAForMin
 			.word .ops8_initAForMax, .ops8_min, .ops8_max
 
@@ -601,10 +605,22 @@ operations8:
 	bx r0
 
 .ops8_display:
-	ldr r0, =.ops8_formatDec
-	add r1, v2, v3	@ r1 = address of cell
-	ldrsb r1, [r1]	@ r1 = data from cell
+	add a2, v2, v3	@ a2 = address of cell
+	ldrsb a2, [a2]	@ a2 = data from cell
+
+	cmp v1, #presentation_bin
+	beq .ops8_displayBin
+
+	ldr a1, =.ops8_formatDec	@ default to decimal
+	cmp v1, #presentation_hex
+	ldreq a1, =.ops8_formatHex	@ cool arm conditional execution
 	bl printf
+	b .ops8_epilogue
+
+.ops8_displayBin:
+	mov a1, a2	@ a1 = data to display
+	mov a2, #1	@ a2 = number of bytes
+	bl showNumberAsBin
 	b .ops8_epilogue
 
 .ops8_initAForMax:
@@ -915,13 +931,64 @@ showList:
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ showNumberAsBin 
+@	a1 number to show
+@	a2 number of bytes
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+showNumberAsBin:
+	push {lr}
+	push {v1 - v6}
+
+	push {a1 - a4}	@ transfer scratch regs...
+	pop  {v1 - v4}	@ to variable regs
+
+.L10_loopInit:
+	mov r0, #4
+	sub v3, r0, v2	@ width in bytes - 4: 1, 2, 4 becomes 3, 2, 0
+	lsl v3, #3	@ 3, 2, 0 becomes 24, 16, 0 to shift val to top of reg
+	lsl v1, v3	@ shift value up to top of register
+
+	mov v4, #4 - 1	@ for testing whether to show underscore
+	mov v3, #1	@ remember we're on the first pass
+	lsl v2, #3	@ width in bytes 1, 2, 4 -> width in bits 8, 16, 32
+
+.L10_loopTop:
+	cmp v2, #0
+	beq .L10_loopExit
+
+	tst v2, v4	@ time for underscore?
+	bne .L10_showbit
+
+	cmp v3, #1	@ no underscore on first pass through
+	beq .L10_showbit
+
+	mov a1, #'_'
+	bl putchar
+
+.L10_showbit:
+	mov a1, #'0'	@ default to displaying zero
+	lsl v1, #1	@ cool arm conditional instruction coming up
+	movcs a1, #'1'	@ move 1 if carry set by above instruction -- cool 
+	bl putchar
+
+.L10_loopBottom:
+	mov v3, #0	@ no longer on first pass
+	sub v2, #1
+	b .L10_loopTop
+
+.L10_loopExit:
+	bl newline
+	pop {v1 - v6}
+	pop {pc}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ main
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.equ presentation_hex, 0
+.equ presentation_bin, 0
 .equ presentation_dec, 1
-.equ presentation_bin, 2
+.equ presentation_hex, 2
 
 testMode:			.word 0
 numberOfCellsInSpreadsheet:	.word 0
@@ -1128,7 +1195,7 @@ menuChangePresentation:
 
 setPresentation:
 	sub r0, #1
-	ldr r1, =formula
+	ldr r1, =presentation
 	str r0, [r1]
 	b returnToMain
 
