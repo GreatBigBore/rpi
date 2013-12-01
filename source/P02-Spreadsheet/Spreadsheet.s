@@ -193,8 +193,7 @@ calcSheetSumAverage:
 	cmp v4, #formula_sum
 	beq .L11_storeResult
 
-	mov a2, v5	@ divide function calculates a2 / a3
-	mov a3, v3	@ denominator for average
+	mov a2, v3	@ denominator for average
 	bl divide	@ result in r0
 
 .L11_storeResult:
@@ -238,7 +237,13 @@ clearScreen:
 @	Hope it works!
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 divide:
-.L12_divide_end:
+	vmov s0, r0
+	vmov s1, r1
+	vcvt.f32.s32 s0, s0
+	vcvt.f32.s32 s1, s1
+	vdiv.f32 s0, s0, s1
+	vcvt.s32.f32 s0, s0
+	vmov r0, s0
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
