@@ -236,6 +236,8 @@ displaySheet:
 	ldr r0, =.L1_msgFormula
 	bl printf
 
+	add a1, fp, #12	@ a1 -> presentation indicator
+	ldr a1, [a1]	@ a1 = presentation indicator
 	mov a2, v2	@ spreadsheet
 	mov a3, v6	@ "index" of result cell 
 	mov a4, #operation_display
@@ -576,6 +578,7 @@ newline:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations8
 @	a/v1 = accumulator/source
+@		except for operation_display -- there it's presentation mode
 @	a/v2 = sheet base address
 @	a/v3 = multi-purpose;
 @		usually index of target cell
@@ -584,7 +587,7 @@ newline:
 .section .data
 
 .ops8_formatDec: .asciz "% 4d\r\n"
-.ops8_formatHex: .asciz "%02X\r\n"
+.ops8_formatHex: .asciz "$%02X\r\n"
 
 .ops8_jumpTable:	.word .ops8_store, .ops8_display, .ops8_initAForMin
 			.word .ops8_initAForMax, .ops8_min, .ops8_max
@@ -614,6 +617,7 @@ operations8:
 	ldr a1, =.ops8_formatDec	@ default to decimal
 	cmp v1, #presentation_hex
 	ldreq a1, =.ops8_formatHex	@ cool arm conditional execution
+	andeq a2, #0xFF			@ also use only bottom byte if hex
 	bl printf
 	b .ops8_epilogue
 
@@ -943,6 +947,9 @@ showNumberAsBin:
 	pop  {v1 - v4}	@ to variable regs
 
 .L10_loopInit:
+	mov a1, #'%'
+	bl putchar
+
 	mov r0, #4
 	sub v3, r0, v2	@ width in bytes - 4: 1, 2, 4 becomes 3, 2, 0
 	lsl v3, #3	@ 3, 2, 0 becomes 24, 16, 0 to shift val to top of reg
@@ -967,7 +974,7 @@ showNumberAsBin:
 
 .L10_showbit:
 	mov a1, #'0'	@ default to displaying zero
-	lsl v1, #1	@ cool arm conditional instruction coming up
+	lsls v1, #1	@ cool arm conditional instruction coming up
 	movcs a1, #'1'	@ move 1 if carry set by above instruction -- cool 
 	bl putchar
 
