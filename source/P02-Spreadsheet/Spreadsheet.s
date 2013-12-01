@@ -193,9 +193,9 @@ calcSheetSumAverage:
 	cmp v4, #formula_sum
 	beq .L11_storeResult
 
-	mov a2, v3	@ denominator for average
-	sdiv a2, a3
-	bl ldiv		@ result in r0
+	mov a2, v5	@ divide function calculates a2 / a3
+	mov a3, v3	@ denominator for average
+	bl divide	@ result in r0
 
 .L11_storeResult:
 	mov a2, v2	@ spreadsheet
@@ -238,30 +238,7 @@ clearScreen:
 @	Hope it works!
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 divide:
-	MOV      R0,#0     ;clear R0 to accumulate result
-	MOV      R3,#1     ;set bit 0 in R3, which will be
-	                ;shifted left then right
-.L12_start:
-	CMP      R2,R1
-	MOVLS    R2,R2,LSL#1
-	MOVLS    R3,R3,LSL#1
-	BLS      .L12_start
-
-.L12_next:
-	CMP       R1,R2      ;carry set if R1>R2 (don't ask why)
-	SUBCS     R1,R1,R2   ;subtract R2 from R1 if this would
-	                     ;give a positive answer
-	ADDCS     R0,R0,R3   ;and add the current bit in R3 to
-	                     ;the accumulating answer in R0
-
-	MOVS      R3,R3,LSR#1     ;Shift R3 right into carry flag
-	MOVCC     R2,R2,LSR#1     ;and if bit 0 of R3 was zero, also
-	                          ;shift R2 right
-	BCC       .L12_next       ;If carry not clear, R3 has shifted
-	                          ;back to where it started, and we
-	                          ;can end
-
-.L12_divide_end
+.L12_divide_end:
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -689,7 +666,7 @@ newline:
 @	a/v1 = accumulator/source
 @		except for operation_display -- there it's presentation mode
 @	a/v2 = sheet base address
-@	a/v3 = multi-purpose;
+@	a/v3 = multi-purpose --
 @		usually index of target cell
 @	a/v4 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
