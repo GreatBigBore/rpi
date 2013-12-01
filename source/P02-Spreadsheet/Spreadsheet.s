@@ -733,6 +733,7 @@ operations8:
 
 .ops8_initAForMax:
 	mov r0, #0x80		@ lowest possible 8-bit signed value
+	sxtb r0, r0		@ sign-extend
 	b .ops8_epilogue
 
 .ops8_initAForMin:
@@ -742,15 +743,17 @@ operations8:
 .ops8_max:
 	add r1, v2, v3	@ r1 = address of cell
 	ldrsb r1, [r1]	@ r1 = data from cell
+	mov r0, v1	@ current max
 	cmp v1, r1
-	movlt r0, r1 
+	movlt r0, r1	@ new max if v1 < cell value
 	b .ops8_epilogue
 
 .ops8_min:
 	add r1, v2, v3	@ r1 = address of cell
 	ldrsb r1, [r1]	@ r1 = data from cell
+	mov r0, v1	@ current min
 	cmp v1, r1
-	movgt r0, r1
+	movgt r0, r1	@ new min if v1 > cell value
 	b .ops8_epilogue
 
 .ops8_store:
