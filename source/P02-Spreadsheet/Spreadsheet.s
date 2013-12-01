@@ -55,6 +55,8 @@
 .equ operation_initAForMax, 3
 .equ operation_min, 4
 .equ operation_max, 5
+.equ operation_accumulate, 6
+.equ operation_checkOverflow, 7
 
 .equ longestCalculationString, 9
 
@@ -102,23 +104,29 @@ calcSheetMinMax:
 
 .L7_loopInit:
 	mov v6, #0
-	mov v1, r0	@ init from the initA result
+	mov v5, r0	@ init from the initA result
 
 .L7_loopTop:
 	cmp v6, v3
 	bhs .L7_loopExit
 
-	mov a1, v1	@ current min/max
+	mov a1, v5	@ current min/max
 	mov a2, v2	@ sheet address
 	mov a3, v6	@ cell index
 	blx v1		@ get min/max between curr and a1
-	mov v1, r0	@ save comparison result
+	mov v5, r0	@ save comparison result
 
 .L7_loopBottom:
 	add v6, #1
-	b .L7_loopInit
+	b .L7_loopTop
 
 .L7_loopExit:
+	mov a1, v5	@ result
+	mov a2, v2	@ sheet
+	mov a3, v6	@ cell "index" -- result cell
+	mov a4, #operation_store
+	blx v1		@ store result
+
 	pop {v1 - v6}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
@@ -127,13 +135,83 @@ calcSheetMinMax:
 
 	add sp, #4	@ clear caller's stack parameters
 	bx lr		@ return
-
+	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ calcSheetSumAverage
+@
+@ stack:
+@	+4 POINTER TO overflow flag
+@
+@ registers:
+@	a/v1 operations function
+@	a/v2 spreadsheet base address
+@	a/v3 number of cells in sheet
+@	a/v4 min/max indicator
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
 calcSheetSumAverage:
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+.L11_loopInit:
+	mov v5, #0	@ accumulator
+	mov v6, #0	@ cell index
+
+.L11_loopTop:
+	cmp v6, v3	@ end of loop?
+	bhs .L11_loopExit
+
+	mov a1, v5	@ accumulator
+	mov a2, v2	@ sheet base address
+	mov a3, v6	@ cell index
+	mov a4, #operation_accumulate
+	blx v1		@ accumulate sum 
+	mov v5, r0	@ track accumulator
+
+	mov a4, #operation_checkOverflow
+	blx v1
+	cmp r0, #1	@ overflow?
+	bne .L11_loopBottom
+
+	add r1, fp, #4	@ r1 -> overflow flag pointer
+	ldr r1, [r1]	@ r1 -> caller's overflow flag
+	str r0, [r1]	@ notify caller of overflow
+
+.L11_loopBottom:
+	add v6, #1
+	b .L11_loopTop
+
+.L11_loopExit:
+	mov a1, v5	@ sum
+	cmp v4, #formula_sum
+	beq .L11_storeResult
+
+	mov a2, v3	@ denominator for average
+	sdiv a2, a3
+	bl ldiv		@ result in r0
+
+.L11_storeResult:
+	mov a2, v2	@ spreadsheet
+	mov a3, v6	@ cell "index" -- just past main sheet is result cell
+	mov a4, #operation_store
+	blx v1		@ store result
+
+.L11_epilogue:
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	add sp, #4	@ clear caller's stack parameters
+	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ clearScreen()
@@ -591,7 +669,7 @@ newline:
 
 .ops8_jumpTable:	.word .ops8_store, .ops8_display, .ops8_initAForMin
 			.word .ops8_initAForMax, .ops8_min, .ops8_max
-
+			.word .ops8_accumulate, .ops8_checkOverflow
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
@@ -606,6 +684,19 @@ operations8:
 	add r0, r0, v4, lsl #2	@ v4 = offset from beginning of jump table
 	ldr r0, [r0]
 	bx r0
+
+.ops8_checkOverflow:
+	mov r0, #0	@ default to no overflow
+	mvn v2, #0xFF	@ v2 = 0xFFFFFF00
+	tst v1, v2
+	movne r0, #1	@ cool arm conditional instruction
+	b .ops8_epilogue
+
+.ops8_accumulate:
+	add r1, v2, v3	@ r1 = address of cell
+	ldrsb r1, [r1]	@ r1 = data from cell
+	add r0, v1, r1	@ r0 = sum so far
+	b .ops8_epilogue
 
 .ops8_display:
 	add a2, v2, v3	@ a2 = address of cell
@@ -1015,11 +1106,11 @@ operationsFunction:		.word 0
 .align 8
 
 actionsJumpTable:
-			.word actionEditCell
-			.word actionChangeFormula
-			.word actionChangePresentation
-			.word actionResetSpreadsheet
-			.word actionFillRandom
+		.word actionEditCell
+		.word actionChangeFormula
+		.word actionChangePresentation
+		.word actionResetSpreadsheet
+		.word actionFillRandom
 
 operationsJumpTable:	.word operations8, operations16, operations32
 
@@ -1030,22 +1121,22 @@ operationsJumpTable:	.word operations8, operations16, operations32
 .equ menuMode_getNewValueForCell,	4
 
 menuModeJumpTable:
-			.word menuMain
-			.word menuChangeFormula
-			.word menuChangePresentation
-			.word menuGetCellToEdit
-			.word menuGetNewValueForCell
+		.word menuMain
+		.word menuChangeFormula
+		.word menuChangePresentation
+		.word menuGetCellToEdit
+		.word menuGetNewValueForCell
 
 .equ formula_sum,	0
 .equ formula_average,	1
 .equ formula_minimum,	2
 .equ formula_maximum,	3
 
-formulaParametersTable:
-.L0_parametersSum:	.word formula_sum, calcSheetSumAverage
-.L0_parametersAverage:	.word formula_average, calcSheetSumAverage
-.L0_parametersMin:	.word formula_minimum, calcSheetMinMax
-.L0_parametersMax:	.word formula_maximum, calcSheetMinMax
+formulaJumpTable:
+		.word calcSheetSumAverage
+		.word calcSheetSumAverage
+		.word calcSheetMinMax
+		.word calcSheetMinMax
 
 msgGreeting:	.asciz "Greetings, data analyzer.\r\n\r\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
@@ -1118,6 +1209,23 @@ showSetupIntro:
 	bl resetSheet
 
 recalculateSheet:
+	ldr r0, =overflowFlag
+	push {r0}
+	ldr r0, =formula
+	ldr r0, [r0]
+	ldr r1, =formulaJumpTable
+	add r0, r1, r0, lsl #2
+	ldr v1, [r0]		@ v1 -> calculation function for formula 
+	ldr a1, =operationsFunction
+	ldr a1, [a1]
+	ldr a2, =spreadsheetDataBuffer
+	ldr a2, [a2]
+	ldr a3, =numberOfCellsInSpreadsheet
+	ldr a3, [a3]
+	ldr a4, =formula
+	ldr a4, [a4]
+	blx v1			@ calculate sheet
+
 redisplaySheet:
 	bl clearScreen 
 
