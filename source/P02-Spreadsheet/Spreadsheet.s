@@ -41,7 +41,8 @@
 @*		of the cells (including the calculation result cell) -- default is decimal
 @*/
 .equ inputStatus_inputOk,			0
-.equ inputStatus_acceptedControlCharacter,	1
+.equ inputStatus_inputNotOk,			1
+.equ inputStatus_acceptedControlCharacter,	2
 
 .equ q_reject,	0
 .equ q_accept,	1
@@ -213,6 +214,135 @@ calcSheetSumAverage:
 	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ convertBitStringToNumber 
+@
+@	a/v1 - string to convert
+@	a/v2 - data width in bytes
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+convertBitStringToNumber:
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ Stack frame and local variable setup
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	rDataWidthInBytes	.req r1
+	rNumberOfBitsToCapture	.req r2
+	rMaxDigitsAllowed	.req r3
+	rFoundFirstUnderscore	.req v1
+	rBinaryDigitCounter	.req v2
+	rDigitTempStore		.req v3
+	rLoopCounter		.req v4
+	rBitsBetweenUnderscores	.req v5
+	rStringToConvert	.req v6
+	rAccumulator		.req v7
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All set up-- meat of the function starts here
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+.L17_loopInit:
+	mov a1, v1	@ string to convert
+	bl strlen
+	mov rNumberOfBitsToCapture, r0
+
+	mov rMaxDigitsAllowed, rDataWidthInBytes, lsl #3
+	mov rFoundFirstUnderscore, #0
+	mov rBinaryDigitCounter, #0
+	mov rDigitTempStore, #0
+	mov rBitsBetweenUnderscores, #0
+	mov rAccumulator, #0
+	mov rLoopCounter, #0
+
+.L17_loopTop:
+	cmp rLoopCounter, rNumberOfBitsToCapture
+	bhs .L17_loopExit
+
+	add r0, rStringToConvert, rLoopCounter
+	ldrb rDigitTempStore, [r0]	@ get current digit from string
+
+	cmp rDigitTempStore, #'_'
+	bne .L17_doneWithUnderscoreCheck
+
+	cmp rFoundFirstUnderscore, #1
+	beq .L17_requireFullNybbleBetweenUnderscores
+
+	mov rFoundFirstUnderscore, #1	@ start counting from this underscore
+	mov rBitsBetweenUnderscores, #0	@ will require full nybbles in between
+	b .L17_loopBottom
+
+.L17_requireFullNybbleBetweenUnderscores:
+	tst rBitsBetweenUnderscores, rBitsBetweenUnderscores
+	beq .L17_badCharacter		@ don't allow consecutive underscores
+
+	tst rBitsBetweenUnderscores, #4 - 1	@ only complete nybbles...
+	bne .L17_badCharacter			@ allowed between underscores
+	b .L17_loopBottom		@ underscore ok--go to next digit
+
+.L17_doneWithUnderscoreCheck:
+	sub rDigitTempStore, #'0'	@ make it a real 0 or 1
+	cmp rDigitTempStore, #1
+	bhi .L17_badCharacter
+
+	add rBinaryDigitCounter, #1	@ track number of bits total
+	add rBitsBetweenUnderscores, #1	@ track number of inter-uscore bits
+
+.L17_loopBottom:
+	add rLoopCounter, #1
+	b .L17_loopTop
+
+.L17_loopExit:
+	cmp rFoundFirstUnderscore, #1
+	bne .L17_checkMaxDigits
+
+	tst rBitsBetweenUnderscores, rBitsBetweenUnderscores
+	beq .L17_badCharacter	@ in case user enters '_' and nothing else
+
+	tst rBitsBetweenUnderscores, #4 - 1	@ only complete nybbles...
+	bne .L17_badCharacter			@ allowed between underscores
+
+.L17_checkMaxDigits:
+	mov r1, #inputStatus_inputOk
+	cmp rBinaryDigitCounter, rMaxDigitsAllowed
+	bls .L17_epilogue
+
+.L17_badCharacter:
+	mov r1, #inputStatus_inputNotOk
+
+.L17_epilogue:
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.unreq rAccumulator
+	.unreq rDataWidthInBytes
+	.unreq rNumberOfBitsToCapture
+	.unreq rMaxDigitsAllowed
+	.unreq rFoundFirstUnderscore
+	.unreq rBinaryDigitCounter
+	.unreq rDigitTempStore
+	.unreq rLoopCounter
+	.unreq rBitsBetweenUnderscores
+	.unreq rStringToConvert	
+
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	add sp, #4	@ clear caller's stack parameters
+	bx lr		@ return
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ clearScreen()
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
@@ -227,6 +357,48 @@ clearScreen:
 	mov r0, $1
 	ldr r1, =msgClearScreen
 	ldr r2, =L_msgClearScreen
+	mov r7, $4
+	svc 0
+	pop {r7}
+	mov pc, lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ clearToEOL
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+msgClearToEOL: .ascii "\033[K"
+L_msgClearToEOL = . - msgClearToEOL
+
+.section .text
+.align 3
+
+clearToEOL:
+	push {r7}
+	mov r0, $1
+	ldr r1, =msgClearToEOL
+	ldr r2, =L_msgClearToEOL
+	mov r7, $4
+	svc 0
+	pop {r7}
+	mov pc, lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ cursorUp
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+msgCursorUp: .ascii "\033[A"
+L_msgCursorUp = . - msgCursorUp
+
+.section .text
+.align 3
+
+cursorUp:
+	push {r7}
+	mov r0, $1
+	ldr r1, =msgCursorUp
+	ldr r2, =L_msgCursorUp
 	mov r7, $4
 	svc 0
 	pop {r7}
@@ -554,8 +726,8 @@ getCellToEdit:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L16_scanfResult	.skip 100	@ arbitrary and hopeful size
-.L16_scanf		.asciz "%100s"
+.L16_scanfResult:	.skip 100	@ arbitrary and hopeful size
+.L16_scanf:		.asciz "%100s"
 
 .section .text
 .align 3
@@ -573,24 +745,25 @@ getCellValueBin:
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
 
+	rTestMode		.req v1
+	rOperationsFunction	.req v2
+	rDataWidthInBytes	.req v3
+	rFirstPass		.req v4
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up-- meat of the function starts here
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-rTestMode		.req v1
-rOperationsFunction	.req v2
-rDataWidthInBytes	.req v3
-rFirstPass		.req v4
-
 	mov rFirstPass, #1	@ cursor behavior different on first pass
 
+.L16_tryAgain:
 	ldr a1, =.L16_scanf
 	ldr a2, =.L16_scanfResult
 	bl scanf
 
 	ldr r0, =.L16_scanfResult
 	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
-	orr r0, #0x20
+	orr r0, #0x20		@ make sure it's lowercase
 
 	mov r1, #inputStatus_acceptedControlCharacter
 	cmp r0, #'q'
@@ -598,11 +771,28 @@ rFirstPass		.req v4
 	cmp r0, #'r'
 	beq .L16_epilogue
 
-	
+	ldr a1, =.L16_scanfResult
+	mov a2, rDataWidthInBytes
+	bl convertBitStringToNumber
 
+	cmp r1, #inputStatus_inputNotOk
+	beq .L16_epilogue
+
+	ldr a1, =.L16_scanfResult
+	mov a2, #'%'
+	mov a3, rFirstPass
+	bl sayYuck
+	b .L16_tryAgain
+
+.L16_epilogue:
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ Restore caller's locals and stack frame
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.unreq rFirstPass
+	.unreq rDataWidthInBytes
+	.unreq rOperationsFunction
+	.unreq rTestMode
+
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
@@ -1401,7 +1591,7 @@ runGetCellValueMenu:
 	bl printf
 
 	mov a1, v3	@ prompt postfix
-	cmp a1, 0	@ decimal has no prompt postfix
+	cmp a1, #0	@ decimal has no prompt postfix
 	bleq putchar	@ awesome arm conditional instruction
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1468,6 +1658,41 @@ runMenu:
 	mov sp, fp
 	pop {fp}
 	add sp, #12
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ sayYuck
+@
+@	a/v1 string with yucky value
+@	a/v2 prompt suffix
+@	a/v3 skip second cursor-up
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L18_yuckMessage:	.asciz "Uhh... %s? Yuck! Try again!\r\n-> "
+
+.section .text
+sayYuck:
+	push {v1 - v7, lr}
+
+	push {a1 - a4}	@ Transfer argument registers...
+	pop  {v1 - v4}	@ to local variable registers
+
+	bl cursorUp
+	bl clearToEOL
+
+	ldr a1, =.L18_yuckMessage
+	mov a2, v1
+	bl printf
+
+	cmp v2, #0	@ dec mode doesn't have a prompt suffix
+	beq .L18_epilogue
+
+	mov a1, v2
+	bl putchar
+
+.L18_epilogue:
+	pop {v1 - v7, lr}
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
