@@ -690,8 +690,9 @@ getCellToEdit:
 	ldr r0, =.L12_msgSeparator
 	bl printf
 
-	mov a1, v1	@ min cell number
-	mov a2, v2	@ max cell number
+	ldr a1, =.L12_msgSelectCell
+	mov a2, v1	@ min cell number
+	mov a3, v2	@ max cell number
 	bl printf
 
 	bl promptForSelection
@@ -957,6 +958,8 @@ getNewValueForCell:
 	add r0, #4
 	ldr v6, [r0]	@ get value function for presentation mode
 
+	ldr r0, [fp, #4]
+	push {r0}	@ test mode
 	mov a1, v2	@ cell index
 	mov a2, v3	@ data width in bytes
 	blx v5		@ run the menu for this presentation mode
@@ -1672,6 +1675,8 @@ runMenu:
 .L18_yuckMessage:	.asciz "Uhh... %s? Yuck! Try again!\r\n-> "
 
 .section .text
+.align 3
+
 sayYuck:
 	push {v1 - v7, lr}
 
@@ -2085,7 +2090,10 @@ actionSwitch:
 	bx r0
 
 actionEditCell:
-	b returnToMain
+	ldr r0, =menuMode
+	mov r1, #menuMode_getCellToEdit
+	str r1, [r0]
+	b redisplaySheet
 
 actionChangeFormula:
 	ldr r0, =menuMode
