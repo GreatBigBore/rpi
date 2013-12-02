@@ -232,19 +232,9 @@ clearScreen:
 	pop {r7}
 	mov pc, lr
 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ divide - cribbed from http://www.tofla.iconbar.com/tofla/arm/arm02/
-@	Hope it works!
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-divide:
-	vmov s0, r0
-	vmov s1, r1
-	vcvt.f32.s32 s0, s0
-	vcvt.f32.s32 s1, s1
-	vdiv.f32 s0, s0, s1
-	vcvt.s32.f32 s0, s0
-	vmov r0, s0
-	bx lr
+displayGetCellValueBinMenu:
+displayGetCellValueDecMenu:
+displayGetCellValueHexMenu:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
@@ -343,7 +333,90 @@ displaySheet:
 	pop {fp}
 	add sp, #12
 	bx lr
-	
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ divide:
+@	floating-point divide, store truncated result in r0
+@	r0 numerator
+@	r1 denominator
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+divide:
+	vmov s0, r0
+	vmov s1, r1
+	vcvt.f32.s32 s0, s0
+	vcvt.f32.s32 s1, s1
+	vdiv.f32 s0, s0, s1
+	vcvt.s32.f32 s0, s0
+	vmov r0, s0
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getCellToEdit
+@
+@ stack: 
+@	+4 testMode
+@
+@ registers:
+@	a/v1 lowest acceptable cell number
+@	a/v2 highest acceptable cell number
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L12_msgInstructions:
+	.asciz "Directions (enter 'Q' to quit, 'R' to return to the main menu):\r\n"
+.L12_msgSeparator:
+	.asciz "---------------------------------------------------------------\r\n"
+
+.L12_msgSelectCell:
+	.asciz "Select the cell to edit [%d, %d]\r\n"
+
+.section .text
+.align 3
+
+getCellToEdit:
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	bl newline
+	ldr r0, =.L12_msgInstructions
+	bl printf
+	ldr r0, =.L12_msgSeparator
+	bl printf
+
+	mov a1, v1	@ min cell number
+	mov a2, v2	@ max cell number
+	bl printf
+
+	bl promptForSelection
+
+	add r0, fp, #4	@ r0 -> test mode indicator
+	ldr r0, [r0]	@ r0 = test mode indicator
+	push {r0}
+	mov a1, v5	@ test mode
+	mov a2, v1	@ min cell number
+	mov a3, v2	@ max cell number
+	mov a4, #'q'	@ accept 'q' for quit
+	bl getMenuSelection
+
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	add sp, #4	@ clear caller's stack parameters
+	bx lr		@ return
+
+getCellValueBin:
+getCellValueDec:
+getCellValueHex:
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getFormula
 @	stack: 
@@ -391,6 +464,64 @@ getFormula:
 	add sp, #4
 	bx lr
 	
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getNewValueForCell
+@
+@ stack: 
+@	+4 testMode
+@
+@ registers
+@	a/v1 operations function
+@	a/v2 cell index
+@	a/v3 data width in bytes
+@	a/v4 data presentation mode
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L13_jumpTable:
+	.word displayGetCellValueBinMenu, getCellValueBin
+	.word displayGetCellValueDecMenu, getCellValueDec
+	.word displayGetCellValueHexMenu, getCellValueHex
+
+.section .text
+.align 3
+
+getNewValueForCell:
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	ldr r0, =.L13_jumpTable
+	add r0, v4, lsl #3
+	ldr v5, [r0]	@ menu for presentation mode
+	add r0, #4
+	ldr v6, [r0]	@ get value function for presentation mode
+
+	mov a1, v2	@ cell index
+	mov a2, v3	@ data width in bytes
+	blx v5		@ run the menu for this presentation mode
+
+	add r0, fp, #4
+	ldr r0, [r0]
+	push {r0}	@ test mode
+	mov a1, v1	@ operations function
+	mov a2, v3	@ data width in bytes
+	blx v6		@ get user input for this presentation mode
+
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	add sp, #4	@ clear caller's stack parameters
+	bx lr		@ return
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getPresentation
 @	stack: 
@@ -1334,13 +1465,60 @@ setPresentation:
 @ Get cell to edit menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuGetCellToEdit:
-	b returnToMain
+	ldr a1, =testMode
+	ldr a1, [a1]
+	push {a1}
+	mov a1, #1	@ lowest acceptable cell number
+	ldr a2, =numberOfCellsInSpreadsheet
+	ldr a2, [a2]	@ highest acceptable cell number
+	bl getCellToEdit
+
+	cmp r1, #inputStatus_acceptedControlCharacter
+	bne gotCellToEdit
+
+	cmp r0, #'q'
+	beq actionQuit
+	b returnToMain	@ control char not q, must be r
+
+gotCellToEdit:
+	mov v1, r0		@ v1 = cell to edit
+	ldr r1, =menuMode
+	mov r2, #menuMode_getNewValueForCell
+	str r2, [r1]
+	b redisplaySheet
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Get new value for cell menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuGetNewValueForCell:
-	b returnToMain
+	ldr r0, =testMode
+	ldr r0, [r0]
+	push {r0}
+	ldr a1, =operationsFunction
+	ldr a1, [a1]
+	mov a2, v1	@ cell to edit, left over from menuGetCellToEdit
+	ldr a3, =cellWidthInBytes
+	ldr a3, [a3]
+	ldr a4, =presentation
+	ldr a4, [a4]
+	bl getNewValueForCell
+
+	cmp r1, #inputStatus_acceptedControlCharacter
+	bne gotNewValueForCell
+
+	cmp r0, #'q'
+	beq actionQuit
+	b actionEditCell @ control char not 'q', so 'r' -- return to cell select
+
+gotNewValueForCell:	@ r0/a1 = new value for cell
+	ldr a2, =spreadsheetDataBuffer
+	ldr a2, [a2]
+	sub a3, v1, #1	@ cell to edit, zero-based
+	mov a4, #operation_store
+	ldr v1, =operationsFunction
+	ldr v1, [v1]
+	blx v1
+	b recalculateAndReturnToMain
 
 actionSwitch:
 	sub r0, #1			@ user menu selection to 0-based
