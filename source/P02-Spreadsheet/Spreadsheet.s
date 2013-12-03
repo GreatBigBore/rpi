@@ -1187,6 +1187,8 @@ getCellValueHex:
 	mov a2, #'$'
 	mov a3, rFirstPass
 	bl sayYuck
+
+	mov rFirstPass, #0
 	b .L22_tryAgain
 	
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1420,7 +1422,6 @@ getMainSelection:
 
 scanString:		.asciz "%2s"
 scanResult:		.asciz "  "
-msgYuck:		.asciz "%s? Yuck! Try again!\r\n-> "
 
 .section .text
 
@@ -1436,6 +1437,8 @@ getMenuSelection:
 
 	add v5, fp, #4	@ accept/reject 'r'
 	ldr v5, [v5]
+
+	mov v6, #1	@ remember we're on first pass
 
 .L2_tryAgain:
 	ldr r0, =scanString
@@ -1477,9 +1480,11 @@ getMenuSelection:
 	b .L2_epilogue
 
 .L2_yuck:
-	ldr r0, =msgYuck
-	ldr r1, =scanResult
-	bl printf
+	ldr a1, =scanResult
+	mov a2, #0		@ no prompt suffix for decimal input
+	mov a3, v6		@ first pass indicator
+	bl sayYuck
+	mov v6, #0
 	b .L2_tryAgain
  
 .L2_acceptControlCharacter:
@@ -2032,6 +2037,13 @@ sayYuck:
 	bl cursorUp
 	bl clearToEOL
 
+	cmp v3, #1	@ skip second cursor up?
+	beq .L18_cursingComplete
+
+	bl cursorUp
+	bl clearToEOL
+
+.L18_cursingComplete:
 	ldr a1, =.L18_yuckMessage
 	mov a2, v1
 	bl printf
