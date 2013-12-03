@@ -392,8 +392,8 @@ convertHexStringToNumber:
 	cmp rLoopCounter, rNumberOfNybblesToCapture
 	bhs .L23_loopExit
 
-	add r0, rStringToConvert, rLoopCounter
-	ldrb rDigitTempStore, [r0]	@ get current digit from string
+					@ get current digit from string
+	ldrb rDigitTempStore, [rStringToConvert, rLoopCounter]
 
 	cmp rDigitTempStore, #'0'
 	blo .L23_badCharacter
@@ -2158,16 +2158,12 @@ showNumberAsBin:
 testMode:			.word 0
 numberOfCellsInSpreadsheet:	.word 0
 cellWidthInBytes:		.word 0
-
 formula:			.word 0
 presentation:			.word 0
 menuMode:			.word 0
 cellToEdit:			.word 0
 overflowFlag:			.word 0
-
-spreadsheetData:		.word 47, 48, 49, 50, 51, 19, 18, 17, 16, 15
 spreadsheetDataBuffer:		.word 0
-
 operationsFunction:		.word 0
 
 .align 8
