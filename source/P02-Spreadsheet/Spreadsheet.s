@@ -340,7 +340,125 @@ convertBitStringToNumber:
 	mov sp, fp	@ restore caller's stack frame
 	pop {fp}
 
-	add sp, #4	@ clear caller's stack parameters
+	bx lr		@ return
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ convertHexStringToNumber 
+@
+@	a/v1 - string to convert
+@	a/v2 - data width in bytes
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+convertHexStringToNumber:
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ Stack frame and local variable setup
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	rFirstNonZeroFound		.req r1
+	rStringToConvert		.req v1
+	rDataWidthInBytes		.req v2	@ used only once
+	rMaxDigitsAllowed		.req v2	@ more permanent use
+	rDigitTempStore			.req v3
+	rLoopCounter			.req v4
+	rAccumulator			.req v5
+	rHexDigitCounter		.req v6
+	rNumberOfNybblesToCapture	.req v7
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All set up-- meat of the function starts here
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+.L23_loopInit:
+	mov a1, rStringToConvert
+	bl strlen
+	mov rNumberOfNybblesToCapture, r0
+
+	mov rFirstNonZeroFound, #0
+	mov rMaxDigitsAllowed, rDataWidthInBytes, lsl #3
+	mov rHexDigitCounter, #0
+	mov rDigitTempStore, #0
+	mov rAccumulator, #0
+	mov rLoopCounter, #0
+
+.L23_loopTop:
+	cmp rLoopCounter, rNumberOfNybblesToCapture
+	bhs .L23_loopExit
+
+	add r0, rStringToConvert, rLoopCounter
+	ldrb rDigitTempStore, [r0]	@ get current digit from string
+
+	cmp r0, #'0'
+	blo .L23_badCharacter
+	cmp r0, #'9'
+	bls .L23_numeric
+	orr r0, #0x20		@ convert to lowercase
+	cmp r0, #'a'
+	blo .L23_badCharacter
+	cmp r0, #'f'
+	bhi .L23_badCharacter
+
+	sub r0, #'a' - 10	@ convert alpha digit to actual number
+	b .L23_processDigit
+
+.L23_numeric:
+	sub r0, #'0'		@ convert numeric digit to actual number
+
+.L23_processDigit:
+	cmp r0, #0
+	bne .L23_significantDigit
+
+	cmp rFirstNonZeroFound, #1	@ ignore all leading zeros
+	beq .L23_significantDigit
+
+	add rStringToConvert, #1	@ skip the leading zero 
+	b .L23_loopTop
+
+.L23_significantDigit:
+	mov rFirstNonZeroFound, #1	@ done with leading zeros
+	add rHexDigitCounter, #1	@ track number of nybbles total
+
+.L23_loopBottom:
+	add rLoopCounter, #1
+	b .L23_loopTop
+
+.L23_loopExit:
+	mov r1, #inputStatus_inputOk
+	cmp rHexDigitCounter, rMaxDigitsAllowed
+	bls .L23_epilogue
+
+.L23_badCharacter:
+	mov r1, #inputStatus_inputNotOk
+
+.L23_epilogue:
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.unreq rAccumulator
+	.unreq rDataWidthInBytes
+	.unreq rNumberOfNybblesToCapture
+	.unreq rMaxDigitsAllowed
+	.unreq rHexDigitCounter
+	.unreq rDigitTempStore
+	.unreq rLoopCounter
+	.unreq rFirstNonZeroFound
+	.unreq rStringToConvert	
+
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
 	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -569,6 +687,23 @@ displayGetCellValueDecMenu:
 @	a/v1 - cell index
 @	a/v2 - data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L21_msgInstructionsTemplate:
+	.asciz "Enter up to %d (significant) hex digits\r\n" 
+
+.L21_msgInstructionsLength = . - .L20_msgInstructionsTemplate
+
+@@@@@@@@@
+@ Buffer to contain the instructions with actual number inserted
+@ in the %d. I had to do it this way because the runMenu function
+@ wants the full string.
+@@@@@@@@@
+.L21_msgInstructions: .skip .L21_msgInstructionsLength
+
+.section .text
+.align 3
+
 displayGetCellValueHexMenu:
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -587,15 +722,23 @@ displayGetCellValueHexMenu:
 	rDataWidthInBytes	.req v2
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Ready to roll
+	@@@ All set up-- meat of the function starts here
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-	
+	ldr a1, =.L21_msgInstructions
+	ldr a2, =.L21_msgInstructionsTemplate
+	mov a3, rDataWidthInBytes, lsl #1	@ max number of hex digits
+	bl sprintf
+
+	ldr a1, =.L21_msgInstructions
+	mov a2, rCellIndex
+	mov a3, #'$'
+	bl runGetCellValueMenu
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Restore caller's locals and stack frame
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
 	.unreq rCellIndex
 	.unreq rDataWidthInBytes
 
@@ -958,6 +1101,10 @@ getCellValueDec:
 	@@@ restore caller's variables and stack frame. 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .L19_epilogue:
+
+	.unreq rFirstPass
+	.unreq rOperationsFunction
+
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
@@ -970,10 +1117,23 @@ getCellValueDec:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueHex
 @
-@	a/v1 - cell index
+@ stack:
+@	+4 test mode
+@
+@ registers:
+@	a/v1 - operations function
 @	a/v2 - data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L22_scanfResult:	.skip 100	@ arbitrary and hopeful size
+.L22_scanf:		.asciz "%100s"
+
+.section .text
+.align 3
+
 getCellValueHex:
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ Stack frame and local variable setup
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -986,13 +1146,55 @@ getCellValueHex:
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
 
+	rTestMode		.req v1
+	rOperationsFunction	.req v2
+	rDataWidthInBytes	.req v3
+	rFirstPass		.req v4
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up-- meat of the function starts here
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+	mov rFirstPass, #1	@ cursor behavior different on first pass
+
+.L22_tryAgain:
+	ldr a1, =.L22_scanf
+	ldr a2, =.L22_scanfResult
+	bl scanf
+
+	ldr r0, =.L22_scanfResult
+	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
+	orr r0, #0x20		@ make sure it's lowercase
+
+	mov r1, #inputStatus_acceptedControlCharacter
+	cmp r0, #'q'
+	beq .L22_epilogue
+	cmp r0, #'r'
+	beq .L22_epilogue
+
+	ldr a1, =.L22_scanfResult
+	mov a2, rDataWidthInBytes
+	bl convertHexStringToNumber
+
+	cmp r1, #inputStatus_inputNotOk
+	beq .L22_epilogue
+
+	ldr a1, =.L22_scanfResult
+	mov a2, #'$'
+	mov a3, rFirstPass
+	bl sayYuck
+	b .L22_tryAgain
+	
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Restore caller's locals and stack frame
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.L22_epilogue:
+	.unreq rFirstPass
+	.unreq rDataWidthInBytes
+	.unreq rOperationsFunction
+	.unreq rTestMode
+
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
