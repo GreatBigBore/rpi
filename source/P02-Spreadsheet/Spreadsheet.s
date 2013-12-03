@@ -382,7 +382,7 @@ convertHexStringToNumber:
 	mov rNumberOfNybblesToCapture, r0
 
 	mov rFirstNonZeroFound, #0
-	mov rMaxDigitsAllowed, rDataWidthInBytes, lsl #3
+	mov rMaxDigitsAllowed, rDataWidthInBytes, lsl #1
 	mov rHexDigitCounter, #0
 	mov rDigitTempStore, #0
 	mov rAccumulator, #0
@@ -395,24 +395,24 @@ convertHexStringToNumber:
 	add r0, rStringToConvert, rLoopCounter
 	ldrb rDigitTempStore, [r0]	@ get current digit from string
 
-	cmp r0, #'0'
+	cmp rDigitTempStore, #'0'
 	blo .L23_badCharacter
-	cmp r0, #'9'
+	cmp rDigitTempStore, #'9'
 	bls .L23_numeric
-	orr r0, #0x20		@ convert to lowercase
-	cmp r0, #'a'
+	orr rDigitTempStore, #0x20	@ convert to lowercase
+	cmp rDigitTempStore, #'a'
 	blo .L23_badCharacter
-	cmp r0, #'f'
+	cmp rDigitTempStore, #'f'
 	bhi .L23_badCharacter
 
-	sub r0, #'a' - 10	@ convert alpha digit to actual number
+	sub rDigitTempStore, #'a' - 10	@ convert alpha digit to actual number
 	b .L23_processDigit
 
 .L23_numeric:
-	sub r0, #'0'		@ convert numeric digit to actual number
+	sub rDigitTempStore, #'0'	@ convert numeric digit to actual number
 
 .L23_processDigit:
-	cmp r0, #0
+	cmp rDigitTempStore, #0
 	bne .L23_significantDigit
 
 	cmp rFirstNonZeroFound, #1	@ ignore all leading zeros
@@ -422,6 +422,10 @@ convertHexStringToNumber:
 	b .L23_loopTop
 
 .L23_significantDigit:
+	@ more arm coolness -- shift accumulator left by one
+	@ nybble, add the temp store into it, and store the
+	@ result back into the accumulator. All in one instruction. Cool.
+	add rAccumulator, rDigitTempStore, rAccumulator, lsl #4 
 	mov rFirstNonZeroFound, #1	@ done with leading zeros
 	add rHexDigitCounter, #1	@ track number of nybbles total
 
@@ -430,6 +434,7 @@ convertHexStringToNumber:
 	b .L23_loopTop
 
 .L23_loopExit:
+	mov r0, rAccumulator
 	mov r1, #inputStatus_inputOk
 	cmp rHexDigitCounter, rMaxDigitsAllowed
 	bls .L23_epilogue
@@ -1146,10 +1151,9 @@ getCellValueHex:
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
 
-	rTestMode		.req v1
-	rOperationsFunction	.req v2
-	rDataWidthInBytes	.req v3
-	rFirstPass		.req v4
+	rOperationsFunction	.req v1
+	rDataWidthInBytes	.req v2
+	rFirstPass		.req v3
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up-- meat of the function starts here
@@ -1176,7 +1180,7 @@ getCellValueHex:
 	mov a2, rDataWidthInBytes
 	bl convertHexStringToNumber
 
-	cmp r1, #inputStatus_inputNotOk
+	cmp r1, #inputStatus_inputOk
 	beq .L22_epilogue
 
 	ldr a1, =.L22_scanfResult
@@ -1193,7 +1197,6 @@ getCellValueHex:
 	.unreq rFirstPass
 	.unreq rDataWidthInBytes
 	.unreq rOperationsFunction
-	.unreq rTestMode
 
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
