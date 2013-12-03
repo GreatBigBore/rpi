@@ -1,0 +1,26 @@
+#!/bin/bash
+clear
+printf %b '\033[3J'
+
+echo Compiling...
+
+if [ -f ../../exec/$1 ]; then
+	rm ../../exec/$1
+fi
+
+hla "-lmacosx_version_min 10.7" -lno_pie -obj:/tmp -e:../../exec/$1 $1.hla
+
+if [ ! -f ../../exec/$1 ]; then
+	exit 1
+fi
+
+echo Running...
+
+if [ -f $1-scratch-out$2.txt ]; then
+	rm $1-scratch-out$2.txt
+fi
+
+../../exec/$1 test $1-test-control-in.txt <$1-master-in$2.txt >$1-scratch-out$2.txt
+
+echo Diffs:
+diff $1-master-out$2.txt $1-scratch-out$2.txt >diff

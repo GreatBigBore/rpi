@@ -1,0 +1,528 @@
+// Garbage for cell-count phase of setup
+-1
+0
+1
+1.5
+-1.5
+x
+// Set for ten cells
+10
+// Garbage for data-width phase of setup
+-1
+0
+1.5
+-1.5
+10
+// Select 8-bit width
+1
+// Edit cell
+1
+// Cell 1
+1
+// Garbage values
+128
+-129
+255
+400
+-400
+101.3
+-62.3
+=
+x
+// Legit value for cell 1
+127
+// Change rep mode to hex
+3
+// Psych! return to main menu
+r
+// Change rep mode to hex
+3
+1
+// Change rep mode to bin
+3
+3
+// Change rep mode back to dec
+3
+2
+// Edit cell
+1
+// Cell 2
+2
+62
+// Change rep mode to hex
+3
+1
+// Change rep mode to bin
+3
+3
+// Change rep mode back to dec
+3
+2
+// Edit cell 5
+1
+5
+17
+// Edit cell 1
+1
+1
+40
+// Change rep mode to hex
+3
+1
+// Change formula
+2
+// Average
+2
+// Change formula
+2
+// Return to main menu without changing anything
+r
+// Change formula
+2
+// Minimum
+3
+// Edit cell
+1
+// Edit cell 8
+8
+// New value for cell 8 (hex)
+95
+// Edit cell
+1
+// Return to main
+R
+// Edit cell
+1
+// Select cell 7
+7
+// Return to cell selection
+r
+// Select cell 6
+6
+// New value for cell 6 (hex)
+94
+// Change formula
+2
+// Maximum
+4
+// Edit cell
+1
+// Cell 9
+9
+// Value for 9 (hex)
+3f
+// Set cell 4 to $63
+1
+4
+63
+// Set cell 7; illegal value first then $78
+1
+7
+120
+78
+// Set cell 3; illegal value first then $7b
+1
+3
+125
+7b
+// Edit cell 10; set to $80
+1
+10
+80
+// Change formula
+2
+// Garbage
+5
+0
+-1
+12
+x
+=
+100.3
+-72.5
+// Minimum
+3
+// Change formula to average
+2
+2
+// Change formula to sum
+2
+1
+// Reset sheet: 10 cells, 16-bit
+4
+10
+2
+// Edit cell
+1
+// Cell 1
+1
+// Garbage values
+32768
+-32769
+65535
+70000
+-70000
+101.3
+-62.3
+=
+x
+// Legit value for cell 1
+127
+// Edit cell
+1
+// Cell 2
+2
+62
+// Edit cell 5
+1
+5
+17
+// Edit cell 1
+1
+1
+40
+// Change formula
+2
+// Average
+2
+// Change formula
+2
+// Return to main menu without changing anything
+r
+// Change formula
+2
+// Minimum
+3
+// Edit cell
+1
+// Edit cell 8
+8
+// New value for cell 8
+-107
+// Edit cell
+1
+// Return to main
+R
+// Edit cell
+1
+// Select cell 7
+7
+// Return to cell selection
+r
+// Select cell 6
+6
+// New value for cell 6
+-108
+// Change formula
+2
+// Maximum
+4
+// Edit cell
+1
+// Cell 9
+9
+// Value for 9
+63
+// Edit cell
+1
+// Cell 4
+4
+63
+// Edit cell
+1
+// Cell 7
+7
+120
+// Edit cell 3; set to 125
+1
+3
+125
+// Edit cell 10; set to -128
+1
+10
+-128
+// Change formula
+2
+// Garbage
+5
+0
+-1
+12
+x
+=
+100.3
+-72.5
+3
+// Change formula to average
+2
+2
+// Change formula to sum
+2
+1
+// Set cell 7 to 12345
+1
+7
+12345
+// Set cell 3
+1
+3
+// Bad value
+-54321
+// Good value
+-32345
+// Average
+2
+2
+// Min
+2
+3
+// Max
+2
+4
+// Reset sheet: 10 cells, 32-bit
+4
+10
+3
+// Edit cell
+1
+// Cell 1
+1
+// Garbage values
+2147483648
+-2147483649
+4294967295
+4300000000
+-4300000000
+19017.52
+-946525.364
++
+qr
+// Legit value for cell 1
+54321
+// Edit cell
+1
+// Cell 2
+2
+62
+// Edit cell 5
+1
+5
+18171492
+// Edit cell 1
+1
+1
+3456789
+// Change formula
+2
+// Average
+2
+// Change formula
+2
+// Return to main menu without changing anything
+r
+// Change formula
+2
+// Minimum
+3
+// Edit cell
+1
+// Edit cell 8
+8
+// New value for cell 8
+-256513
+// Edit cell
+1
+// Return to main
+R
+// Edit cell
+1
+// Select cell 7
+7
+// Return to cell selection
+r
+// Select cell 6
+6
+// New value for cell 6
+-8921629
+// Change formula
+2
+// Maximum
+4
+// Edit cell
+1
+// Cell 9
+9
+// Value for 9
+63
+// Edit cell
+1
+// Cell 4
+4
+63
+// Edit cell
+1
+// Cell 7
+7
+120
+// Edit cell 3; set to 125
+1
+3
+125
+// Edit cell 10; set to -128
+1
+10
+-128
+// Change formula
+2
+// Garbage
+5
+0
+-1
+12
+x
+=
+100.3
+-72.5
+3
+// Change formula to average
+2
+2
+// Change formula to sum
+2
+1
+// Set cell 7 to 071598
+1
+7
+071598
+// Set cell 3
+1
+3
+// Bad value
+-4294967296
+// Good value
+2147483615
+// Average
+2
+2
+// Min
+2
+3
+// Max
+2
+4
+// Change to hex rep mode
+3
+1
+// Set cell 3 to $feed5787
+1
+3
+geed5787
+feeh5787
+$feed5787
+00000000feed5787
+// Change formula to min
+2
+3
+// Set cell 4 to $80123456
+1
+4
+80123456
+// Change rep mode to binary
+3
+3
+// Set cell 10 to $80054321
+1
+10
+27
+x
+1.5
+_
+1_1
+1_
+1010_
+1111_1111_1_1010
+-1011
+-1101_1001
+1000_0000_0000_0101_0100_0011_0010_0001
+// Set cell 9 to $7F
+1
+9
+111_1111
+// Set cell 8 to $C7A
+1
+8
+_1100_0111_1010
+// Change rep mode to hex
+3
+1
+// Change rep mode to dec
+3
+2
+// Reset to 5 8-bit cells
+4
+5
+1
+// Change rep mode to bin
+3
+3
+// Order values in cells
+1
+1
+0001_0101
+1
+2
+0010_0100
+1
+3
+0011_0011
+1
+4
+0100_0010
+1
+5
+0101_0001
+// Reset to 7 32-bit cells
+4
+7
+3
+// Change rep mode to bin
+3
+3
+// Order values in cells
+1
+1
+0111_0101_0100_0011_0000_0001_0010_0011
+1
+2
+0110_0100_0011_0010_0001_1111_1110_1101
+1
+3
+0101_0011_0010_0001_0010_0000_1111_1110
+1
+4
+0100_0010_0001_0000_0011_0001_0000_1111
+1
+5
+0011_0001_0000_1111_0011_0010_0001_0000
+1
+6
+0010_0000_1111_1110_0111_0101_0011_0001
+1
+7
+0001_1111_1110_1101_0101_0100_1001_1101
+// Change rep to hex
+3
+1
+// Change rep to dec
+3
+2
+// Change cell 1 to -1967325475
+1
+1
+-1967325475
+// Change cell 3 to -1394680062
+1
+3
+-1394680062
+// Quit
+q
