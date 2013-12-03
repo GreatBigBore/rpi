@@ -1,8 +1,8 @@
 @* Spreadsheet
 @*
 @* written by			Rob Bishop
-@* created on			23 October 2013
-@* last modified on		17 November 2013
+@* created on			05 November 2013
+@* last modified on		03 December 2013
 @*
 @* Create a simple one-row spreadsheet. The number of cells in the row
 @*		will be selected by the user (minimum number of cells: 2, maximum
@@ -576,9 +576,10 @@ displayGetCellValueBinMenu:
 
 	ldr a1, =.L14_msgInstructions
 	ldr a2, =.L14_msgInstructionsTemplate
-	mov a2, v2, lsl #3	@ number of bits allowed for input
-	bl sprintf		@ r0 -> complete instructions string
+	mov a3, v2, lsl #3	@ number of bits allowed for input
+	bl sprintf
 
+	ldr a1, =.L14_msgInstructions
 	mov a2, v1	@ cell index
 	mov a3, #'%'	@ prompt for binary
 	bl runGetCellValueMenu
@@ -970,6 +971,8 @@ getCellValueBin:
 	rDataWidthInBytes	.req v3
 	rFirstPass		.req v4
 
+	ldr rTestMode, [fp, #4]
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up-- meat of the function starts here
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -991,6 +994,13 @@ getCellValueBin:
 	cmp r0, #'r'
 	beq .L16_epilogue
 
+	and r0, #0xFF		@ if in test mode, allow // comments in input
+	cmp r0, #'/'
+	bne .L16_inputFirstStep
+	cmp rTestMode, #1
+	beq .L16_tryAgain
+
+.L16_inputFirstStep:
 	ldr a1, =.L16_scanfResult
 	mov a2, rDataWidthInBytes
 	bl convertBitStringToNumber
@@ -1056,6 +1066,9 @@ getCellValueDec:
 
 	rOperationsFunction	.req v1
 	rFirstPass		.req v2
+	rTestMode		.req v3
+
+	ldr rTestMode, [fp, #4]
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up-- meat of the function starts here
@@ -1078,6 +1091,13 @@ getCellValueDec:
 	cmp r0, #'r'
 	beq .L19_epilogue
 
+	and r0, #0xFF		@ if in test mode, allow // comments in input
+	cmp r0, #'/'
+	bne .L19_inputFirstStep
+	cmp rTestMode, #1
+	beq .L19_tryAgain
+
+.L19_inputFirstStep:
 	ldr a1, =.L19_scanfResult
 	ldr a2, =.L19_sscanf
 	ldr a3, =.L19_sscanfResult
@@ -1109,6 +1129,7 @@ getCellValueDec:
 
 	.unreq rFirstPass
 	.unreq rOperationsFunction
+	.unreq rTestMode
 
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
@@ -1154,6 +1175,9 @@ getCellValueHex:
 	rOperationsFunction	.req v1
 	rDataWidthInBytes	.req v2
 	rFirstPass		.req v3
+	rTestMode		.req v4
+
+	ldr rTestMode, [fp, #4]
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up-- meat of the function starts here
@@ -1176,6 +1200,13 @@ getCellValueHex:
 	cmp r0, #'r'
 	beq .L22_epilogue
 
+	and r0, #0xFF		@ if in test mode, allow // comments in input
+	cmp r0, #'/'
+	bne .L22_inputFirstStep
+	cmp rTestMode, #1
+	beq .L22_tryAgain
+
+.L22_inputFirstStep:
 	ldr a1, =.L22_scanfResult
 	mov a2, rDataWidthInBytes
 	bl convertHexStringToNumber
@@ -1199,6 +1230,7 @@ getCellValueHex:
 	.unreq rFirstPass
 	.unreq rDataWidthInBytes
 	.unreq rOperationsFunction
+	.unreq rTestMode
 
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
@@ -1420,8 +1452,8 @@ getMainSelection:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-scanString:		.asciz "%2s"
-scanResult:		.asciz "  "
+.L2_scanfResult:	.skip 100	@ arbitrary and hopeful size
+.L2_scanf:		.asciz "%100s"
 
 .section .text
 
@@ -1441,13 +1473,13 @@ getMenuSelection:
 	mov v6, #1	@ remember we're on first pass
 
 .L2_tryAgain:
-	ldr r0, =scanString
-	ldr r1, =scanResult
+	ldr a1, =.L2_scanf
+	ldr a2, =.L2_scanfResult
 	bl scanf
 
-	ldr r0, =scanResult
+	ldr r0, =.L2_scanfResult
 	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
-	orr r0, #0x20
+	orr r0, #0x20		@ make sure it's lowercase
 
 	cmp r0, #'q'
 	bne .L2_checkR
@@ -1465,7 +1497,14 @@ getMenuSelection:
 	b .L2_acceptControlCharacter
 
 .L2_notQnotR:
-	ldr r0, =scanResult
+	and r0, #0xFF		@ if in test mode, allow // comments in input
+	cmp r0, #'/'
+	bne .L2_inputFirstStep
+	cmp v1, #1
+	beq .L2_tryAgain
+
+.L2_inputFirstStep:
+	ldr r0, =.L2_scanfResult
 	mov r1, #0
 	mov r2, #10
 	bl strtol
@@ -1480,7 +1519,7 @@ getMenuSelection:
 	b .L2_epilogue
 
 .L2_yuck:
-	ldr a1, =scanResult
+	ldr a1, =.L2_scanfResult
 	mov a2, #0		@ no prompt suffix for decimal input
 	mov a3, v6		@ first pass indicator
 	bl sayYuck
