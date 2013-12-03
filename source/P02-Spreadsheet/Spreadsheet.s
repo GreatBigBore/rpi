@@ -58,6 +58,7 @@
 .equ operation_max, 5
 .equ operation_accumulate, 6
 .equ operation_checkOverflow, 7
+.equ operation_validateRange, 8
 
 .equ longestCalculationString, 9
 
@@ -407,6 +408,10 @@ cursorUp:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueBinMenu
 @
+@ stack:
+@	+4 test mode
+@
+@ registers
 @	a/v1 - cell index
 @	a/v2 - data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -470,9 +475,32 @@ displayGetCellValueBinMenu:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueDecMenu
 @
+@ stack:
+@	+4 test mode
+@
+@ registers
 @	a/v1 - cell index
 @	a/v2 - data width in bytes
+@	a/v3 - operations function
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L20_msgInstructionsTemplate:
+	.asciz "Enter an integer from %d to %d\r\n"
+
+.L20_msgInstructionsLength = . - .L20_msgInstructionsTemplate
+
+@@@@@@@@@
+@ Buffer to contain the instructions with actual number inserted
+@ in the %d. I had to do it this way because the runMenu function
+@ wants the full string. The 11 is to allow for the maximum
+@ length of a 32-bit integer, digits plus sign
+@@@@@@@@@
+.L20_msgInstructions: .skip .L20_msgInstructionsLength + (2 * 11) 
+
+.section .text
+.align 3
+
 displayGetCellValueDecMenu:
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -486,13 +514,42 @@ displayGetCellValueDecMenu:
 
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
+
+	rCellIndex		.req v1
+	rDataWidthInBytes	.req v2
+	rOperationsFunction	.req v3
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ Ready to roll
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+	mov a4, #operation_initAForMax
+	blx rOperationsFunction
+	mov v4, r0
+
+	mov a4, #operation_initAForMin
+	blx rOperationsFunction
+	mov v5, r0
+
+	ldr a1, =.L20_msgInstructions
+	ldr a2, =.L20_msgInstructionsTemplate
+	mov a3, v4	@ min
+	mov a4, v5	@ max
+	bl sprintf	@ r0 -> complete instructions string
+
+	ldr a1, =.L20_msgInstructions
+	mov a2, rCellIndex
+	mov a3, #0	@ no prompt postfix for decimal
+	bl runGetCellValueMenu
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ Restore caller's locals and stack frame
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.unreq rCellIndex
+	.unreq rDataWidthInBytes
+	.unreq rOperationsFunction
+
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
@@ -505,6 +562,10 @@ displayGetCellValueDecMenu:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueHexMenu
 @
+@ stack:
+@	+4 test mode
+@
+@ registers
 @	a/v1 - cell index
 @	a/v2 - data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -521,13 +582,23 @@ displayGetCellValueHexMenu:
 
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
+
+	rCellIndex		.req v1
+	rDataWidthInBytes	.req v2
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ Ready to roll
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+	
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ Restore caller's locals and stack frame
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.unreq rCellIndex
+	.unreq rDataWidthInBytes
+
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
@@ -805,10 +876,23 @@ getCellValueBin:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueDec
+@ stack:
+@	+4 test mode
 @
-@	a/v1 - cell index
-@	a/v2 - data width in bytes
+@ registers:
+@	a/v1 - operations function
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+.section .data
+
+.L19_scanfResult:	.skip 100	@ arbitrary and hopeful size
+.L19_scanf:		.asciz "%100s"
+.L19_sscanfResult:	.word 0
+.L19_sscanf:		.asciz "%d"
+
+.section .text
+.align 3
+
 getCellValueDec:
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ Stack frame and local variable setup
@@ -822,13 +906,58 @@ getCellValueDec:
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
 
+	rOperationsFunction	.req v1
+	rFirstPass		.req v2
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up-- meat of the function starts here
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+	mov rFirstPass, #1	@ remember we're on the first pass
+
+.L19_tryAgain:
+	ldr a1, =.L19_scanf
+	ldr a2, =.L19_scanfResult
+	bl scanf
+
+	ldr r0, =.L19_scanfResult
+	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
+	orr r0, #0x20		@ make sure it's lowercase
+
+	mov r1, #inputStatus_acceptedControlCharacter
+	cmp r0, #'q'
+	beq .L19_epilogue
+	cmp r0, #'r'
+	beq .L19_epilogue
+
+	ldr a1, =.L19_scanfResult
+	ldr a2, =.L19_sscanf
+	ldr a3, =.L19_sscanfResult
+	bl sscanf
+
+	ldr a1, =.L19_sscanfResult
+	ldr a1, [a1]
+	mov a4, #operation_validateRange
+	blx rOperationsFunction	@ returns input status in r1
+
+	cmp r1, #inputStatus_inputOk
+	bne .L19_sayYuck
+	ldr r0, =.L19_sscanfResult
+	ldrb r0, [r0]
+	b .L19_epilogue
+
+.L19_sayYuck:
+	ldr a1, =.L19_scanfResult
+	mov a2, #0
+	mov a3, rFirstPass
+	bl sayYuck
+	b .L19_tryAgain
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Restore caller's locals and stack frame
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.L19_epilogue:
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
@@ -962,6 +1091,7 @@ getNewValueForCell:
 	push {r0}	@ test mode
 	mov a1, v2	@ cell index
 	mov a2, v3	@ data width in bytes
+	mov a3, v1	@ operations function
 	blx v5		@ run the menu for this presentation mode
 
 	add r0, fp, #4
@@ -1272,6 +1402,8 @@ newline:
 .ops8_jumpTable:	.word .ops8_store, .ops8_display, .ops8_initAForMin
 			.word .ops8_initAForMax, .ops8_min, .ops8_max
 			.word .ops8_accumulate, .ops8_checkOverflow
+			.word .ops8_validateRange
+
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
@@ -1286,6 +1418,16 @@ operations8:
 	add r0, r0, v4, lsl #2	@ v4 = offset from beginning of jump table
 	ldr r0, [r0]
 	bx r0
+
+.ops8_validateRange:
+	mov r1, #inputStatus_inputNotOk
+	mov r0, #0x80		@ minimum 8-bit value
+	sxtb r0, r0		@ sign-extend
+	cmp v1, r0
+	blt .ops8_epilogue
+	cmp v1, #0x7F		@ maximum 8-bit value
+	movle r1, #inputStatus_inputOk
+	b .ops8_epilogue
 
 .ops8_checkOverflow:
 	mov r0, #0	@ default to no overflow
@@ -1553,11 +1695,11 @@ resetSheet:
 
 .L15_msgDirections:
 	.ascii "Directions (enter 'Q' to quit, 'R' to return "
-	.asciz " cell selection menu)\r\n"
+	.asciz "to cell selection menu):\r\n"
 
 .L15_msgSeparator:
 	.ascii "---------------------------------------------"
-	.asciz "---------------------"
+	.asciz "------------------------\r\n"
 
 .L15_msgNewValue: .asciz "New value for cell %d\r\n-> "
 
@@ -1595,7 +1737,7 @@ runGetCellValueMenu:
 
 	mov a1, v3	@ prompt postfix
 	cmp a1, #0	@ decimal has no prompt postfix
-	bleq putchar	@ awesome arm conditional instruction
+	blne putchar	@ awesome arm conditional instruction
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ Restore caller's locals and stack frame
@@ -1606,7 +1748,6 @@ runGetCellValueMenu:
 	mov sp, fp	@ restore caller's stack frame
 	pop {fp}
 
-	add sp, #4	@ clear caller's stack parameters
 	bx lr		@ return
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
