@@ -472,19 +472,26 @@ convertHexStringToNumber:
 .section .data
 
 msgClearScreen: .ascii "\033[2J\033[H"
-L_msgClearScreen = . - msgClearScreen
+LmsgClearScreen = . - msgClearScreen
 
 .section .text
 
 clearScreen:
-	push {r7}
-	mov r0, $1
-	ldr r1, =msgClearScreen
-	ldr r2, =L_msgClearScreen
-	mov r7, $4
-	svc 0
-	pop {r7}
-	mov pc, lr
+	push {v1, v2, lr}
+
+.msgClearScreenLoopInit:
+	ldr v1, =msgClearScreen
+	mov v2, #LmsgClearScreen
+
+.msgClearScreenLoopTop:
+	ldrb a1, [v1]
+	bl putchar
+	add v1, #1
+	subs v2, #1
+	bne .msgClearScreenLoopTop
+
+	pop {v1, v2, lr}
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ clearToEOL
@@ -492,20 +499,26 @@ clearScreen:
 .section .data
 
 msgClearToEOL: .ascii "\033[K"
-L_msgClearToEOL = . - msgClearToEOL
+LmsgClearToEOL = . - msgClearToEOL
 
 .section .text
-.align 3
 
 clearToEOL:
-	push {r7}
-	mov r0, $1
-	ldr r1, =msgClearToEOL
-	ldr r2, =L_msgClearToEOL
-	mov r7, $4
-	svc 0
-	pop {r7}
-	mov pc, lr
+	push {v1, v2, lr}
+
+.msgClearToEOLLoopInit:
+	ldr v1, =msgClearToEOL
+	mov v2, #LmsgClearToEOL
+
+.msgClearToEOLLoopTop:
+	ldrb a1, [v1]
+	bl putchar
+	add v1, #1
+	subs v2, #1
+	bne .msgClearToEOLLoopTop
+
+	pop {v1, v2, lr}
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ cursorUp
@@ -513,20 +526,26 @@ clearToEOL:
 .section .data
 
 msgCursorUp: .ascii "\033[A"
-L_msgCursorUp = . - msgCursorUp
+LmsgCursorUp = . - msgCursorUp
 
 .section .text
-.align 3
 
 cursorUp:
-	push {r7}
-	mov r0, $1
-	ldr r1, =msgCursorUp
-	ldr r2, =L_msgCursorUp
-	mov r7, $4
-	svc 0
-	pop {r7}
-	mov pc, lr
+	push {v1, v2, lr}
+
+.msgCursorUpLoopInit:
+	ldr v1, =msgCursorUp
+	mov v2, #LmsgCursorUp
+
+.msgCursorUpLoopTop:
+	ldrb a1, [v1]
+	bl putchar
+	add v1, #1
+	subs v2, #1
+	bne .msgCursorUpLoopTop
+
+	pop {v1, v2, lr}
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueBinMenu
@@ -1452,8 +1471,9 @@ getMainSelection:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L2_scanfResult:	.skip 100	@ arbitrary and hopeful size
-.L2_scanf:		.asciz "%100s"
+.L2_getsBuffer:		.skip 100
+.L2_scanf:		.asciz "%d"
+.L2_scanfResult:	.word 0
 
 .section .text
 
@@ -1473,11 +1493,10 @@ getMenuSelection:
 	mov v6, #1	@ remember we're on first pass
 
 .L2_tryAgain:
-	ldr a1, =.L2_scanf
-	ldr a2, =.L2_scanfResult
-	bl scanf
+	ldr a1, =.L2_getsBuffer
+	bl gets
 
-	ldr r0, =.L2_scanfResult
+	ldr r0, =.L2_getsBuffer
 	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
 	orr r0, #0x20		@ make sure it's lowercase
 
@@ -1504,11 +1523,13 @@ getMenuSelection:
 	beq .L2_tryAgain
 
 .L2_inputFirstStep:
-	ldr r0, =.L2_scanfResult
-	mov r1, #0
-	mov r2, #10
-	bl strtol
+	ldr a1, =.L2_getsBuffer
+	ldr a2, =.L2_scanf
+	ldr a3, =.L2_scanfResult
+	bl sscanf
 
+	ldr r0, =.L2_scanfResult
+	ldr r0, [r0]
 	cmp r0, v2	@ Check against min
 	blo .L2_yuck
 
@@ -1519,7 +1540,7 @@ getMenuSelection:
 	b .L2_epilogue
 
 .L2_yuck:
-	ldr a1, =.L2_scanfResult
+	ldr a1, =.L2_getsBuffer
 	mov a2, #0		@ no prompt suffix for decimal input
 	mov a3, v6		@ first pass indicator
 	bl sayYuck
@@ -1546,10 +1567,10 @@ getMenuSelection:
 
 .section .data
 
-msgEnterSpreadsheetSize:	.asciz "Enter the number of cells for the spreadsheet [2, 10] or 'Q' to quit\r\n"
+msgEnterSpreadsheetSize:	.asciz "Enter the number of cells for the spreadsheet [2, 10], or 'Q' to quit\r\n"
 msgDataWidthOptions:		.asciz "Data width options (enter 'Q' to quit):\r\n"
 msgSeparator:			.asciz "---------------------------------------\r\n"
-msgSelectDataWidth:		.asciz "Select data width:\r\n"
+msgSelectDataWidth:		.asciz "\r\nSelect data width\r\n"
 
 dwo8:	.asciz "8 bits - range is [-128, 127]"
 dwo16:	.asciz "16 bits - range is [-32768, 32767]"
@@ -1594,6 +1615,8 @@ getSpreadsheetSpecs:
 	ldr r0, =dataWidthOptions
 	mov r1, #numberOfDataWidthOptions
 	bl showList
+	ldr r0, =msgSelectDataWidth
+	bl printf
 	ldr r0, =msgPrompt
 	bl printf
 
@@ -2054,6 +2077,33 @@ runMenu:
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ setColors 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+msgSetColors: .ascii "\033[37;40m"
+LmsgSetColors = . - msgSetColors
+
+.section .text
+
+setColors:
+	push {v1, v2, lr}
+
+.msgSetColorsLoopInit:
+	ldr v1, =msgSetColors
+	mov v2, #LmsgSetColors
+
+.msgSetColorsLoopTop:
+	ldrb a1, [v1]
+	bl putchar
+	add v1, #1
+	subs v2, #1
+	bne .msgSetColorsLoopTop
+
+	pop {v1, v2, lr}
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ sayYuck
 @
 @	a/v1 string with yucky value
@@ -2257,6 +2307,7 @@ main:
 	bl time
 	bl srand
 
+	bl setColors
 	bl clearScreen
 
 greet:
