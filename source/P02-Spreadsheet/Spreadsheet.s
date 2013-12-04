@@ -1528,6 +1528,15 @@ getMenuSelection:
 	ldr a3, =.L2_scanfResult
 	bl sscanf
 
+	ldr a1, =.L2_getsBuffer
+	ldr a2, =.L2_scanf
+	ldr a3, =.L2_scanfResult
+	ldr a3, [a3]
+	bl matchInputToResult
+
+	cmp r1, #inputStatus_inputOk
+	bne .L2_yuck
+
 	ldr r0, =.L2_scanfResult
 	ldr r0, [r0]
 	cmp r0, v2	@ Check against min
@@ -1643,6 +1652,74 @@ getSpreadsheetSpecs:
 
 epilogue:
 	pop {pc}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ matchInputToResult
+@
+@	a1 what the user entered
+@	a2 format string used on the user input
+@	a3 the value that resulted from the scanf
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L24_sprintfBuffer: .skip 100
+
+.section .text
+.align 3
+
+matchInputToResult:
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ Stack frame and local variable setup
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	rOriginalUserInput	.req v1
+	rFormatString		.req v2
+	rScanfResult		.req v3
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All set up-- meat of the function starts here
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	ldr a1, =.L24_sprintfBuffer
+	mov a2, rFormatString
+	mov a3, rScanfResult
+	bl sprintf
+
+	ldr a1, =.L24_sprintfBuffer
+	mov a2, rOriginalUserInput
+	bl strcmp
+
+	mov r1, #inputStatus_inputOk
+	cmp r0, #0
+	movne r1, #inputStatus_inputNotOk
+	b .L24_epilogue
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.unreq rOriginalUserInput
+	.unreq rFormatString
+	.unreq rScanfResult
+
+.L24_epilogue:
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ newline
