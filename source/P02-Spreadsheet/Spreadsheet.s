@@ -62,6 +62,8 @@
 
 .equ longestCalculationString, 9
 
+.equ inputBufferSize, 100
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ calcSheetMinMax
 @
@@ -966,7 +968,7 @@ getCellToEdit:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L16_scanfResult:	.skip 100	@ arbitrary and hopeful size
+.L16_scanfResult:	.skip inputBufferSize	@ arbitrary and hopeful size
 .L16_scanf:		.asciz "%100s"
 
 .section .text
@@ -1062,10 +1064,9 @@ getCellValueBin:
 
 .section .data
 
-.L19_scanfResult:	.skip 100	@ arbitrary and hopeful size
-.L19_scanf:		.asciz "%100s"
-.L19_sscanfResult:	.word 0
-.L19_sscanf:		.asciz "%d"
+.L19_getsBuffer:	.skip inputBufferSize
+.L19_scanf:		.asciz "%d"
+.L19_scanfResult:	.word 0
 
 .section .text
 .align 3
@@ -1096,11 +1097,10 @@ getCellValueDec:
 	mov rFirstPass, #1	@ remember we're on the first pass
 
 .L19_tryAgain:
-	ldr a1, =.L19_scanf
-	ldr a2, =.L19_scanfResult
-	bl scanf
+	ldr a1, =.L19_getsBuffer
+	bl gets
 
-	ldr r0, =.L19_scanfResult
+	ldr r0, =.L19_getsBuffer
 	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
 	orr r0, #0x20		@ make sure it's lowercase
 
@@ -1117,19 +1117,25 @@ getCellValueDec:
 	beq .L19_tryAgain
 
 .L19_inputFirstStep:
-	ldr a1, =.L19_scanfResult
-	ldr a2, =.L19_sscanf
-	ldr a3, =.L19_sscanfResult
+	ldr a1, =.L19_getsBuffer
+	ldr a2, =.L19_scanf
+	ldr a3, =.L19_scanfResult
 	bl sscanf
 
-	ldr a1, =.L19_sscanfResult
+	ldr a1, =.L19_getsBuffer
+	ldr a2, =.L19_scanf
+	ldr a3, =.L19_scanfResult
+	ldr a3, [a3]
+	bl matchInputToResult
+
+	ldr a1, =.L19_scanfResult
 	ldr a1, [a1]
 	mov a4, #operation_validateRange
 	blx rOperationsFunction	@ returns input status in r1
 
 	cmp r1, #inputStatus_inputOk
 	bne .L19_sayYuck
-	ldr r0, =.L19_sscanfResult
+	ldr r0, =.L19_scanfResult
 	ldrb r0, [r0]
 	b .L19_epilogue
 
@@ -1171,8 +1177,9 @@ getCellValueDec:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L22_scanfResult:	.skip 100	@ arbitrary and hopeful size
-.L22_scanf:		.asciz "%100s"
+.L22_getsBuffer:	.skip inputBufferSize
+.L22_scanf:		.asciz "%d"
+.L22_scanfResult:	.word 0
 
 .section .text
 .align 3
@@ -1205,11 +1212,18 @@ getCellValueHex:
 	mov rFirstPass, #1	@ cursor behavior different on first pass
 
 .L22_tryAgain:
-	ldr a1, =.L22_scanf
-	ldr a2, =.L22_scanfResult
-	bl scanf
+	ldr a1, =.L22_getsBuffer
+	ldr a2, =.L22_scanf
+	ldr a3, =.L22_scanfResult
+	bl sscanf
 
-	ldr r0, =.L22_scanfResult
+	ldr a1, =.L22_getsBuffer
+	ldr a2, =.L22_scanf
+	ldr a3, =.L22_scanfResult
+	ldr a3, [a3]
+	bl matchInputToResult
+
+	ldr r0, =.L22_getsBuffer
 	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
 	orr r0, #0x20		@ make sure it's lowercase
 
@@ -1471,7 +1485,7 @@ getMainSelection:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L2_getsBuffer:		.skip 100
+.L2_getsBuffer:		.skip inputBufferSize
 .L2_scanf:		.asciz "%d"
 .L2_scanfResult:	.word 0
 
@@ -1662,7 +1676,7 @@ epilogue:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L24_sprintfBuffer: .skip 100
+.L24_sprintfBuffer: .skip inputBufferSize
 
 .section .text
 .align 3
