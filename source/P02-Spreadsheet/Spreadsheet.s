@@ -925,7 +925,6 @@ getCellToEdit:
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
 
-	bl newline
 	ldr r0, =.L12_msgInstructions
 	bl printf
 	ldr r0, =.L12_msgSeparator
@@ -938,13 +937,12 @@ getCellToEdit:
 
 	bl promptForSelection
 
-	add r0, fp, #4	@ r0 -> test mode indicator
-	ldr r0, [r0]	@ r0 = test mode indicator
+	ldr r0, [fp, #4]	@ test mode
 	push {r0}
-	mov a1, v5	@ test mode
-	mov a2, v1	@ min cell number
-	mov a3, v2	@ max cell number
-	mov a4, #'q'	@ accept 'q' for quit
+	mov a1, v1		@ min cell number
+	mov a2, v2		@ max cell number
+	mov a3, #q_accept	@ accept 'q' for quit
+	mov a4, #r_accept	@ accept 'r' to go up a menu
 	bl getMenuSelection
 
 	pop {v1 - v7}	@ restore caller's locals
@@ -1127,6 +1125,8 @@ getCellValueDec:
 	ldr a3, =.L19_scanfResult
 	ldr a3, [a3]
 	bl matchInputToResult
+	cmp r1, #inputStatus_inputNotOk
+	beq .L19_yuck
 
 	ldr a1, =.L19_scanfResult
 	ldr a1, [a1]
@@ -1134,13 +1134,13 @@ getCellValueDec:
 	blx rOperationsFunction	@ returns input status in r1
 
 	cmp r1, #inputStatus_inputOk
-	bne .L19_sayYuck
+	bne .L19_yuck
 	ldr r0, =.L19_scanfResult
 	ldrb r0, [r0]
 	b .L19_epilogue
 
-.L19_sayYuck:
-	ldr a1, =.L19_scanfResult
+.L19_yuck:
+	ldr a1, =.L19_getsBuffer
 	mov a2, #0
 	mov a3, rFirstPass
 	bl sayYuck
@@ -1222,6 +1222,8 @@ getCellValueHex:
 	ldr a3, =.L22_scanfResult
 	ldr a3, [a3]
 	bl matchInputToResult
+	cmp r1, #inputStatus_inputNotOk
+	beq .L22_yuck
 
 	ldr r0, =.L22_getsBuffer
 	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
@@ -1247,6 +1249,7 @@ getCellValueHex:
 	cmp r1, #inputStatus_inputOk
 	beq .L22_epilogue
 
+.L22_yuck:
 	ldr a1, =.L22_scanfResult
 	mov a2, #'$'
 	mov a3, rFirstPass
@@ -1307,7 +1310,9 @@ getFormula:
 	ldr r0, [r0]
 	mov r1, #q_accept
 	mov r2, #r_accept
-	push {r0 - r2}
+	push {r0}
+	push {r1}
+	push {r2}
 	ldr a1, =.L8_msgInstructions
 	ldr a2, =.L8_msgSeparator
 	ldr a3, =.L8_menuOptions
@@ -1414,7 +1419,9 @@ getPresentation:
 	ldr r0, [r0]
 	mov r1, #q_accept
 	mov r2, #r_accept
-	push {r0 - r2}
+	push {r0}
+	push {r1}
+	push {r2}
 	ldr a1, =.L9_msgInstructions
 	ldr a2, =.L9_msgSeparator
 	ldr a3, =.L9_menuOptions
@@ -1458,7 +1465,9 @@ getMainSelection:
 	ldr r0, [r0]
 	mov r1, #q_accept
 	mov r2, #r_reject
-	push {r0 - r2}
+	push {r0}
+	push {r1}
+	push {r2}
 	ldr a1, =.L5_msgInstructions
 	ldr a2, =.L5_msgSeparator
 	ldr a3, =menuOptions
@@ -1471,13 +1480,13 @@ getMainSelection:
 @ getMenuSelection
 @
 @ stack:
-@	+4/v5 accept/reject 'r'
+@	+4 test mode
 @
 @ registers:
-@	a/v1 test mode
-@	a/v2 minimum acceptable input
-@	a/v3 maximum acceptable input
-@	a/v4 accept/reject 'q'
+@	a1 minimum acceptable input
+@	a2 maximum acceptable input
+@	a3 accept/reject 'q'
+@	a4 accept/reject 'r'
 @
 @ returns:
 @	r0 user input
@@ -1490,21 +1499,35 @@ getMainSelection:
 .L2_scanfResult:	.word 0
 
 .section .text
+.align 3
 
 getMenuSelection:
-	push {fp}
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ Stack frame and local variable setup
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	push {fp}	@ setup local stack frame
 	mov fp, sp
 
-	push {lr}
-	push {v1 - v6}
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
 
-	push {a1 - a4}	@ Transfer args to...
+	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
 
-	add v5, fp, #4	@ accept/reject 'r'
-	ldr v5, [v5]
+	rMinimum	.req v1
+	rMaximum	.req v2
+	rQControl	.req v3
+	rRControl	.req v4
+	rTestMode	.req v5
+	rFirstPass	.req v6
 
-	mov v6, #1	@ remember we're on first pass
+	ldr rTestMode, [fp, #4]
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All set up-- meat of the function starts here
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	mov rFirstPass, #1
 
 .L2_tryAgain:
 	ldr a1, =.L2_getsBuffer
@@ -1517,7 +1540,7 @@ getMenuSelection:
 	cmp r0, #'q'
 	bne .L2_checkR
 
-	cmp v4, #q_accept
+	cmp rQControl, #q_accept
 	bne .L2_yuck	
 	b .L2_acceptControlCharacter
 
@@ -1525,7 +1548,7 @@ getMenuSelection:
 	cmp r0, #'r'
 	bne .L2_notQnotR
 
-	cmp v5, #r_accept
+	cmp rRControl, #r_accept
 	bne .L2_yuck
 	b .L2_acceptControlCharacter
 
@@ -1533,7 +1556,7 @@ getMenuSelection:
 	and r0, #0xFF		@ if in test mode, allow // comments in input
 	cmp r0, #'/'
 	bne .L2_inputFirstStep
-	cmp v1, #1
+	cmp rTestMode, #1
 	beq .L2_tryAgain
 
 .L2_inputFirstStep:
@@ -1553,10 +1576,10 @@ getMenuSelection:
 
 	ldr r0, =.L2_scanfResult
 	ldr r0, [r0]
-	cmp r0, v2	@ Check against min
+	cmp r0, rMinimum	@ Check against min
 	blo .L2_yuck
 
-	cmp r0, v3	@ Check against max
+	cmp r0, rMaximum	@ Check against max
 	bhi .L2_yuck
 
 	mov r1, #inputStatus_inputOk
@@ -1565,22 +1588,33 @@ getMenuSelection:
 .L2_yuck:
 	ldr a1, =.L2_getsBuffer
 	mov a2, #0		@ no prompt suffix for decimal input
-	mov a3, v6		@ first pass indicator
+	mov a3, rFirstPass	@ first pass indicator
 	bl sayYuck
-	mov v6, #0
+	mov rFirstPass, #0
 	b .L2_tryAgain
  
 .L2_acceptControlCharacter:
 	mov r1, #inputStatus_acceptedControlCharacter
 
-.L2_epilogue:
-	pop {v1 - v6}
-	pop {lr}
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ Restore caller's locals and stack frame
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.unreq rMinimum
+	.unreq rMaximum
+	.unreq rQControl
+	.unreq rRControl
+	.unreq rTestMode
+	.unreq rFirstPass
 
-	mov sp, fp
+.L2_epilogue:
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
 	pop {fp}
-	add sp, #4
-	bx lr
+
+	add sp, #4	@ clear caller's stack parameters
+	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getSpreadsheetSpecs
@@ -1613,13 +1647,13 @@ getSpreadsheetSpecs:
 	ldr r0, =msgPrompt
 	bl printf
 
-	mov r0, #r_reject
-	push {r0}
 	ldr r0, =testMode
 	ldr r0, [r0]
-	mov r1, #minimumCellCount
-	mov r2, #maximumCellCount
-	mov r3, #q_accept
+	push {r0}
+	mov a1, #minimumCellCount
+	mov a2, #maximumCellCount
+	mov a3, #q_accept
+	mov a4, #r_accept
 	bl getMenuSelection
 
 	cmp r1, #inputStatus_acceptedControlCharacter
@@ -1643,13 +1677,13 @@ getSpreadsheetSpecs:
 	ldr r0, =msgPrompt
 	bl printf
 
-	mov r0, #r_reject
-	push {r0}
 	ldr r0, =testMode
 	ldr r0, [r0]
-	mov r1, #1
-	mov r2, #3
-	mov r3, #q_accept
+	push {r0}
+	mov a1, #1
+	mov a2, #numberOfDataWidthOptions
+	mov a3, #q_accept
+	mov a4, #r_accept
 	bl getMenuSelection
 
 	cmp r1, #inputStatus_acceptedControlCharacter
@@ -1750,12 +1784,12 @@ newline:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations8
-@	a/v1 = accumulator/source
+@	a1 = accumulator/source
 @		except for operation_display -- there it's presentation mode
-@	a/v2 = sheet base address
-@	a/v3 = multi-purpose --
+@	a2 = sheet base address
+@	a3 = multi-purpose --
 @		usually index of target cell
-@	a/v4 = operation
+@	a4 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -1771,94 +1805,118 @@ newline:
 .align 3	@ in case there's an issue with jumping to this via register
 
 operations8:
-	push {lr}
-	push {v1 - v6}
 
-	push {a1 - a4}
-	pop  {v1 - v4}
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ Stack frame and local variable setup
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	rOperationResult	.req r0
+	rInputStatus		.req r1
+	rCellContents		.req r1
+	rOperand		.req v1
+	rAccumulator		.req v1
+	rPresentationMode	.req v1
+	rSheetBaseAddress	.req v2
+	rCellIndex		.req v3
+	rOperation		.req v4
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All set up-- meat of the function starts here
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	ldr r0, =.ops8_jumpTable
-	add r0, r0, v4, lsl #2	@ v4 = offset from beginning of jump table
-	ldr r0, [r0]
+	ldr r0, [r0, rOperation, lsl #2]
 	bx r0
 
 .ops8_validateRange:
-	mov r1, #inputStatus_inputNotOk
+	mov rInputStatus, #inputStatus_inputNotOk
 	mov r0, #0x80		@ minimum 8-bit value
 	sxtb r0, r0		@ sign-extend
-	cmp v1, r0
+	cmp rOperand, r0
 	blt .ops8_epilogue
-	cmp v1, #0x7F		@ maximum 8-bit value
-	movle r1, #inputStatus_inputOk
+	cmp rOperand, #0x7F	@ maximum 8-bit value
+	movle rInputStatus, #inputStatus_inputOk
 	b .ops8_epilogue
 
 .ops8_checkOverflow:
-	mov r0, #0	@ default to no overflow
-	mvn v2, #0xFF	@ v2 = 0xFFFFFF00
-	tst v1, v2
-	movne r0, #1	@ cool arm conditional instruction
+	mov rOperationResult, #0	@ default to no overflow
+	mvn r1, #0xFF			@ r1 = 0xFFFFFF00
+	tst rOperand, r1
+	movne rOperationResult, #1	@ cool arm conditional instruction
 	b .ops8_epilogue
 
 .ops8_accumulate:
-	add r1, v2, v3	@ r1 = address of cell
-	ldrsb r1, [r1]	@ r1 = data from cell
-	add r0, v1, r1	@ r0 = sum so far
+	ldrsb rCellContents, [rSheetBaseAddress, rCellIndex]
+	add rOperationResult, rAccumulator, rCellContents
 	b .ops8_epilogue
 
 .ops8_display:
-	add a2, v2, v3	@ a2 = address of cell
-	ldrsb a2, [a2]	@ a2 = data from cell
+	ldrsb rCellContents, [rSheetBaseAddress, rCellIndex]
 
-	cmp v1, #presentation_bin
+	cmp rPresentationMode, #presentation_bin
 	beq .ops8_displayBin
 
 	ldr a1, =.ops8_formatDec	@ default to decimal
-	cmp v1, #presentation_hex
+	cmp rPresentationMode, #presentation_hex
 	ldreq a1, =.ops8_formatHex	@ cool arm conditional execution
 	andeq a2, #0xFF			@ also use only bottom byte if hex
 	bl printf
 	b .ops8_epilogue
 
 .ops8_displayBin:
-	mov a1, a2	@ a1 = data to display
-	mov a2, #1	@ a2 = number of bytes
+	mov a1, rCellContents	@ a1 = data to display
+	mov a2, #1		@ a2 = number of bytes
 	bl showNumberAsBin
 	b .ops8_epilogue
 
 .ops8_initAForMax:
-	mov r0, #0x80		@ lowest possible 8-bit signed value
-	sxtb r0, r0		@ sign-extend
+	mov rOperationResult, #0x80		@ lowest possible 8-bit signed value
+	sxtb rOperationResult, rOperationResult	@ sign-extend
 	b .ops8_epilogue
 
 .ops8_initAForMin:
-	mov r0, #0x7F		@ highest possible 8-bit signed value
+	mov rOperationResult, #0x7F		@ highest possible 8-bit signed value
 	b .ops8_epilogue
 
 .ops8_max:
-	add r1, v2, v3	@ r1 = address of cell
-	ldrsb r1, [r1]	@ r1 = data from cell
-	mov r0, v1	@ current max
-	cmp v1, r1
-	movlt r0, r1	@ new max if v1 < cell value
+	ldrsb rCellContents, [rSheetBaseAddress, rCellIndex]
+	mov rOperationResult, rOperand		@ current max
+	cmp rOperand, rCellContents
+	movlt rOperationResult, rCellContents	@ new max if operand < cell value
 	b .ops8_epilogue
 
 .ops8_min:
-	add r1, v2, v3	@ r1 = address of cell
-	ldrsb r1, [r1]	@ r1 = data from cell
-	mov r0, v1	@ current min
-	cmp v1, r1
-	movgt r0, r1	@ new min if v1 > cell value
+	ldrsb rCellContents, [rSheetBaseAddress, rCellIndex]
+	mov rOperationResult, rOperand		@ current min
+	cmp rOperand, rCellContents
+	movgt rOperationResult, rCellContents	@ new min if operand > cell value
 	b .ops8_epilogue
 
 .ops8_store:
-	add v2, v3
-	strb v1, [v2]
+	strb rOperand, [rSheetBaseAddress, rCellIndex]
 	b .ops8_epilogue
 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 .ops8_epilogue:
-	pop {v1 - v6}
-	pop {lr}
-	bx lr
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations16
@@ -1953,7 +2011,7 @@ operations32:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-msgEnterSelection:	.asciz "Enter a selection"
+msgEnterSelection:	.asciz "Enter a selection\r\n"
 msgPrompt:		.asciz "-> "
 
 .section .text
@@ -2064,7 +2122,7 @@ resetSheet:
 	.ascii "---------------------------------------------"
 	.asciz "------------------------\r\n"
 
-.L15_msgNewValue: .asciz "New value for cell %d\r\n-> "
+.L15_msgNewValue: .asciz "\r\nNew value for cell %d\r\n-> "
 
 .section .text
 .align 3
@@ -2148,15 +2206,12 @@ runMenu:
 
 	bl promptForSelection
 
-	add v6, fp, #4	@ r accept/reject
-	ldr v6, [v6]
-	push {v6}
-	add v6, fp, #12	@ test mode
-	ldr a1, [v6]
-	mov a2, #1	@ minimum selection
-	mov a3, v4	@ maximum selection
-	add v6, fp, #8	@ q accept/reject
-	ldr a4, [v6]
+	ldr r0, [fp, #12]	@ test mode
+	push {r0}
+	mov a1, #1		@ minimum
+	mov a2, v4		@ maximum
+	ldr a3, [fp, #8]	@ q accept/reject
+	ldr a4, [fp, #4]	@ r accept/reject
 	bl getMenuSelection
 
 	pop {v1 - v6}
