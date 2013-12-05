@@ -2087,6 +2087,8 @@ operations16:
 	.unreq rCellIndex
 	.unreq rOperation
 	.unreq rHwordMask
+	.unreq rMinimum
+	.unreq rMaximum
 
 .ops16_epilogue:
 	pop {v1 - v7}	@ restore caller's locals
@@ -2099,47 +2101,160 @@ operations16:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations32
-@	r0 = accumulator/source
-@	r1 = sheet base address
-@	r2 = multi-purpose;
+@	a1 = accumulator/source
+@		except for operation_display -- there it's presentation mode
+@	a2 = sheet base address
+@	a3 = multi-purpose --
 @		usually index of target cell
-@	r3 = operation
+@	a4 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.ops32_formatDec: .asciz "% 11d\r\n"
-.ops32_jumpTable: .word .ops32_store, .ops32_display
+.ops32_formatDec: .asciz "% 11d"
+.ops32_formatHex: .asciz "$%08X"
+
+.ops32_jumpTable:	.word .ops32_store, .ops32_display, .ops32_initAForMin
+			.word .ops32_initAForMax, .ops32_min, .ops32_max
+			.word .ops32_accumulate, .ops32_checkOverflow
+			.word .ops32_validateRange
 
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
 operations32:
-	push {lr}
-	push {r4 - r7}
 
-	push {r0 - r3}
-	pop  {r4 - r7}
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ Stack frame and local variable setup
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	push {fp}	@ setup local stack frame
+	mov fp, sp
 
-	ldr r3, =.ops32_jumpTable
-	add r3, r3, r7, lsl #2	@ r7 = offset from beginning of jump table
-	ldr r3, [r3]
-	bx r3
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
 
-.ops32_store:
-	add r1, r2, lsl #2
-	str r0, [r1]
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	rOperationResult	.req r0
+	rInputStatus		.req r1
+	rCellContents		.req r1
+	rOperand		.req v1
+	rAccumulator		.req v1
+	rPresentationMode	.req v1
+	rSheetBaseAddress	.req v2
+	rCellIndex		.req v3
+	rOperation		.req v4
+	rWordMask		.req v5
+	rMinimum		.req v6
+	rMaximum		.req v7
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All set up-- meat of the function starts here
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	mov r0, #0
+	sub r0, #1	@ r0 = 0xFFFFFFFF
+	mov rWordMask, r0	@ rWordMask = 0xFFFFFFFF
+	lsr rMaximum, r0, #1	@ rMaximum = 0x7FFFFFFF
+	lsl rMinimum, r0, #31	@ rMinimum = 0x80000000
+
+	ldr r0, =.ops32_jumpTable
+	ldr r0, [r0, rOperation, lsl #2]
+	bx r0
+
+.ops32_validateRange:
+	mov rInputStatus, #inputStatus_inputNotOk
+	cmp rOperand, rMinimum
+	blt .ops32_epilogue
+	cmp rOperand, rMaximum
+	movle rInputStatus, #inputStatus_inputOk
+	b .ops32_epilogue
+
+.ops32_checkOverflow:
+	mov rOperationResult, #0	@ default to no overflow -- fix!
+	b .ops32_epilogue
+
+.ops32_accumulate:
+	add r0, rSheetBaseAddress, rCellIndex, lsl #2
+	ldr rCellContents, [r0]
+	add rOperationResult, rAccumulator, rCellContents
 	b .ops32_epilogue
 
 .ops32_display:
-	ldr r0, =.ops32_formatDec
-	add r1, r2, lsl #2	@ r1 = address of cell
-	ldr r1, [r1]		@ r1 = data from cell
+	add r0, rSheetBaseAddress, rCellIndex, lsl #2
+	ldr rCellContents, [r0]
+
+	cmp rPresentationMode, #presentation_bin
+	beq .ops32_displayBin
+
+	ldr a1, =.ops32_formatDec	@ default to decimal
+	cmp rPresentationMode, #presentation_hex
+	ldreq a1, =.ops32_formatHex	@ cool arm conditional execution
+	andeq a2, rWordMask		@ also use only bottom hword if hex
 	bl printf
+	b .ops32_epilogue
+
+.ops32_displayBin:
+	mov a1, rCellContents	@ a1 = data to display
+	mov a2, #1		@ a2 = number of bytes
+	bl showNumberAsBin
+	b .ops32_epilogue
+
+.ops32_initAForMax:
+	mov rOperationResult, rMinimum	@ min signed 32-bit value
+	b .ops32_epilogue
+
+.ops32_initAForMin:
+	mov rOperationResult, rMaximum	@ max signed 32-bit value
+	b .ops32_epilogue	
+
+.ops32_max:
+	add r0, rSheetBaseAddress, rCellIndex, lsl #2
+	ldr rCellContents, [r0]
+	mov rOperationResult, rOperand		@ current max
+	cmp rOperand, rCellContents
+	movlt rOperationResult, rCellContents	@ new max if operand < cell value
+	b .ops32_epilogue
+
+.ops32_min:
+	add r0, rSheetBaseAddress, rCellIndex, lsl #2
+	ldr rCellContents, [r0]
+	mov rOperationResult, rOperand		@ current min
+	cmp rOperand, rCellContents
+	movgt rOperationResult, rCellContents	@ new min if operand > cell value
+	b .ops32_epilogue
+
+.ops32_store:
+	add r0, rSheetBaseAddress, rCellIndex, lsl #2
+	str rOperand, [r0]
+	b .ops32_epilogue
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.unreq rOperationResult
+	.unreq rInputStatus
+	.unreq rCellContents
+	.unreq rOperand
+	.unreq rAccumulator
+	.unreq rPresentationMode
+	.unreq rSheetBaseAddress
+	.unreq rCellIndex
+	.unreq rOperation
+	.unreq rWordMask
+	.unreq rMinimum
+	.unreq rMaximum
 
 .ops32_epilogue:
-	pop {r4 - r7}
-	pop {lr}
-	bx lr
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ promptForSelection 
