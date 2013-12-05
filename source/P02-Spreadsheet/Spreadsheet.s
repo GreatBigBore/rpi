@@ -181,12 +181,11 @@ calcSheetSumAverage:
 
 	mov a4, #operation_checkOverflow
 	blx v1
-	cmp r0, #1	@ overflow?
-	bne .L11_loopBottom
 
 	add r1, fp, #4	@ r1 -> overflow flag pointer
 	ldr r1, [r1]	@ r1 -> caller's overflow flag
-	str r0, [r1]	@ notify caller of overflow
+	str r0, [r1]	@ set caller's overflow flag
+	bne .L11_loopBottom
 
 .L11_loopBottom:
 	add v6, #1
@@ -804,7 +803,7 @@ displayGetCellValueHexMenu:
 .L1_formulas:	.word .L1_fSum, .L1_fAverage, .L1_fMinimum, .L1_fMaximum
 
 .L1_msgDataWidth:	.asciz "%d-bit signed integer mode\r\n\r\n"
-.L1_msgOverflow:	.asciz "[ERROR]"
+.L1_msgOverflow:	.asciz " \033[37;41m[ERROR]\033[37;40m"
 
 .section .text
 .align 3
@@ -843,6 +842,7 @@ displaySheet:
 	mov a3, v6	@ cell index
 	mov a4, #operation_display
 	blx v1		@ display current cell per data width 
+	bl newline
 
 .L1_loopBottom:
 	add v6, v6, #1
@@ -866,6 +866,15 @@ displaySheet:
 	mov a4, #operation_display
 	blx v1		@ display result cell per data width
 
+	ldr r0, [fp, #4]	@ get overflow indicator
+	cmp r0, #1
+	bne .L1_checkedOverflow
+
+	ldr r0, =.L1_msgOverflow
+	bl printf
+
+.L1_checkedOverflow:
+	bl newline
 	bl newline
 
 	pop {v1 - v6}
@@ -1793,8 +1802,8 @@ newline:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.ops8_formatDec: .asciz "% 4d\r\n"
-.ops8_formatHex: .asciz "$%02X\r\n"
+.ops8_formatDec: .asciz "% 4d"
+.ops8_formatHex: .asciz "$%02X"
 
 .ops8_jumpTable:	.word .ops8_store, .ops8_display, .ops8_initAForMin
 			.word .ops8_initAForMax, .ops8_min, .ops8_max
@@ -1848,9 +1857,10 @@ operations8:
 
 .ops8_checkOverflow:
 	mov rOperationResult, #0	@ default to no overflow
-	mvn r1, #0xFF			@ r1 = 0xFFFFFF00
-	tst rOperand, r1
-	movne rOperationResult, #1	@ cool arm conditional instruction
+	and r1, rOperand, #0xFF		@ r1 = low 8 bits of operand
+	sxtb r1, r1			@ sign-extend r1
+	cmp r1, rOperand		@ if they're equal, then no overflow
+	movne rOperationResult, #1	@ unequal means overflow
 	b .ops8_epilogue
 
 .ops8_accumulate:
@@ -2377,7 +2387,6 @@ showNumberAsBin:
 	b .L10_loopTop
 
 .L10_loopExit:
-	bl newline
 	pop {v1 - v6}
 	pop {pc}
 
