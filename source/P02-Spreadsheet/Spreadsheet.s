@@ -57,8 +57,7 @@
 .equ operation_min, 4
 .equ operation_max, 5
 .equ operation_accumulate, 6
-.equ operation_checkOverflow, 7
-.equ operation_validateRange, 8
+.equ operation_validateRange, 7
 
 .equ longestCalculationString, 9
 
@@ -179,13 +178,8 @@ calcSheetSumAverage:
 	blx v1		@ accumulate sum 
 	mov v5, r0	@ track accumulator
 
-	mov a4, #operation_checkOverflow
-	blx v1
-
-	add r1, fp, #4	@ r1 -> overflow flag pointer
-	ldr r1, [r1]	@ r1 -> caller's overflow flag
-	str r0, [r1]	@ set caller's overflow flag
-	bne .L11_loopBottom
+	ldr r0, [fp, #4]	@ r0 -> caller's overflow flag
+	str r1, [r0]		@ set caller's overflow flag
 
 .L11_loopBottom:
 	add v6, #1
@@ -238,12 +232,12 @@ convertBitStringToNumber:
 	rDataWidthInBytes	.req r1
 	rNumberOfBitsToCapture	.req r2
 	rMaxDigitsAllowed	.req r3
-	rFoundFirstUnderscore	.req v1
+	rStringToConvert	.req v1
 	rBinaryDigitCounter	.req v2
 	rDigitTempStore		.req v3
 	rLoopCounter		.req v4
 	rBitsBetweenUnderscores	.req v5
-	rStringToConvert	.req v6
+	rFoundFirstUnderscore	.req v6
 	rAccumulator		.req v7
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -251,7 +245,7 @@ convertBitStringToNumber:
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 .L17_loopInit:
-	mov a1, v1	@ string to convert
+	mov a1, rStringToConvert
 	bl strlen
 	mov rNumberOfBitsToCapture, r0
 
@@ -296,6 +290,9 @@ convertBitStringToNumber:
 	add rBinaryDigitCounter, #1	@ track number of bits total
 	add rBitsBetweenUnderscores, #1	@ track number of inter-uscore bits
 
+	lsl rAccumulator, #1			@ make room for the new bit
+	orr rAccumulator, rDigitTempStore	@ store the new bit
+
 .L17_loopBottom:
 	add rLoopCounter, #1
 	b .L17_loopTop
@@ -311,6 +308,7 @@ convertBitStringToNumber:
 	bne .L17_badCharacter			@ allowed between underscores
 
 .L17_checkMaxDigits:
+	mov r0, rAccumulator		@ default to everything ok
 	mov r1, #inputStatus_inputOk
 	cmp rBinaryDigitCounter, rMaxDigitsAllowed
 	bls .L17_epilogue
@@ -562,7 +560,7 @@ cursorUp:
 
 .L14_msgInstructionsTemplate:
 	.ascii "Enter up to %d binary digits; underscores optional, but "
-	.ascii "complete\r\n nybbles required after each: 11_1111 ok, but "
+	.ascii "complete\r\nnybbles required after each: 11_1111 ok, but "
 	.asciz "not 11_111 or 11_11_1111\r\n"
 
 .L14_msgInstructionsLength = . - .L14_msgInstructionsTemplate
@@ -975,8 +973,7 @@ getCellToEdit:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L16_scanfResult:	.skip inputBufferSize	@ arbitrary and hopeful size
-.L16_scanf:		.asciz "%100s"
+.L16_getsBuffer:	.skip inputBufferSize	@ arbitrary and hopeful size
 
 .section .text
 .align 3
@@ -1008,11 +1005,10 @@ getCellValueBin:
 	mov rFirstPass, #1	@ cursor behavior different on first pass
 
 .L16_tryAgain:
-	ldr a1, =.L16_scanf
-	ldr a2, =.L16_scanfResult
-	bl scanf
+	ldr a1, =.L16_getsBuffer
+	bl gets
 
-	ldr r0, =.L16_scanfResult
+	ldr r0, =.L16_getsBuffer
 	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
 	orr r0, #0x20		@ make sure it's lowercase
 
@@ -1029,17 +1025,19 @@ getCellValueBin:
 	beq .L16_tryAgain
 
 .L16_inputFirstStep:
-	ldr a1, =.L16_scanfResult
+	ldr a1, =.L16_getsBuffer
 	mov a2, rDataWidthInBytes
 	bl convertBitStringToNumber
 
-	cmp r1, #inputStatus_inputNotOk
+	cmp r1, #inputStatus_inputOk
 	beq .L16_epilogue
 
-	ldr a1, =.L16_scanfResult
+	ldr a1, =.L16_getsBuffer
 	mov a2, #'%'
 	mov a3, rFirstPass
 	bl sayYuck
+
+	mov rFirstPass, #0
 	b .L16_tryAgain
 
 .L16_epilogue:
@@ -1153,6 +1151,8 @@ getCellValueDec:
 	mov a2, #0
 	mov a3, rFirstPass
 	bl sayYuck
+
+	mov rFirstPass, #0
 	b .L19_tryAgain
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1186,9 +1186,7 @@ getCellValueDec:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L22_getsBuffer:	.skip inputBufferSize
-.L22_scanf:		.asciz "%d"
-.L22_scanfResult:	.word 0
+.L22_getsBuffer:	.skip inputBufferSize	@ arbitrary and hopeful size
 
 .section .text
 .align 3
@@ -1222,17 +1220,7 @@ getCellValueHex:
 
 .L22_tryAgain:
 	ldr a1, =.L22_getsBuffer
-	ldr a2, =.L22_scanf
-	ldr a3, =.L22_scanfResult
-	bl sscanf
-
-	ldr a1, =.L22_getsBuffer
-	ldr a2, =.L22_scanf
-	ldr a3, =.L22_scanfResult
-	ldr a3, [a3]
-	bl matchInputToResult
-	cmp r1, #inputStatus_inputNotOk
-	beq .L22_yuck
+	bl gets
 
 	ldr r0, =.L22_getsBuffer
 	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
@@ -1251,7 +1239,7 @@ getCellValueHex:
 	beq .L22_tryAgain
 
 .L22_inputFirstStep:
-	ldr a1, =.L22_scanfResult
+	ldr a1, =.L22_getsBuffer
 	mov a2, rDataWidthInBytes
 	bl convertHexStringToNumber
 
@@ -1259,7 +1247,7 @@ getCellValueHex:
 	beq .L22_epilogue
 
 .L22_yuck:
-	ldr a1, =.L22_scanfResult
+	ldr a1, =.L22_getsBuffer
 	mov a2, #'$'
 	mov a3, rFirstPass
 	bl sayYuck
@@ -1807,8 +1795,7 @@ newline:
 
 .ops8_jumpTable:	.word .ops8_store, .ops8_display, .ops8_initAForMin
 			.word .ops8_initAForMax, .ops8_min, .ops8_max
-			.word .ops8_accumulate, .ops8_checkOverflow
-			.word .ops8_validateRange
+			.word .ops8_accumulate, .ops8_validateRange
 
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
@@ -1828,6 +1815,7 @@ operations8:
 	pop  {v1 - v4}	@ local variable regs
 
 	rOperationResult	.req r0
+	rOverflowIndicator	.req r1
 	rInputStatus		.req r1
 	rCellContents		.req r1
 	rOperand		.req v1
@@ -1855,17 +1843,21 @@ operations8:
 	movle rInputStatus, #inputStatus_inputOk
 	b .ops8_epilogue
 
-.ops8_checkOverflow:
-	mov rOperationResult, #0	@ default to no overflow
-	and r1, rOperand, #0xFF		@ r1 = low 8 bits of operand
-	sxtb r1, r1			@ sign-extend r1
-	cmp r1, rOperand		@ if they're equal, then no overflow
-	movne rOperationResult, #1	@ unequal means overflow
-	b .ops8_epilogue
-
 .ops8_accumulate:
 	ldrsb rCellContents, [rSheetBaseAddress, rCellIndex]
 	add rOperationResult, rAccumulator, rCellContents
+
+	@@@
+	@ notify caller of overflow status relative
+	@ to bottom byte of the operation result
+	@@@
+
+	mov rOverflowIndicator, #0	@ default to no overflow
+	and r2, rOperationResult, #0xFF	@ get bottom byte
+	sxtb r2, r2			@ sign-extend r2
+	cmp r2, rOperationResult
+	movne rOverflowIndicator, #1	@ not equal means overflow
+
 	b .ops8_epilogue
 
 .ops8_display:
@@ -1920,6 +1912,7 @@ operations8:
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	.unreq rOperationResult
+	.unreq rOverflowIndicator
 	.unreq rInputStatus
 	.unreq rCellContents
 	.unreq rOperand
@@ -1954,8 +1947,7 @@ operations8:
 
 .ops16_jumpTable:	.word .ops16_store, .ops16_display, .ops16_initAForMin
 			.word .ops16_initAForMax, .ops16_min, .ops16_max
-			.word .ops16_accumulate, .ops16_checkOverflow
-			.word .ops16_validateRange
+			.word .ops16_accumulate, .ops16_validateRange
 
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
@@ -1975,6 +1967,7 @@ operations16:
 	pop  {v1 - v4}	@ local variable regs
 
 	rOperationResult	.req r0
+	rOverflowIndicator	.req r1
 	rInputStatus		.req r1
 	rCellContents		.req r1
 	rOperand		.req v1
@@ -2009,18 +2002,22 @@ operations16:
 	movle rInputStatus, #inputStatus_inputOk
 	b .ops16_epilogue
 
-.ops16_checkOverflow:
-	mov rOperationResult, #0	@ default to no overflow
-	and r1, rOperand, rHwordMask	@ r1 = low 16 bits of operand
-	sxth r1, r1			@ sign-extend r1
-	cmp r1, rOperand		@ if they're equal, then no overflow
-	movne rOperationResult, #1	@ unequal means overflow
-	b .ops16_epilogue
-
 .ops16_accumulate:
 	add r0, rSheetBaseAddress, rCellIndex, lsl #1
 	ldrsh rCellContents, [r0]
 	add rOperationResult, rAccumulator, rCellContents
+
+	@@@
+	@ notify caller of overflow status relative
+	@ to bottom hword of the operation result
+	@@@
+
+	mov rOverflowIndicator, #0		@ default to no overflow
+	and r2, rOperationResult, rHwordMask	@ get bottom byte
+	sxth r2, r2				@ sign-extend r2
+	cmp r2, rOperationResult
+	movne rOverflowIndicator, #1		@ not equal means overflow
+
 	b .ops16_epilogue
 
 .ops16_display:
@@ -2078,6 +2075,7 @@ operations16:
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	.unreq rOperationResult
+	.unreq rOverflowIndicator
 	.unreq rInputStatus
 	.unreq rCellContents
 	.unreq rOperand
@@ -2115,8 +2113,7 @@ operations16:
 
 .ops32_jumpTable:	.word .ops32_store, .ops32_display, .ops32_initAForMin
 			.word .ops32_initAForMax, .ops32_min, .ops32_max
-			.word .ops32_accumulate, .ops32_checkOverflow
-			.word .ops32_validateRange
+			.word .ops32_accumulate, .ops32_validateRange
 
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
@@ -2136,6 +2133,7 @@ operations32:
 	pop  {v1 - v4}	@ local variable regs
 
 	rOperationResult	.req r0
+	rOverflowIndicator	.req r1
 	rInputStatus		.req r1
 	rCellContents		.req r1
 	rOperand		.req v1
@@ -2170,14 +2168,12 @@ operations32:
 	movle rInputStatus, #inputStatus_inputOk
 	b .ops32_epilogue
 
-.ops32_checkOverflow:
-	mov rOperationResult, #0	@ default to no overflow -- fix!
-	b .ops32_epilogue
-
 .ops32_accumulate:
+	mov rOverflowIndicator, #0	@ default to no overflow
 	add r0, rSheetBaseAddress, rCellIndex, lsl #2
 	ldr rCellContents, [r0]
-	add rOperationResult, rAccumulator, rCellContents
+	adds rOperationResult, rAccumulator, rCellContents
+	movcs rOverflowIndicator, #1	@ set overflow flag if necessary
 	b .ops32_epilogue
 
 .ops32_display:
@@ -2235,6 +2231,7 @@ operations32:
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	.unreq rOperationResult
+	.unreq rOverflowIndicator
 	.unreq rInputStatus
 	.unreq rCellContents
 	.unreq rOperand
@@ -2951,7 +2948,11 @@ actionChangePresentation:
 	b redisplaySheet
 
 actionResetSpreadsheet:
-	b returnToMain
+	ldr a1, =spreadsheetDataBuffer
+	ldr a1, [a1]
+	bl free
+	bl clearScreen
+	b showSetupIntro
 
 actionFillRandom:
 	ldr a1, =operationsFunction
