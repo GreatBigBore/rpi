@@ -1145,7 +1145,7 @@ getCellValueDec:
 	cmp r1, #inputStatus_inputOk
 	bne .L19_yuck
 	ldr r0, =.L19_scanfResult
-	ldrb r0, [r0]
+	ldr r0, [r0]
 	b .L19_epilogue
 
 .L19_yuck:
@@ -1919,6 +1919,16 @@ operations8:
 	@@@ restore caller's variables and stack frame. 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+	.unreq rOperationResult
+	.unreq rInputStatus
+	.unreq rCellContents
+	.unreq rOperand
+	.unreq rAccumulator
+	.unreq rPresentationMode
+	.unreq rSheetBaseAddress
+	.unreq rCellIndex
+	.unreq rOperation
+
 .ops8_epilogue:
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
@@ -1930,47 +1940,162 @@ operations8:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations16
-@	r0 = accumulator/source
-@	r1 = sheet base address
-@	r2 = multi-purpose;
+@	a1 = accumulator/source
+@		except for operation_display -- there it's presentation mode
+@	a2 = sheet base address
+@	a3 = multi-purpose --
 @		usually index of target cell
-@	r3 = operation
+@	a4 = operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.ops16_formatDec: .asciz "% 6d\r\n"
-.ops16_jumpTable: .word .ops16_store, .ops16_display
+.ops16_formatDec: .asciz "% 6d"
+.ops16_formatHex: .asciz "$%04X"
+
+.ops16_jumpTable:	.word .ops16_store, .ops16_display, .ops16_initAForMin
+			.word .ops16_initAForMax, .ops16_min, .ops16_max
+			.word .ops16_accumulate, .ops16_checkOverflow
+			.word .ops16_validateRange
 
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
 operations16:
-	push {lr}
-	push {r4 - r7}
 
-	push {r0 - r3}
-	pop  {r4 - r7}
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ Stack frame and local variable setup
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	push {fp}	@ setup local stack frame
+	mov fp, sp
 
-	ldr r3, =.ops16_jumpTable
-	add r3, r3, r7, lsl #2	@ r7 = offset from beginning of jump table
-	ldr r3, [r3]
-	bx r3
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
 
-.ops16_store:
-	add r1, r2, lsl #1
-	strh r0, [r1]
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+
+	rOperationResult	.req r0
+	rInputStatus		.req r1
+	rCellContents		.req r1
+	rOperand		.req v1
+	rAccumulator		.req v1
+	rPresentationMode	.req v1
+	rSheetBaseAddress	.req v2
+	rCellIndex		.req v3
+	rOperation		.req v4
+	rHwordMask		.req v5
+	rMinimum		.req v6
+	rMaximum		.req v7
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All set up-- meat of the function starts here
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	mov r0, #0
+	sub r0, #1	@ r0 = 0xFFFFFFFF
+	lsr rHwordMask, r0, #16	@ rHwordMask = 0xFFFF
+	lsr rMaximum, r0, #17	@ rMaximum = 0x7FFF
+	lsl rMinimum, r0, #15	@ rMinimum = 0xFFFF8000
+
+	ldr r0, =.ops16_jumpTable
+	ldr r0, [r0, rOperation, lsl #2]
+	bx r0
+
+.ops16_validateRange:
+	mov rInputStatus, #inputStatus_inputNotOk
+	cmp rOperand, rMinimum
+	blt .ops16_epilogue
+	cmp rOperand, rMaximum
+	movle rInputStatus, #inputStatus_inputOk
+	b .ops16_epilogue
+
+.ops16_checkOverflow:
+	mov rOperationResult, #0	@ default to no overflow
+	and r1, rOperand, rHwordMask	@ r1 = low 16 bits of operand
+	sxth r1, r1			@ sign-extend r1
+	cmp r1, rOperand		@ if they're equal, then no overflow
+	movne rOperationResult, #1	@ unequal means overflow
+	b .ops16_epilogue
+
+.ops16_accumulate:
+	add r0, rSheetBaseAddress, rCellIndex, lsl #1
+	ldrsh rCellContents, [r0]
+	add rOperationResult, rAccumulator, rCellContents
 	b .ops16_epilogue
 
 .ops16_display:
-	ldr r0, =.ops16_formatDec
-	add r1, r2, lsl #1	@ r1 = address of cell
-	ldrsh r1, [r1]		@ r1 = data from cell
+	add r0, rSheetBaseAddress, rCellIndex, lsl #1
+	ldrsh rCellContents, [r0]
+
+	cmp rPresentationMode, #presentation_bin
+	beq .ops16_displayBin
+
+	ldr a1, =.ops16_formatDec	@ default to decimal
+	cmp rPresentationMode, #presentation_hex
+	ldreq a1, =.ops16_formatHex	@ cool arm conditional execution
+	andeq a2, rHwordMask		@ also use only bottom hword if hex
 	bl printf
+	b .ops16_epilogue
+
+.ops16_displayBin:
+	mov a1, rCellContents	@ a1 = data to display
+	mov a2, #1		@ a2 = number of bytes
+	bl showNumberAsBin
+	b .ops16_epilogue
+
+.ops16_initAForMax:
+	mov rOperationResult, rMinimum	@ min signed 16-bit value
+	b .ops16_epilogue
+
+.ops16_initAForMin:
+	mov rOperationResult, rMaximum	@ max signed 16-bit value
+	b .ops16_epilogue	
+
+.ops16_max:
+	add r0, rSheetBaseAddress, rCellIndex, lsl #1
+	ldrsh rCellContents, [r0]
+	mov rOperationResult, rOperand		@ current max
+	cmp rOperand, rCellContents
+	movlt rOperationResult, rCellContents	@ new max if operand < cell value
+	b .ops16_epilogue
+
+.ops16_min:
+	add r0, rSheetBaseAddress, rCellIndex, lsl #1
+	ldrsh rCellContents, [r0]
+	mov rOperationResult, rOperand		@ current min
+	cmp rOperand, rCellContents
+	movgt rOperationResult, rCellContents	@ new min if operand > cell value
+	b .ops16_epilogue
+
+.ops16_store:
+	add r0, rSheetBaseAddress, rCellIndex, lsl #1
+	strh rOperand, [r0]
+	b .ops16_epilogue
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@@@ All done. Undefine register synonyms and
+	@@@ restore caller's variables and stack frame. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.unreq rOperationResult
+	.unreq rInputStatus
+	.unreq rCellContents
+	.unreq rOperand
+	.unreq rAccumulator
+	.unreq rPresentationMode
+	.unreq rSheetBaseAddress
+	.unreq rCellIndex
+	.unreq rOperation
+	.unreq rHwordMask
 
 .ops16_epilogue:
-	pop {r4 - r7}
-	pop {lr}
-	bx lr
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations32
@@ -2393,6 +2518,10 @@ showNumberAsBin:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ main
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.ltorg	@ not too clear on this, but this directive does something
+	@ with data sections that keeps the data close enough to the
+	@ code that is working on the data. Learn more about this.
+
 .section .data
 
 .equ presentation_bin, 0
