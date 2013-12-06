@@ -2749,15 +2749,18 @@ formulaJumpTable:
 msgGreeting:	.asciz "Greetings, data analyzer.\n\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\n"
 msgByeNow:	.asciz "'Bye now!\n"
+msgArg:		.asciz "r0 = 0x%08X; r1 = %s"
 
 .section .text
 
 	.global main
 
 main:
-	mov r0, #1
-	ldr r1, =testMode
-	str r0, [r1]
+	mov r1, #1	@ default to test mode
+	cmp r0, #1
+	moveq r1, #0	@ if only one cmdline arg (prog name), not test mode
+	ldr r0, =testMode
+	str r1, [r0]	@ remember which mode
 
 	mov r0, #0
 	bl time
