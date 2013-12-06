@@ -239,6 +239,7 @@ convertBitStringToNumber:
 	rBitsBetweenUnderscores	.req v5
 	rFoundFirstUnderscore	.req v6
 	rAccumulator		.req v7
+	rFirstSigfigFound	.req ip
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up-- meat of the function starts here
@@ -256,6 +257,7 @@ convertBitStringToNumber:
 	mov rBitsBetweenUnderscores, #0
 	mov rAccumulator, #0
 	mov rLoopCounter, #0
+	mov rFirstSigfigFound, #0
 
 .L17_loopTop:
 	cmp rLoopCounter, rNumberOfBitsToCapture
@@ -280,13 +282,25 @@ convertBitStringToNumber:
 
 	tst rBitsBetweenUnderscores, #4 - 1	@ only complete nybbles...
 	bne .L17_badCharacter			@ allowed between underscores
-	b .L17_loopBottom		@ underscore ok--go to next digit
+	b .L17_loopBottom			@ underscore ok--go to next digit
 
 .L17_doneWithUnderscoreCheck:
 	sub rDigitTempStore, #'0'	@ make it a real 0 or 1
 	cmp rDigitTempStore, #1
 	bhi .L17_badCharacter
 
+	cmp rDigitTempStore, #0		@ check for first sigfig
+	bne .L17_processingSigfigs
+
+	cmp rFirstSigfigFound, #1
+	beq .L17_processingSigfigs
+
+	sub rNumberOfBitsToCapture, #1	@ if it's a leading zero, then one...
+	add rStringToConvert, #1	@ less bit to capture
+	b .L17_loopTop
+
+.L17_processingSigfigs:
+	mov rFirstSigfigFound, #1
 	add rBinaryDigitCounter, #1	@ track number of bits total
 	add rBitsBetweenUnderscores, #1	@ track number of inter-uscore bits
 
@@ -332,6 +346,7 @@ convertBitStringToNumber:
 	.unreq rLoopCounter
 	.unreq rBitsBetweenUnderscores
 	.unreq rStringToConvert	
+	.unreq rFirstSigfigFound
 
 	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
@@ -361,7 +376,7 @@ convertHexStringToNumber:
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
 
-	rFirstNonZeroFound		.req r1
+	rFirstSigfigFound		.req r1
 	rStringToConvert		.req v1
 	rDataWidthInBytes		.req v2	@ used only once
 	rMaxDigitsAllowed		.req v2	@ more permanent use
@@ -380,7 +395,7 @@ convertHexStringToNumber:
 	bl strlen
 	mov rNumberOfNybblesToCapture, r0
 
-	mov rFirstNonZeroFound, #0
+	mov rFirstSigfigFound, #0
 	mov rMaxDigitsAllowed, rDataWidthInBytes, lsl #1
 	mov rHexDigitCounter, #0
 	mov rDigitTempStore, #0
@@ -414,18 +429,21 @@ convertHexStringToNumber:
 	cmp rDigitTempStore, #0
 	bne .L23_significantDigit
 
-	cmp rFirstNonZeroFound, #1	@ ignore all leading zeros
+	cmp rFirstSigfigFound, #1	@ ignore all leading zeros
 	beq .L23_significantDigit
 
 	add rStringToConvert, #1	@ skip the leading zero 
 	b .L23_loopTop
 
 .L23_significantDigit:
+
+	@@@
 	@ more arm coolness -- shift accumulator left by one
 	@ nybble, add the temp store into it, and store the
 	@ result back into the accumulator. All in one instruction. Cool.
+	@@@
 	add rAccumulator, rDigitTempStore, rAccumulator, lsl #4 
-	mov rFirstNonZeroFound, #1	@ done with leading zeros
+	mov rFirstSigfigFound, #1	@ done with leading zeros
 	add rHexDigitCounter, #1	@ track number of nybbles total
 
 .L23_loopBottom:
@@ -454,7 +472,7 @@ convertHexStringToNumber:
 	.unreq rHexDigitCounter
 	.unreq rDigitTempStore
 	.unreq rLoopCounter
-	.unreq rFirstNonZeroFound
+	.unreq rFirstSigfigFound
 	.unreq rStringToConvert	
 
 	pop {v1 - v7}	@ restore caller's locals
