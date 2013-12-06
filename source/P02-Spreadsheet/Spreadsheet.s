@@ -1147,6 +1147,18 @@ getCellValueDec:
 	bl sscanf
 
 	ldr a1, =.L19_getsBuffer
+
+.L19_skippingWhitespace:
+	ldrb r1, [a1]
+	cmp r1, #' '
+	bhi .L19_foundNonWhitespace
+	cmp r1, #0	@ null terminator--end of input
+	beq .L19_yuck	@ nothing but whitespace? yuck!
+	add a1, #1
+	b .L19_skippingWhitespace
+
+.L19_foundNonWhitespace:
+	@ a1 -> first usable char in gets buffer
 	ldr a2, =.L19_scanf
 	ldr a3, =.L19_scanfResult
 	ldr a3, [a3]
@@ -1758,8 +1770,23 @@ matchInputToResult:
 	mov a3, rScanfResult
 	bl sprintf
 
+	mov r0, rOriginalUserInput
+
+.L24_skipLeadingZeros:	@ caller already skipped whitespace
+	ldrb r1, [r0]
+	cmp r1, #'0'
+	bne .L24_foundMeatOfUserInput
+
+	ldrb r1, [r0, #1]		@ if following char is...
+	cmp r1, #0			@ null terminator, accept final...
+	beq .L24_foundMeatOfUserInput	@ char as whole input
+
+	add r0, #1			@ leading zero--keep looking
+	b .L24_skipLeadingZeros
+	
+.L24_foundMeatOfUserInput:
 	ldr a1, =.L24_sprintfBuffer
-	mov a2, rOriginalUserInput
+	mov a2, r0
 	bl strcmp
 
 	mov r1, #inputStatus_inputOk
