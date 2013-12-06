@@ -1660,6 +1660,11 @@ getMenuSelection:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getSpreadsheetSpecs
+@
+@ returns
+@	r0 number of cells in spreadsheet
+@	r1 cell width in bytes
+@	r2 input status
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .equ minimumCellCount, 2
 .equ maximumCellCount, 10
@@ -1683,6 +1688,11 @@ dataWidthOptions: .word dwo8, dwo16, dwo32
 
 getSpreadsheetSpecs:
 	push {lr}
+	push {v1 - v7}
+
+	rInputStatus		.req v1
+	rNumberOfCells		.req v2
+	rCellWidthInBytes	.req v3
 
 	ldr r0, =msgEnterSpreadsheetSize
 	bl printf
@@ -1697,12 +1707,11 @@ getSpreadsheetSpecs:
 	mov a3, #q_accept
 	mov a4, #r_accept
 	bl getMenuSelection
+	mov rNumberOfCells, r0
+	mov rInputStatus, r1
 
-	cmp r1, #inputStatus_acceptedControlCharacter
+	cmp rInputStatus, #inputStatus_acceptedControlCharacter
 	beq epilogue
-
-	ldr r1, =numberOfCellsInSpreadsheet
-	str r0, [r1]
 
 	bl newline
 
@@ -1727,20 +1736,25 @@ getSpreadsheetSpecs:
 	mov a3, #q_accept
 	mov a4, #r_accept
 	bl getMenuSelection
+	mov rInputStatus, r1
 
-	cmp r1, #inputStatus_acceptedControlCharacter
+	cmp rInputStatus, #inputStatus_acceptedControlCharacter
 	beq epilogue
 
-	sub r0, #1	@ Convert 1-based to 0-based
-	mov r1, #1	@ Will be data width
-	lsl r1, r0	@ Now r1 has the data width in bytes
-	ldr r0, =cellWidthInBytes
-	str r1, [r0]
-
-	mov r0, #0
-	mov r1, #inputStatus_inputOk
+	sub r1, r0, #1				@ convert 1-based to 0-based
+	mov r0, #1				@ to be shifted
+	mov rCellWidthInBytes, r0, lsl r1	@ v2 = data width in bytes
 
 epilogue:
+	mov r0, rInputStatus
+	mov r1, rNumberOfCells
+	mov r2, rCellWidthInBytes
+
+	.unreq rInputStatus
+	.unreq rNumberOfCells
+	.unreq rCellWidthInBytes
+
+	pop {v1 - v7}
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2754,10 +2768,12 @@ msgArg:		.asciz "r0 = 0x%08X; r1 = %s"
 .section .text
 .global main
 
-	rMenuMode		.req v1
-	rFormula		.req v2
-	rPresentation		.req v3
-	rOperationsFunction	.req v4
+	rMenuMode			.req v1
+	rFormula			.req v2
+	rPresentation			.req v3
+	rOperationsFunction		.req v4
+	rCellWidthInBytes		.req v5
+	rNumberOfCellsInSpreadsheet	.req v6
 
 main:
 	mov r1, #1	@ default to test mode
@@ -2785,23 +2801,20 @@ showSetupIntro:
 	ldr a1, =msgSetupIntro
 	bl printf
 
-	bl getSpreadsheetSpecs 
+	bl getSpreadsheetSpecs
+	mov rNumberOfCellsInSpreadsheet, r1
+	mov rCellWidthInBytes, r2
 
-	cmp r1, #inputStatus_acceptedControlCharacter
+	cmp r0, #inputStatus_acceptedControlCharacter
 	beq actionQuit 
 
 	ldr r0, =operationsJumpTable
-	ldr r2, =cellWidthInBytes
-	ldr r2, [r2]
-	lsr r2, #1		@ convert 1, 2, 4 to 0, 1, 2
-	add r1, r0, r2, lsl #2	@ convert 0, 1, 2 to 0, 4, 8 for offset into jump table
+	mov r2, rCellWidthInBytes, lsr #1	@ convert 1, 2, 4 to 0, 1, 2
+	add r1, r0, r2, lsl #2			@ convert 0, 1, 2 to 0, 4, 8
 	ldr rOperationsFunction, [r1]
 
-	ldr r0, =cellWidthInBytes
-	ldr r0, [r0]
-	ldr r1, =numberOfCellsInSpreadsheet
-	add r1, #1	@ Make room for result cell
-	mul r0, r1, r0
+	add r1, rNumberOfCellsInSpreadsheet, #1	@ make room for result cell
+	mul a1, r1, rCellWidthInBytes
 	bl malloc
 	ldr r1, =spreadsheetDataBuffer
 	str r0, [r1]
@@ -2809,8 +2822,7 @@ showSetupIntro:
 	mov a1, rOperationsFunction
 	ldr r1, =spreadsheetDataBuffer
 	ldr r1, [r1]
-	ldr r2, =numberOfCellsInSpreadsheet
-	ldr r2, [r2]
+	mov a3, rNumberOfCellsInSpreadsheet
 	bl resetSheet
 
 recalculateSheet:
@@ -2823,8 +2835,7 @@ recalculateSheet:
 	mov a1, rOperationsFunction
 	ldr a2, =spreadsheetDataBuffer
 	ldr a2, [a2]
-	ldr a3, =numberOfCellsInSpreadsheet
-	ldr a3, [a3]
+	mov a3, rNumberOfCellsInSpreadsheet
 	mov a4, rFormula
 	blx v7			@ calculate sheet
 
@@ -2839,10 +2850,8 @@ redisplaySheet:
 	mov a1, rOperationsFunction
 	ldr r1, =spreadsheetDataBuffer
 	ldr r1, [r1]
-	ldr r2, =numberOfCellsInSpreadsheet
-	ldr r2, [r2]
-	ldr r3, =cellWidthInBytes
-	ldr r3, [r3]
+	mov a3, rNumberOfCellsInSpreadsheet
+	mov a4, rCellWidthInBytes
 	bl displaySheet
 
 	ldr r1, =menuModeJumpTable
@@ -2911,9 +2920,8 @@ menuGetCellToEdit:
 	ldr a1, =testMode
 	ldr a1, [a1]
 	push {a1}
-	mov a1, #1	@ lowest acceptable cell number
-	ldr a2, =numberOfCellsInSpreadsheet
-	ldr a2, [a2]	@ highest acceptable cell number
+	mov a1, #1				@ lowest acceptable cell number
+	mov a2, rNumberOfCellsInSpreadsheet	@ highest acceptable
 	bl getCellToEdit
 
 	cmp r1, #inputStatus_acceptedControlCharacter
@@ -2937,8 +2945,7 @@ menuGetNewValueForCell:
 	push {r0}
 	mov a1, rOperationsFunction
 	mov a2, v7	@ cell to edit, left over from menuGetCellToEdit
-	ldr a3, =cellWidthInBytes
-	ldr a3, [a3]
+	mov a3, rCellWidthInBytes
 	mov a4, rPresentation
 	bl getNewValueForCell
 
@@ -2987,8 +2994,7 @@ actionFillRandom:
 	mov a1, rOperationsFunction
 	ldr a2, =spreadsheetDataBuffer
 	ldr a2, [a2]
-	ldr a3, =numberOfCellsInSpreadsheet
-	ldr a3, [a3]
+	mov a3, rNumberOfCellsInSpreadsheet
 	bl randomFill
 	b recalculateSheet
 
@@ -3008,6 +3014,13 @@ actionQuit:
 
 	mov r7, $1		@ exit syscall
 	svc 0			@ wake kernel
+
+	.unreq rMenuMode
+	.unreq rFormula
+	.unreq rPresentation
+	.unreq rOperationsFunction
+	.unreq rCellWidthInBytes
+	.unreq rNumberOfCellsInSpreadsheet
 
 	.end
 
