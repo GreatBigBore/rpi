@@ -2193,9 +2193,9 @@ operations32:
 	pop  {v1 - v4}	@ local variable regs
 
 	rOperationResult	.req r0
-	rOverflowIndicator	.req r1
 	rInputStatus		.req r1
-	rCellContents		.req r2
+	rCellContents		.req r1
+	rOverflowIndicator	.req r2
 	rOperand		.req v1
 	rAccumulator		.req v1
 	rPresentationMode	.req v1
@@ -2233,8 +2233,8 @@ operations32:
 	add r0, rSheetBaseAddress, rCellIndex, lsl #2
 	ldr rCellContents, [r0]
 	adds rOperationResult, rAccumulator, rCellContents
-	movcs rOverflowIndicator, #1	@ carry counts as overflow
-	orrvs rOverflowIndicator, #1	@ overflow counts as overflow
+	orrvs rOverflowIndicator, #1
+	mov r1, rOverflowIndicator	@ for caller
 	b .ops32_epilogue
 
 .ops32_display:
@@ -2247,7 +2247,6 @@ operations32:
 	ldr a1, =.ops32_formatDec	@ default to decimal
 	cmp rPresentationMode, #presentation_hex
 	ldreq a1, =.ops32_formatHex	@ cool arm conditional execution
-	andeq a2, rWordMask		@ also use only bottom hword if hex
 	bl printf
 	b .ops32_epilogue
 
@@ -3042,6 +3041,8 @@ returnToMain:
 actionQuit:
 	ldr r0, =msgByeNow
 	bl printf
+	mov r0, #0
+	bl fflush		@ make sure it's all out, for our test harness
 
 	mov r7, $1		@ exit syscall
 	svc 0			@ wake kernel

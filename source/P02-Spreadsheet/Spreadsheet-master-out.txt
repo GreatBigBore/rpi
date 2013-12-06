@@ -1,6 +1,6 @@
-[37;40m[2J[HGreetings data analyzer.
+[37;40m[2J[HGreetings, data analyzer.
 
-To set up, enter spreadsheet size and data width:
+To set up, enter spreadsheet size and data width.
 Enter the number of cells for the spreadsheet [2, 10], or 'Q' to quit
 -> [A[KUhh... -1? Yuck! Try again!
 -> [A[K[A[KUhh... 0? Yuck! Try again!
@@ -21,7 +21,7 @@ Select data width
 -> [A[K[A[KUhh... 1.5? Yuck! Try again!
 -> [A[K[A[KUhh... -1.5? Yuck! Try again!
 -> [A[K[A[KUhh... 10? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.    0
@@ -41,12 +41,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.    0
@@ -67,7 +67,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.    0
@@ -97,7 +97,7 @@ New value for cell 1
 -> [A[K[A[KUhh... -62.3? Yuck! Try again!
 -> [A[K[A[KUhh... =? Yuck! Try again!
 -> [A[K[A[KUhh... x? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -117,12 +117,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -138,14 +138,14 @@ Enter a selection
 
       Sum:  127
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -165,12 +165,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -186,14 +186,14 @@ Enter a selection
 
       Sum:  127
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $7F
@@ -213,12 +213,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $7F
@@ -234,14 +234,14 @@ Enter a selection
 
       Sum: $7F
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0111_1111
@@ -261,12 +261,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0111_1111
@@ -282,14 +282,14 @@ Enter a selection
 
       Sum: %0111_1111
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -309,12 +309,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -335,7 +335,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -356,7 +356,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -128 to 127
 
 New value for cell 2
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -376,12 +376,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -397,14 +397,14 @@ Enter a selection
 
       Sum:  -67[37;41m[ERROR][37;40m
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $7F
@@ -424,12 +424,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $7F
@@ -445,14 +445,14 @@ Enter a selection
 
       Sum: $BD[37;41m[ERROR][37;40m
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0111_1111
@@ -472,12 +472,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0111_1111
@@ -493,14 +493,14 @@ Enter a selection
 
       Sum: %1011_1101[37;41m[ERROR][37;40m
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -520,12 +520,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -546,7 +546,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -567,7 +567,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -128 to 127
 
 New value for cell 5
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -587,12 +587,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -613,7 +613,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.  127
@@ -634,7 +634,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -128 to 127
 
 New value for cell 1
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.   40
@@ -654,12 +654,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.   40
@@ -675,14 +675,14 @@ Enter a selection
 
       Sum:  119
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -702,12 +702,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -731,7 +731,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -751,12 +751,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -780,7 +780,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -800,12 +800,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -829,7 +829,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -849,12 +849,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -875,7 +875,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -896,7 +896,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter up to 2 (significant) hex digits
 
 New value for cell 8
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -916,12 +916,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -942,7 +942,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -962,12 +962,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -988,7 +988,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1009,7 +1009,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter up to 2 (significant) hex digits
 
 New value for cell 7
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1030,7 +1030,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1051,7 +1051,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter up to 2 (significant) hex digits
 
 New value for cell 6
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1071,12 +1071,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1100,7 +1100,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1120,12 +1120,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1146,7 +1146,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1167,7 +1167,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter up to 2 (significant) hex digits
 
 New value for cell 9
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1187,12 +1187,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1213,7 +1213,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1234,7 +1234,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter up to 2 (significant) hex digits
 
 New value for cell 4
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1254,12 +1254,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1280,7 +1280,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1302,7 +1302,7 @@ Enter up to 2 (significant) hex digits
 
 New value for cell 7
 -> $[A[KUhh... 120? Yuck! Try again!
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1322,12 +1322,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1348,7 +1348,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1370,7 +1370,7 @@ Enter up to 2 (significant) hex digits
 
 New value for cell 3
 -> $[A[KUhh... 125? Yuck! Try again!
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1390,12 +1390,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1416,7 +1416,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1437,7 +1437,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter up to 2 (significant) hex digits
 
 New value for cell 10
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1457,12 +1457,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1494,7 +1494,7 @@ Enter a selection
 -> [A[K[A[KUhh... =? Yuck! Try again!
 -> [A[K[A[KUhh... 100.3? Yuck! Try again!
 -> [A[K[A[KUhh... -72.5? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1514,12 +1514,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1543,7 +1543,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1557,18 +1557,18 @@ Enter a selection
         9. $3F
        10. $80
 
-  Average: $F9[37;41m[ERROR][37;40m
+  Average: $12[37;41m[ERROR][37;40m
 
 Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1582,7 +1582,7 @@ Enter a selection
         9. $3F
        10. $80
 
-  Average: $F9[37;41m[ERROR][37;40m
+  Average: $12[37;41m[ERROR][37;40m
 
 Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 --------------------------------------------------------------------
@@ -1592,7 +1592,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. $28
@@ -1612,12 +1612,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HTo set up, enter spreadsheet size and data width:
+-> [2J[HTo set up, enter spreadsheet size and data width.
 Enter the number of cells for the spreadsheet [2, 10], or 'Q' to quit
 -> 
 Data width options (enter 'Q' to quit):
@@ -1627,7 +1627,7 @@ Data width options (enter 'Q' to quit):
 3. 32 bits - range is [-2147483648, 2147483647]
 
 Select data width
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.      0
@@ -1647,12 +1647,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.      0
@@ -1673,7 +1673,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.      0
@@ -1703,7 +1703,7 @@ New value for cell 1
 -> [A[K[A[KUhh... -62.3? Yuck! Try again!
 -> [A[K[A[KUhh... =? Yuck! Try again!
 -> [A[K[A[KUhh... x? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1723,12 +1723,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1749,7 +1749,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1770,7 +1770,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 2
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1790,12 +1790,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1816,7 +1816,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1837,7 +1837,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 5
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1857,12 +1857,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1883,7 +1883,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.    127
@@ -1904,7 +1904,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 1
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -1924,12 +1924,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -1953,7 +1953,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -1973,12 +1973,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2002,7 +2002,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2022,12 +2022,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2051,7 +2051,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2071,12 +2071,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2097,7 +2097,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2118,7 +2118,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 8
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2138,12 +2138,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2164,7 +2164,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2184,12 +2184,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2210,7 +2210,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2231,7 +2231,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 7
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2252,7 +2252,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2273,7 +2273,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 6
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2293,12 +2293,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2322,7 +2322,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2342,12 +2342,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2368,7 +2368,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2389,7 +2389,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 9
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2409,12 +2409,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2435,7 +2435,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2456,7 +2456,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 4
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2476,12 +2476,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2502,7 +2502,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2523,7 +2523,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 7
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2543,12 +2543,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2569,7 +2569,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2590,7 +2590,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 3
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2610,12 +2610,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2636,7 +2636,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2657,7 +2657,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 10
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2677,12 +2677,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2714,7 +2714,7 @@ Enter a selection
 -> [A[K[A[KUhh... =? Yuck! Try again!
 -> [A[K[A[KUhh... 100.3? Yuck! Try again!
 -> [A[K[A[KUhh... -72.5? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2734,12 +2734,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2763,7 +2763,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2783,12 +2783,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2812,7 +2812,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2832,12 +2832,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2858,7 +2858,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2879,7 +2879,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -32768 to 32767
 
 New value for cell 7
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2899,12 +2899,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2925,7 +2925,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2947,7 +2947,7 @@ Enter an integer from -32768 to 32767
 
 New value for cell 3
 -> [A[KUhh... -54321? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2967,12 +2967,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -2996,7 +2996,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -3016,12 +3016,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -3045,7 +3045,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -3065,12 +3065,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -3094,7 +3094,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 16-bit signed integer mode
 
         1.     40
@@ -3114,12 +3114,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HTo set up, enter spreadsheet size and data width:
+-> [2J[HTo set up, enter spreadsheet size and data width.
 Enter the number of cells for the spreadsheet [2, 10], or 'Q' to quit
 -> 
 Data width options (enter 'Q' to quit):
@@ -3129,7 +3129,7 @@ Data width options (enter 'Q' to quit):
 3. 32 bits - range is [-2147483648, 2147483647]
 
 Select data width
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.           0
@@ -3149,12 +3149,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.           0
@@ -3175,7 +3175,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.           0
@@ -3205,7 +3205,7 @@ New value for cell 1
 -> [A[K[A[KUhh... -946525.364? Yuck! Try again!
 -> [A[K[A[KUhh... +? Yuck! Try again!
 -> [A[K[A[KUhh... qr? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3225,12 +3225,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3251,7 +3251,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3272,7 +3272,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 2
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3292,12 +3292,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3318,7 +3318,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3339,7 +3339,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 5
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3359,12 +3359,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3385,7 +3385,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.       54321
@@ -3406,7 +3406,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 1
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3426,12 +3426,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3455,7 +3455,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3475,12 +3475,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3504,7 +3504,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3524,12 +3524,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3553,7 +3553,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3573,12 +3573,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3599,7 +3599,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3620,7 +3620,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 8
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3640,12 +3640,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3666,7 +3666,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3686,12 +3686,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3712,7 +3712,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3733,7 +3733,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 7
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3754,7 +3754,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3775,7 +3775,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 6
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3795,12 +3795,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3824,7 +3824,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3844,12 +3844,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3870,7 +3870,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3891,7 +3891,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 9
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3911,12 +3911,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3937,7 +3937,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3958,7 +3958,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 4
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -3978,12 +3978,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4004,7 +4004,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4025,7 +4025,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 7
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4045,12 +4045,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4071,7 +4071,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4092,7 +4092,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 3
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4112,12 +4112,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4138,7 +4138,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4159,7 +4159,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 10
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4179,12 +4179,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4216,7 +4216,7 @@ Enter a selection
 -> [A[K[A[KUhh... =? Yuck! Try again!
 -> [A[K[A[KUhh... 100.3? Yuck! Try again!
 -> [A[K[A[KUhh... -72.5? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4236,12 +4236,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4265,7 +4265,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4285,12 +4285,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4314,7 +4314,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4334,12 +4334,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4360,7 +4360,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4381,7 +4381,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 7
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4401,12 +4401,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4427,7 +4427,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4449,7 +4449,7 @@ Enter an integer from -2147483648 to 2147483647
 
 New value for cell 3
 -> [A[KUhh... -4294967296? Yuck! Try again!
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4469,12 +4469,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4498,7 +4498,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4512,18 +4512,18 @@ Enter a selection
         9.          63
        10.        -128
 
-  Average:  -213496188[37;41m[ERROR][37;40m
+  Average:  -213496192[37;41m[ERROR][37;40m
 
 Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4537,7 +4537,7 @@ Enter a selection
         9.          63
        10.        -128
 
-  Average:  -213496188[37;41m[ERROR][37;40m
+  Average:  -213496192[37;41m[ERROR][37;40m
 
 Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 --------------------------------------------------------------------
@@ -4547,7 +4547,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4567,12 +4567,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4596,7 +4596,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4616,12 +4616,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -4637,14 +4637,14 @@ Enter a selection
 
   Maximum:  2147483615
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4664,12 +4664,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4690,7 +4690,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4714,7 +4714,7 @@ New value for cell 3
 -> $[A[KUhh... geed5787? Yuck! Try again!
 -> $[A[K[A[KUhh... feeh5787? Yuck! Try again!
 -> $[A[K[A[KUhh... $feed5787? Yuck! Try again!
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4734,12 +4734,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4763,7 +4763,7 @@ Formula options (enter 'Q' to quit, 'R' to return to the main menu):
 4. Maximum
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4783,12 +4783,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4809,7 +4809,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4830,7 +4830,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter up to 8 (significant) hex digits
 
 New value for cell 4
--> $[2J[HSimple Spreadsheet
+-> $[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4850,12 +4850,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -4871,14 +4871,14 @@ Enter a selection
 
   Minimum: $80123456
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -4898,12 +4898,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -4924,7 +4924,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -4956,7 +4956,7 @@ New value for cell 10
 -> %[A[K[A[KUhh... 1111_1111_1_1010? Yuck! Try again!
 -> %[A[K[A[KUhh... -1011? Yuck! Try again!
 -> %[A[K[A[KUhh... -1101_1001? Yuck! Try again!
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -4976,12 +4976,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -5002,7 +5002,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -5024,7 +5024,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 9
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -5044,12 +5044,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -5070,7 +5070,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 10]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -5092,7 +5092,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 8
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -5112,12 +5112,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0011_0100_1011_1111_0001_0101
@@ -5133,14 +5133,14 @@ Enter a selection
 
   Minimum: %1000_0000_0000_0101_0100_0011_0010_0001
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -5160,12 +5160,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $0034BF15
@@ -5181,14 +5181,14 @@ Enter a selection
 
   Minimum: $80054321
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.     3456789
@@ -5208,12 +5208,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HTo set up, enter spreadsheet size and data width:
+-> [2J[HTo set up, enter spreadsheet size and data width.
 Enter the number of cells for the spreadsheet [2, 10], or 'Q' to quit
 -> 
 Data width options (enter 'Q' to quit):
@@ -5223,7 +5223,7 @@ Data width options (enter 'Q' to quit):
 3. 32 bits - range is [-2147483648, 2147483647]
 
 Select data width
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.    0
@@ -5238,12 +5238,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1.    0
@@ -5254,14 +5254,14 @@ Enter a selection
 
       Sum:    0
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0000_0000
@@ -5276,12 +5276,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0000_0000
@@ -5297,7 +5297,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 5]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0000_0000
@@ -5314,7 +5314,7 @@ Enter up to 8 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 1
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5329,12 +5329,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5350,7 +5350,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 5]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5367,7 +5367,7 @@ Enter up to 8 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 2
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5382,12 +5382,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5403,7 +5403,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 5]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5420,7 +5420,7 @@ Enter up to 8 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 3
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5435,12 +5435,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5456,7 +5456,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 5]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5473,7 +5473,7 @@ Enter up to 8 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 4
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5488,12 +5488,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5509,7 +5509,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 5]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5526,7 +5526,7 @@ Enter up to 8 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 5
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 8-bit signed integer mode
 
         1. %0001_0101
@@ -5541,12 +5541,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HTo set up, enter spreadsheet size and data width:
+-> [2J[HTo set up, enter spreadsheet size and data width.
 Enter the number of cells for the spreadsheet [2, 10], or 'Q' to quit
 -> 
 Data width options (enter 'Q' to quit):
@@ -5556,7 +5556,7 @@ Data width options (enter 'Q' to quit):
 3. 32 bits - range is [-2147483648, 2147483647]
 
 Select data width
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.           0
@@ -5573,12 +5573,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.           0
@@ -5591,14 +5591,14 @@ Enter a selection
 
       Sum:           0
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0000_0000_0000_0000_0000_0000
@@ -5615,12 +5615,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0000_0000_0000_0000_0000_0000
@@ -5638,7 +5638,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0000_0000_0000_0000_0000_0000_0000_0000
@@ -5657,7 +5657,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 1
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5674,12 +5674,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5697,7 +5697,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5716,7 +5716,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 2
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5733,12 +5733,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5756,7 +5756,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5775,7 +5775,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 3
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5792,12 +5792,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5815,7 +5815,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5834,7 +5834,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 4
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5851,12 +5851,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5874,7 +5874,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5893,7 +5893,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 5
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5910,12 +5910,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5933,7 +5933,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5952,7 +5952,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 6
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5969,12 +5969,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -5992,7 +5992,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -6011,7 +6011,7 @@ Enter up to 32 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 7
--> %[2J[HSimple Spreadsheet
+-> %[2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -6028,12 +6028,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. %0111_0101_0100_0011_0000_0001_0010_0011
@@ -6046,14 +6046,14 @@ Enter a selection
 
       Sum: %1110_0000_1010_0001_0110_1110_1111_1011[37;41m[ERROR][37;40m
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $75430123
@@ -6070,12 +6070,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. $75430123
@@ -6088,14 +6088,14 @@ Enter a selection
 
       Sum: $E0A16EFB[37;41m[ERROR][37;40m
 
-Representation options (enter 'Q' to quit, 'R' to return to the main menu):
+Presentation options (enter 'Q' to quit, 'R' to return to the main menu):
 ---------------------------------------------------------------------------
-1. Hexadecimal
+1. Binary
 2. Decimal
-3. Binary
+3. Hexadecimal
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.  1967325475
@@ -6112,12 +6112,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.  1967325475
@@ -6135,7 +6135,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1.  1967325475
@@ -6153,7 +6153,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 1
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. -1967325475
@@ -6170,12 +6170,12 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. -1967325475
@@ -6193,7 +6193,7 @@ Directions (enter 'Q' to quit, 'R' to return to the main menu):
 Select the cell to edit [1, 7]
 
 Enter a selection
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. -1967325475
@@ -6211,7 +6211,7 @@ Directions (enter 'Q' to quit, 'R' to return to cell selection menu):
 Enter an integer from -2147483648 to 2147483647
 
 New value for cell 3
--> [2J[HSimple Spreadsheet
+-> [2J[HSimple spreadsheet
 32-bit signed integer mode
 
         1. -1967325475
@@ -6228,7 +6228,7 @@ Options (enter 'Q' to quit):
 ----------------------------
 1. Edit cell
 2. Change formula
-3. Change data representation
+3. Change data presentation
 4. Reset spreadsheet
 5. Fill cells with random values
 

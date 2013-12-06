@@ -37,10 +37,10 @@ x
 r
 // Change rep mode to hex
 3
-1
+3
 // Change rep mode to bin
 3
-3
+1
 // Change rep mode back to dec
 3
 2
@@ -51,10 +51,10 @@ r
 62
 // Change rep mode to hex
 3
-1
+3
 // Change rep mode to bin
 3
-3
+1
 // Change rep mode back to dec
 3
 2
@@ -68,7 +68,7 @@ r
 40
 // Change rep mode to hex
 3
-1
+3
 // Change formula
 2
 // Average
@@ -412,8 +412,8 @@ x
 4
 // Change to hex rep mode
 3
-1
-// Set cell 3 to $feed5787
+3
+// barf ~4647 Set cell 3 to $feed5787
 1
 3
 geed5787
@@ -427,9 +427,9 @@ $feed5787
 1
 4
 80123456
-// Change rep mode to binary
+// barf ~4833 Change rep mode to binary
 3
-3
+1
 // Set cell 10 to $80054321
 1
 10
@@ -452,9 +452,9 @@ _
 1
 8
 _1100_0111_1010
-// Change rep mode to hex
+// barf ~5095 Change rep mode to hex
 3
-1
+3
 // Change rep mode to dec
 3
 2
@@ -464,7 +464,7 @@ _1100_0111_1010
 1
 // Change rep mode to bin
 3
-3
+1
 // Order values in cells
 1
 1
@@ -487,7 +487,7 @@ _1100_0111_1010
 3
 // Change rep mode to bin
 3
-3
+1
 // Order values in cells
 1
 1
@@ -512,7 +512,7 @@ _1100_0111_1010
 0001_1111_1110_1101_0101_0100_1001_1101
 // Change rep to hex
 3
-1
+3
 // Change rep to dec
 3
 2
