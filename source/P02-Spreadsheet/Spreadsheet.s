@@ -822,7 +822,7 @@ displayGetCellValueHexMenu:
 .L1_formulas:	.word .L1_fSum, .L1_fAverage, .L1_fMinimum, .L1_fMaximum
 
 .L1_msgDataWidth:	.asciz "%d-bit signed integer mode\n\n"
-.L1_msgOverflow:	.asciz "\033[37;41m[ERROR]\033[37;40m"
+.L1_msgOverflow:	.asciz " \033[37;41m[ERROR]\033[37;40m"
 
 .section .text
 .align 3
