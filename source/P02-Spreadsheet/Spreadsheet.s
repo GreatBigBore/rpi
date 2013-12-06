@@ -149,7 +149,7 @@ calcSheetMinMax:
 @	a/v1 operations function
 @	a/v2 spreadsheet base address
 @	a/v3 number of cells in sheet
-@	a/v4 min/max indicator
+@	a/v4 sum/avg indicator
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
@@ -166,6 +166,7 @@ calcSheetSumAverage:
 .L11_loopInit:
 	mov v5, #0	@ accumulator
 	mov v6, #0	@ cell index
+	mov v7, #0	@ overflow indicator
 
 .L11_loopTop:
 	cmp v6, v3	@ end of loop?
@@ -177,9 +178,7 @@ calcSheetSumAverage:
 	mov a4, #operation_accumulate
 	blx v1		@ accumulate sum 
 	mov v5, r0	@ track accumulator
-
-	ldr r0, [fp, #4]	@ r0 -> caller's overflow flag
-	str r1, [r0]		@ set caller's overflow flag
+	orr v7, r1	@ track overflow flag over entire sheet
 
 .L11_loopBottom:
 	add v6, #1
@@ -198,6 +197,9 @@ calcSheetSumAverage:
 	mov a3, v6	@ cell "index" -- just past main sheet is result cell
 	mov a4, #operation_store
 	blx v1		@ store result
+
+	ldr r0, [fp, #4]	@ r0 -> caller's overflow flag
+	str v7, [r0]		@ set caller's overflow flag for entire sheet
 
 .L11_epilogue:
 	pop {v1 - v7}	@ restore caller's locals
@@ -579,8 +581,8 @@ cursorUp:
 
 .L14_msgInstructionsTemplate:
 	.ascii "Enter up to %d binary digits; underscores optional, but "
-	.ascii "complete\r\nnybbles required after each: 11_1111 ok, but "
-	.asciz "not 11_111 or 11_11_1111\r\n"
+	.ascii "complete\nnybbles required after each: 11_1111 ok, but "
+	.asciz "not 11_111 or 11_11_1111\n"
 
 .L14_msgInstructionsLength = . - .L14_msgInstructionsTemplate
 
@@ -647,7 +649,7 @@ displayGetCellValueBinMenu:
 .section .data
 
 .L20_msgInstructionsTemplate:
-	.asciz "Enter an integer from %d to %d\r\n"
+	.asciz "Enter an integer from %d to %d\n"
 
 .L20_msgInstructionsLength = . - .L20_msgInstructionsTemplate
 
@@ -733,7 +735,7 @@ displayGetCellValueDecMenu:
 .section .data
 
 .L21_msgInstructionsTemplate:
-	.asciz "Enter up to %d (significant) hex digits\r\n" 
+	.asciz "Enter up to %d (significant) hex digits\n" 
 
 .L21_msgInstructionsLength = . - .L20_msgInstructionsTemplate
 
@@ -809,7 +811,7 @@ displayGetCellValueHexMenu:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L1_msgSpreadsheetHeader:	.asciz "Simple spreadsheet\r\n"
+.L1_msgSpreadsheetHeader:	.asciz "Simple spreadsheet\n"
 .L1_cellNumber:			.asciz "%9d. "
 
 .L1_msgFormula:	.asciz "%9s: "
@@ -819,8 +821,8 @@ displayGetCellValueHexMenu:
 .L1_fMaximum:	.asciz "Maximum"
 .L1_formulas:	.word .L1_fSum, .L1_fAverage, .L1_fMinimum, .L1_fMaximum
 
-.L1_msgDataWidth:	.asciz "%d-bit signed integer mode\r\n\r\n"
-.L1_msgOverflow:	.asciz " \033[37;41m[ERROR]\033[37;40m"
+.L1_msgDataWidth:	.asciz "%d-bit signed integer mode\n\n"
+.L1_msgOverflow:	.asciz "\033[37;41m[ERROR]\033[37;40m"
 
 .section .text
 .align 3
@@ -931,12 +933,12 @@ divide:
 .section .data
 
 .L12_msgInstructions:
-	.asciz "Directions (enter 'Q' to quit, 'R' to return to the main menu):\r\n"
+	.asciz "Directions (enter 'Q' to quit, 'R' to return to the main menu):\n"
 .L12_msgSeparator:
-	.asciz "---------------------------------------------------------------\r\n"
+	.asciz "---------------------------------------------------------------\n"
 
 .L12_msgSelectCell:
-	.asciz "Select the cell to edit [%d, %d]\r\n"
+	.asciz "Select the cell to edit [%d, %d]\n"
 
 .section .text
 .align 3
@@ -1313,9 +1315,9 @@ getCellValueHex:
 .section .data
 
 .L8_msgInstructions:
-	.asciz "Formula options (enter 'Q' to quit, 'R' to return to the main menu):\r\n"
+	.asciz "Formula options (enter 'Q' to quit, 'R' to return to the main menu):\n"
 .L8_msgSeparator:
-	.asciz "--------------------------------------------------------------------\r\n"
+	.asciz "--------------------------------------------------------------------\n"
 
 .L8_moSum:	.asciz "Sum"
 .L8_moAverage:	.asciz "Average"
@@ -1423,13 +1425,13 @@ getNewValueForCell:
 .section .data
 
 .L9_msgInstructions:
-	.asciz "Presentation options (enter 'Q' to quit, 'R' to return to the main menu):\r\n"
+	.asciz "Presentation options (enter 'Q' to quit, 'R' to return to the main menu):\n"
 .L9_msgSeparator:
-	.asciz "---------------------------------------------------------------------------\r\n"
+	.asciz "---------------------------------------------------------------------------\n"
 
 .L9_moBinary:	.asciz "Binary"
 .L9_moDecimal:	.asciz "Decimal"
-.L9_moHex:	.asciz "Hex"
+.L9_moHex:	.asciz "Hexadecimal"
 
 .L9_menuOptions: .word .L9_moBinary, .L9_moDecimal, .L9_moHex
 .equ .L9_menuOptionsCount, 3
@@ -1470,13 +1472,13 @@ getPresentation:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L5_msgInstructions:	.asciz "Options (enter 'Q' to quit):\r\n"
-.L5_msgSeparator:	.asciz "----------------------------\r\n"
+.L5_msgInstructions:	.asciz "Options (enter 'Q' to quit):\n"
+.L5_msgSeparator:	.asciz "----------------------------\n"
 
 mo_editCell:		.asciz "Edit cell"
 mo_changeFormula:	.asciz "Change formula"
 mo_changeDataRep:	.asciz "Change data presentation"
-mo_resetSpreadsheet:	.asciz "Reset sheet"
+mo_resetSpreadsheet:	.asciz "Reset spreadsheet"
 mo_randomValues:	.asciz "Fill cells with random values"
 
 menuOptions: .word mo_editCell, mo_changeFormula, mo_changeDataRep
@@ -1594,6 +1596,18 @@ getMenuSelection:
 	bl sscanf
 
 	ldr a1, =.L2_getsBuffer
+
+.L2_skippingWhitespace:
+	ldrb r1, [a1]
+	cmp r1, #' '
+	bhi .L2_foundNonWhitespace
+	cmp r1, #0	@ null terminator--end of input
+	beq .L2_yuck	@ nothing but whitespace? yuck!
+	add a1, #1
+	b .L2_skippingWhitespace
+
+.L2_foundNonWhitespace:
+	@ a1 -> first usable char in gets buffer
 	ldr a2, =.L2_scanf
 	ldr a3, =.L2_scanfResult
 	ldr a3, [a3]
@@ -1652,10 +1666,10 @@ getMenuSelection:
 
 .section .data
 
-msgEnterSpreadsheetSize:	.asciz "Enter the number of cells for the spreadsheet [2, 10], or 'Q' to quit\r\n"
-msgDataWidthOptions:		.asciz "Data width options (enter 'Q' to quit):\r\n"
-msgSeparator:			.asciz "---------------------------------------\r\n"
-msgSelectDataWidth:		.asciz "\r\nSelect data width\r\n"
+msgEnterSpreadsheetSize:	.asciz "Enter the number of cells for the spreadsheet [2, 10], or 'Q' to quit\n"
+msgDataWidthOptions:		.asciz "Data width options (enter 'Q' to quit):\n"
+msgSeparator:			.asciz "---------------------------------------\n"
+msgSelectDataWidth:		.asciz "\nSelect data width\n"
 
 dwo8:	.asciz "8 bits - range is [-128, 127]"
 dwo16:	.asciz "16 bits - range is [-32768, 32767]"
@@ -1785,8 +1799,8 @@ matchInputToResult:
 	b .L24_skipLeadingZeros
 	
 .L24_foundMeatOfUserInput:
-	ldr a1, =.L24_sprintfBuffer
-	mov a2, r0
+	mov a2, r0			@ first usable char of original input
+	ldr a1, =.L24_sprintfBuffer	@ result of sprintf using that input
 	bl strcmp
 
 	mov r1, #inputStatus_inputOk
@@ -1816,7 +1830,7 @@ matchInputToResult:
 @ newline
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
-msgNewline: .asciz "\r\n"
+msgNewline: .asciz "\n"
 
 .section .text
 newline:
@@ -2082,7 +2096,7 @@ operations16:
 
 .ops16_displayBin:
 	mov a1, rCellContents	@ a1 = data to display
-	mov a2, #1		@ a2 = number of bytes
+	mov a2, #2		@ a2 = number of bytes
 	bl showNumberAsBin
 	b .ops16_epilogue
 
@@ -2181,7 +2195,7 @@ operations32:
 	rOperationResult	.req r0
 	rOverflowIndicator	.req r1
 	rInputStatus		.req r1
-	rCellContents		.req r1
+	rCellContents		.req r2
 	rOperand		.req v1
 	rAccumulator		.req v1
 	rPresentationMode	.req v1
@@ -2219,7 +2233,8 @@ operations32:
 	add r0, rSheetBaseAddress, rCellIndex, lsl #2
 	ldr rCellContents, [r0]
 	adds rOperationResult, rAccumulator, rCellContents
-	movcs rOverflowIndicator, #1	@ set overflow flag if necessary
+	movcs rOverflowIndicator, #1	@ carry counts as overflow
+	orrvs rOverflowIndicator, #1	@ overflow counts as overflow
 	b .ops32_epilogue
 
 .ops32_display:
@@ -2238,7 +2253,7 @@ operations32:
 
 .ops32_displayBin:
 	mov a1, rCellContents	@ a1 = data to display
-	mov a2, #1		@ a2 = number of bytes
+	mov a2, #4		@ a2 = number of bytes
 	bl showNumberAsBin
 	b .ops32_epilogue
 
@@ -2304,7 +2319,7 @@ operations32:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-msgEnterSelection:	.asciz "Enter a selection\r\n"
+msgEnterSelection:	.asciz "Enter a selection\n"
 msgPrompt:		.asciz "-> "
 
 .section .text
@@ -2384,7 +2399,7 @@ resetSheet:
 	cmp r4, r8
 	bhs .L4_loopExit
 
-	mov r0, #-27	@ data to store
+	mov r0, #0	@ data to store
 	mov r1, r7	@ base address of array
 	mov r2, r4	@ index of target cell
 	mov r3, #operation_store
@@ -2409,13 +2424,13 @@ resetSheet:
 
 .L15_msgDirections:
 	.ascii "Directions (enter 'Q' to quit, 'R' to return "
-	.asciz "to cell selection menu):\r\n"
+	.asciz "to cell selection menu):\n"
 
 .L15_msgSeparator:
 	.ascii "---------------------------------------------"
-	.asciz "------------------------\r\n"
+	.asciz "------------------------\n"
 
-.L15_msgNewValue: .asciz "\r\nNew value for cell %d\r\n-> "
+.L15_msgNewValue: .asciz "\nNew value for cell %d\n-> "
 
 .section .text
 .align 3
@@ -2551,7 +2566,7 @@ setColors:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L18_yuckMessage:	.asciz "Uhh... %s? Yuck! Try again!\r\n-> "
+.L18_yuckMessage:	.asciz "Uhh... %s? Yuck! Try again!\n-> "
 
 .section .text
 .align 3
@@ -2591,8 +2606,8 @@ sayYuck:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-msgListElement: .asciz "%d. %s\r\n"
-.L3_debug1: .asciz "r4 = 0x%08X, r5 = 0x%08X, r6 = 0x%08X\r\n"
+msgListElement: .asciz "%d. %s\n"
+.L3_debug1: .asciz "r4 = 0x%08X, r5 = 0x%08X, r6 = 0x%08X\n"
 
 .section .text
 
@@ -2732,9 +2747,9 @@ formulaJumpTable:
 		.word calcSheetMinMax
 		.word calcSheetMinMax
 
-msgGreeting:	.asciz "Greetings, data analyzer.\r\n\r\n"
-msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\r\n"
-msgByeNow:	.asciz "'Bye now!\r\n"
+msgGreeting:	.asciz "Greetings, data analyzer.\n\n"
+msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\n"
+msgByeNow:	.asciz "'Bye now!\n"
 
 .section .text
 
@@ -2805,7 +2820,9 @@ showSetupIntro:
 
 recalculateSheet:
 	ldr r0, =overflowFlag
-	push {r0}
+	mov r1, #0
+	str r1, [r0]	@ clear overflow flag
+	push {r0}	@ pass address of overflow flag to calc function
 	ldr r0, =formula
 	ldr r0, [r0]
 	ldr r1, =formulaJumpTable
