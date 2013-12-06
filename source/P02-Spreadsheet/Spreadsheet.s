@@ -85,7 +85,7 @@ calcSheetMinMax:
 	mov fp, sp
 
 	push {lr}	@ preserve return address
-	push {v1 - v6}	@ always preserve caller's locals
+	push {v1 - v7}	@ always preserve caller's locals
 
 	push {a1 - a4}	@ Transfer scratch regs to...
 	pop  {v1 - v4}	@ local variable regs
@@ -130,7 +130,7 @@ calcSheetMinMax:
 	mov a4, #operation_store
 	blx v1		@ store result
 
-	pop {v1 - v6}	@ restore caller's locals
+	pop {v1 - v7}	@ restore caller's locals
 	pop {lr}	@ restore return address
 
 	mov sp, fp	@ restore caller's stack frame
@@ -832,7 +832,7 @@ displaySheet:
 	mov fp, sp
 
 	push {lr}
-	push {v1 - v6}
+	push {v1 - v7}
 
 	push {a1 - a4}	@ transfer argument registers...
 	pop {v1 - v4}	@ to local variable registers
@@ -896,7 +896,7 @@ displaySheet:
 	bl newline
 	bl newline
 
-	pop {v1 - v6}
+	pop {v1 - v7}
 	pop {lr}
 
 	mov sp, fp
@@ -2355,7 +2355,7 @@ promptForSelection:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 randomFill:
 	push {lr}
-	push {v1 - v6}
+	push {v1 - v7}
 
 	push {a1 - a3}	@ Transfer arguments to...
 	pop  {v1 - v3}	@ local variables
@@ -2386,7 +2386,7 @@ randomFill:
 
 .L6_loopExit:
 
-	pop {v1 - v6}
+	pop {v1 - v7}
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2399,7 +2399,7 @@ randomFill:
 
 resetSheet:
 	push {lr}
-	push {r4 - r8}
+	push {v1 - v7}
 
 	@ Is there a better way to copy registers?
 	push {r0 - r2}
@@ -2423,7 +2423,7 @@ resetSheet:
 	b .L4_top
 
 .L4_loopExit:
-	pop {r4 - r8}
+	pop {v1 - v7}
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2715,15 +2715,8 @@ showNumberAsBin:
 .equ presentation_hex, 2
 
 testMode:			.word 0
-numberOfCellsInSpreadsheet:	.word 0
-cellWidthInBytes:		.word 0
-formula:			.word 0
-presentation:			.word 0
-menuMode:			.word 0
 cellToEdit:			.word 0
 overflowFlag:			.word 0
-spreadsheetDataBuffer:		.word 0
-operationsFunction:		.word 0
 
 .align 8
 
@@ -2774,6 +2767,7 @@ msgArg:		.asciz "r0 = 0x%08X; r1 = %s"
 	rOperationsFunction		.req v4
 	rCellWidthInBytes		.req v5
 	rNumberOfCellsInSpreadsheet	.req v6
+	rSpreadsheetAddress		.req v7
 
 main:
 	mov r1, #1	@ default to test mode
@@ -2816,12 +2810,10 @@ showSetupIntro:
 	add r1, rNumberOfCellsInSpreadsheet, #1	@ make room for result cell
 	mul a1, r1, rCellWidthInBytes
 	bl malloc
-	ldr r1, =spreadsheetDataBuffer
-	str r0, [r1]
+	mov rSpreadsheetAddress, r0
 
 	mov a1, rOperationsFunction
-	ldr r1, =spreadsheetDataBuffer
-	ldr r1, [r1]
+	mov a2, rSpreadsheetAddress
 	mov a3, rNumberOfCellsInSpreadsheet
 	bl resetSheet
 
@@ -2831,13 +2823,12 @@ recalculateSheet:
 	str r1, [r0]	@ clear overflow flag
 	push {r0}	@ pass address of overflow flag to calc function
 	ldr r0, =formulaJumpTable
-	ldr v7, [r0, rFormula, lsl #2]	@ calc function for formula
+	ldr ip, [r0, rFormula, lsl #2]	@ calc function for formula
 	mov a1, rOperationsFunction
-	ldr a2, =spreadsheetDataBuffer
-	ldr a2, [a2]
+	mov a2, rSpreadsheetAddress
 	mov a3, rNumberOfCellsInSpreadsheet
 	mov a4, rFormula
-	blx v7			@ calculate sheet
+	blx ip			@ calculate sheet
 
 redisplaySheet:
 	bl clearScreen 
@@ -2848,8 +2839,7 @@ redisplaySheet:
 	ldr r0, [r0]
 	push {r0}
 	mov a1, rOperationsFunction
-	ldr r1, =spreadsheetDataBuffer
-	ldr r1, [r1]
+	mov a2, rSpreadsheetAddress
 	mov a3, rNumberOfCellsInSpreadsheet
 	mov a4, rCellWidthInBytes
 	bl displaySheet
@@ -2932,7 +2922,8 @@ menuGetCellToEdit:
 	b returnToMain	@ control char not q, must be r
 
 gotCellToEdit:
-	mov v7, r0		@ v7 = cell to edit
+	ldr r1, =cellToEdit
+	str r0, [r1]
 	mov rMenuMode, #menuMode_getNewValueForCell
 	b redisplaySheet
 
@@ -2944,7 +2935,8 @@ menuGetNewValueForCell:
 	ldr r0, [r0]
 	push {r0}
 	mov a1, rOperationsFunction
-	mov a2, v7	@ cell to edit, left over from menuGetCellToEdit
+	ldr a2, =cellToEdit
+	ldr a2, [a2]
 	mov a3, rCellWidthInBytes
 	mov a4, rPresentation
 	bl getNewValueForCell
@@ -2957,9 +2949,10 @@ menuGetNewValueForCell:
 	b actionEditCell @ control char not 'q', so 'r' -- return to cell select
 
 gotNewValueForCell:	@ r0/a1 = new value for cell
-	ldr a2, =spreadsheetDataBuffer
-	ldr a2, [a2]
-	sub a3, v7, #1	@ cell to edit, zero-based
+	mov a2, rSpreadsheetAddress
+	ldr a3, =cellToEdit
+	ldr a3, [a3]
+	sub a3, #1	@ cell to edit, zero-based
 	mov a4, #operation_store
 	blx rOperationsFunction
 	b recalculateAndReturnToMain
@@ -2984,16 +2977,14 @@ actionChangePresentation:
 	b redisplaySheet
 
 actionResetSpreadsheet:
-	ldr a1, =spreadsheetDataBuffer
-	ldr a1, [a1]
+	mov a1, rSpreadsheetAddress
 	bl free
 	bl clearScreen
 	b showSetupIntro
 
 actionFillRandom:
 	mov a1, rOperationsFunction
-	ldr a2, =spreadsheetDataBuffer
-	ldr a2, [a2]
+	mov a2, rSpreadsheetAddress
 	mov a3, rNumberOfCellsInSpreadsheet
 	bl randomFill
 	b recalculateSheet
@@ -3021,6 +3012,7 @@ actionQuit:
 	.unreq rOperationsFunction
 	.unreq rCellWidthInBytes
 	.unreq rNumberOfCellsInSpreadsheet
+	.unreq rSpreadsheetAddress
 
 	.end
 
