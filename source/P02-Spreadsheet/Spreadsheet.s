@@ -263,8 +263,8 @@ convertBitStringToNumber:
 	cmp rLoopCounter, rNumberOfBitsToCapture
 	bhs .L17_loopExit
 
-	add r0, rStringToConvert, rLoopCounter
-	ldrb rDigitTempStore, [r0]	@ get current digit from string
+					@ get current digit from string
+	ldrb rDigitTempStore, [rStringToConvert, rLoopCounter]
 
 	cmp rDigitTempStore, #'_'
 	bne .L17_doneWithUnderscoreCheck
@@ -432,7 +432,8 @@ convertHexStringToNumber:
 	cmp rFirstSigfigFound, #1	@ ignore all leading zeros
 	beq .L23_significantDigit
 
-	add rStringToConvert, #1	@ skip the leading zero 
+	add rStringToConvert, #1		@ skip the leading zero 
+	sub rNumberOfNybblesToCapture, #1	@ one less digit to capture
 	b .L23_loopTop
 
 .L23_significantDigit:
