@@ -2752,8 +2752,11 @@ msgByeNow:	.asciz "'Bye now!\n"
 msgArg:		.asciz "r0 = 0x%08X; r1 = %s"
 
 .section .text
+.global main
 
-	.global main
+	rMenuMode	.req v1
+	rFormula	.req v2
+	rPresentation	.req v3
 
 main:
 	mov r1, #1	@ default to test mode
@@ -2774,17 +2777,9 @@ greet:
 	bl printf
 
 showSetupIntro:
-	mov r0, #menuMode_main
-	ldr r1, =menuMode
-	str r0, [r1]
-
-	mov r0, #formula_sum
-	ldr r1, =formula
-	str r0, [r1]
-
-	mov r0, #presentation_dec
-	ldr r1, =presentation
-	str r0, [r1]
+	mov rMenuMode, #menuMode_main
+	mov rFormula, #formula_sum
+	mov rPresentation, #presentation_dec
 
 	ldr r0, =msgSetupIntro
 	bl printf
@@ -2825,30 +2820,22 @@ recalculateSheet:
 	mov r1, #0
 	str r1, [r0]	@ clear overflow flag
 	push {r0}	@ pass address of overflow flag to calc function
-	ldr r0, =formula
-	ldr r0, [r0]
-	ldr r1, =formulaJumpTable
-	add r0, r1, r0, lsl #2
-	ldr v1, [r0]		@ v1 -> calculation function for formula 
+	ldr r0, =formulaJumpTable
+	ldr v7, [r0, rFormula, lsl #2]	@ calc function for formula
 	ldr a1, =operationsFunction
 	ldr a1, [a1]
 	ldr a2, =spreadsheetDataBuffer
 	ldr a2, [a2]
 	ldr a3, =numberOfCellsInSpreadsheet
 	ldr a3, [a3]
-	ldr a4, =formula
-	ldr a4, [a4]
-	blx v1			@ calculate sheet
+	mov a4, rFormula
+	blx v7			@ calculate sheet
 
 redisplaySheet:
 	bl clearScreen 
 
-	ldr r0, =presentation
-	ldr r0, [r0]
-	push {r0}
-	ldr r0, =formula
-	ldr r0, [r0]
-	push {r0}
+	push {rPresentation}
+	push {rFormula}
 	ldr r0, =overflowFlag
 	ldr r0, [r0]
 	push {r0}
@@ -2862,12 +2849,9 @@ redisplaySheet:
 	ldr r3, [r3]
 	bl displaySheet
 
-	ldr r0, =menuMode
-	ldr r0, [r0]		@ r0 = menu mode
 	ldr r1, =menuModeJumpTable
-	add r1, r1, r0, lsl #2	@ r1 -> jump target for current menu
-	ldr r0, [r1]		@ r0 = jump target
-	bx r0
+	ldr r0, [r1, rMenuMode, lsl #2]
+	bx r0	@ jump to handler for current menu mode
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Main Menu
@@ -2900,9 +2884,7 @@ menuChangeFormula:
 	beq returnToMain
 
 setFormula:
-	sub r0, #1
-	ldr r1, =formula
-	str r0, [r1]
+	sub rFormula, r0, #1
 	b recalculateAndReturnToMain 
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2923,9 +2905,7 @@ menuChangePresentation:
 	beq returnToMain
 
 setPresentation:
-	sub r0, #1
-	ldr r1, =presentation
-	str r0, [r1]
+	sub rPresentation, r0, #1
 	b returnToMain
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2948,10 +2928,8 @@ menuGetCellToEdit:
 	b returnToMain	@ control char not q, must be r
 
 gotCellToEdit:
-	mov v1, r0		@ v1 = cell to edit
-	ldr r1, =menuMode
-	mov r2, #menuMode_getNewValueForCell
-	str r2, [r1]
+	mov v7, r0		@ v7 = cell to edit
+	mov rMenuMode, #menuMode_getNewValueForCell
 	b redisplaySheet
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2963,11 +2941,10 @@ menuGetNewValueForCell:
 	push {r0}
 	ldr a1, =operationsFunction
 	ldr a1, [a1]
-	mov a2, v1	@ cell to edit, left over from menuGetCellToEdit
+	mov a2, v7	@ cell to edit, left over from menuGetCellToEdit
 	ldr a3, =cellWidthInBytes
 	ldr a3, [a3]
-	ldr a4, =presentation
-	ldr a4, [a4]
+	mov a4, rPresentation
 	bl getNewValueForCell
 
 	cmp r1, #inputStatus_acceptedControlCharacter
@@ -2980,11 +2957,11 @@ menuGetNewValueForCell:
 gotNewValueForCell:	@ r0/a1 = new value for cell
 	ldr a2, =spreadsheetDataBuffer
 	ldr a2, [a2]
-	sub a3, v1, #1	@ cell to edit, zero-based
+	sub a3, v7, #1	@ cell to edit, zero-based
 	mov a4, #operation_store
-	ldr v1, =operationsFunction
-	ldr v1, [v1]
-	blx v1
+	ldr v7, =operationsFunction
+	ldr v7, [v7]
+	blx v7
 	b recalculateAndReturnToMain
 
 actionSwitch:
@@ -2995,21 +2972,15 @@ actionSwitch:
 	bx r0
 
 actionEditCell:
-	ldr r0, =menuMode
-	mov r1, #menuMode_getCellToEdit
-	str r1, [r0]
+	mov rMenuMode, #menuMode_getCellToEdit
 	b redisplaySheet
 
 actionChangeFormula:
-	ldr r0, =menuMode
-	mov r1, #menuMode_changeFormula
-	str r1, [r0]
+	mov rMenuMode, #menuMode_changeFormula
 	b redisplaySheet
 
 actionChangePresentation:
-	ldr r0, =menuMode
-	mov r1, #menuMode_changePresentation
-	str r1, [r0]
+	mov rMenuMode, #menuMode_changePresentation
 	b redisplaySheet
 
 actionResetSpreadsheet:
@@ -3030,15 +3001,11 @@ actionFillRandom:
 	b recalculateSheet
 
 recalculateAndReturnToMain:
-	ldr r0, =menuMode
-	mov r1, #menuMode_main
-	str r1, [r0]
+	mov rMenuMode, #menuMode_main
 	b recalculateSheet
 
 returnToMain:
-	ldr r0, =menuMode
-	mov r1, #menuMode_main
-	str r1, [r0]
+	mov rMenuMode, #menuMode_main
 	b redisplaySheet
 
 actionQuit:
