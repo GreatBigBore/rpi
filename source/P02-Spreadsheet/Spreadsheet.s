@@ -2754,9 +2754,10 @@ msgArg:		.asciz "r0 = 0x%08X; r1 = %s"
 .section .text
 .global main
 
-	rMenuMode	.req v1
-	rFormula	.req v2
-	rPresentation	.req v3
+	rMenuMode		.req v1
+	rFormula		.req v2
+	rPresentation		.req v3
+	rOperationsFunction	.req v4
 
 main:
 	mov r1, #1	@ default to test mode
@@ -2765,7 +2766,7 @@ main:
 	ldr r0, =testMode
 	str r1, [r0]	@ remember which mode
 
-	mov r0, #0
+	mov a1, #0
 	bl time
 	bl srand
 
@@ -2773,7 +2774,7 @@ main:
 	bl clearScreen
 
 greet:
-	ldr r0, =msgGreeting
+	ldr a1, =msgGreeting
 	bl printf
 
 showSetupIntro:
@@ -2781,7 +2782,7 @@ showSetupIntro:
 	mov rFormula, #formula_sum
 	mov rPresentation, #presentation_dec
 
-	ldr r0, =msgSetupIntro
+	ldr a1, =msgSetupIntro
 	bl printf
 
 	bl getSpreadsheetSpecs 
@@ -2794,9 +2795,7 @@ showSetupIntro:
 	ldr r2, [r2]
 	lsr r2, #1		@ convert 1, 2, 4 to 0, 1, 2
 	add r1, r0, r2, lsl #2	@ convert 0, 1, 2 to 0, 4, 8 for offset into jump table
-	ldr r1, [r1]
-	ldr r0, =operationsFunction
-	str r1, [r0]
+	ldr rOperationsFunction, [r1]
 
 	ldr r0, =cellWidthInBytes
 	ldr r0, [r0]
@@ -2807,8 +2806,7 @@ showSetupIntro:
 	ldr r1, =spreadsheetDataBuffer
 	str r0, [r1]
 
-	ldr r0, =operationsFunction
-	ldr r0, [r0]
+	mov a1, rOperationsFunction
 	ldr r1, =spreadsheetDataBuffer
 	ldr r1, [r1]
 	ldr r2, =numberOfCellsInSpreadsheet
@@ -2822,8 +2820,7 @@ recalculateSheet:
 	push {r0}	@ pass address of overflow flag to calc function
 	ldr r0, =formulaJumpTable
 	ldr v7, [r0, rFormula, lsl #2]	@ calc function for formula
-	ldr a1, =operationsFunction
-	ldr a1, [a1]
+	mov a1, rOperationsFunction
 	ldr a2, =spreadsheetDataBuffer
 	ldr a2, [a2]
 	ldr a3, =numberOfCellsInSpreadsheet
@@ -2839,8 +2836,7 @@ redisplaySheet:
 	ldr r0, =overflowFlag
 	ldr r0, [r0]
 	push {r0}
-	ldr r0, =operationsFunction
-	ldr r0, [r0]
+	mov a1, rOperationsFunction
 	ldr r1, =spreadsheetDataBuffer
 	ldr r1, [r1]
 	ldr r2, =numberOfCellsInSpreadsheet
@@ -2939,8 +2935,7 @@ menuGetNewValueForCell:
 	ldr r0, =testMode
 	ldr r0, [r0]
 	push {r0}
-	ldr a1, =operationsFunction
-	ldr a1, [a1]
+	mov a1, rOperationsFunction
 	mov a2, v7	@ cell to edit, left over from menuGetCellToEdit
 	ldr a3, =cellWidthInBytes
 	ldr a3, [a3]
@@ -2959,9 +2954,7 @@ gotNewValueForCell:	@ r0/a1 = new value for cell
 	ldr a2, [a2]
 	sub a3, v7, #1	@ cell to edit, zero-based
 	mov a4, #operation_store
-	ldr v7, =operationsFunction
-	ldr v7, [v7]
-	blx v7
+	blx rOperationsFunction
 	b recalculateAndReturnToMain
 
 actionSwitch:
@@ -2991,8 +2984,7 @@ actionResetSpreadsheet:
 	b showSetupIntro
 
 actionFillRandom:
-	ldr a1, =operationsFunction
-	ldr a1, [a1]
+	mov a1, rOperationsFunction
 	ldr a2, =spreadsheetDataBuffer
 	ldr a2, [a2]
 	ldr a3, =numberOfCellsInSpreadsheet
