@@ -8,7 +8,7 @@ if [ -f ../../exec/$1 ]; then
 	rm ../../exec/$1
 fi
 
-./rmake $1
+../rmake $1
 
 if [ ! -f ../../exec/$1 ]; then
 	exit 1
