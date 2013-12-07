@@ -1444,7 +1444,10 @@ getMenuSelection:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getSpreadsheetSpecs
 @
-@ returns
+@ stack:
+@	+4 test mode
+@
+@ returns:
 @	r0 number of cells in spreadsheet
 @	r1 cell width in bytes
 @	r2 input status
@@ -1481,8 +1484,7 @@ getSpreadsheetSpecs:
 	ldr r0, =msgPrompt
 	bl printf
 
-	ldr r0, =testMode
-	ldr r0, [r0]
+	ldr r0, [fp, #4]
 	push {r0}
 	mov a1, #minimumCellCount
 	mov a2, #maximumCellCount
@@ -1510,8 +1512,7 @@ getSpreadsheetSpecs:
 	ldr r0, =msgPrompt
 	bl printf
 
-	ldr r0, =testMode
-	ldr r0, [r0]
+	ldr r0, [fp, #4]
 	push {r0}
 	mov a1, #1
 	mov a2, #numberOfDataWidthOptions
@@ -1536,7 +1537,7 @@ epilogue:
 	.unreq rNumberOfCells
 	.unreq rCellWidthInBytes
 
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2463,11 +2464,16 @@ terminalCommand:
 .equ presentation_dec, 1
 .equ presentation_hex, 2
 
-testMode:			.word 0
-cellToEdit:			.word 0
-overflowFlag:			.word 0
+.L0_localVariables:
 
-.align 8
+testMode	= .-.L0_localVariables; .word 0
+@cellToEdit	= .-.L0_localVariables; .word 0
+overflowFlag	= .-.L0_localVariables; .word 0
+
+cellToEdit: .word 0
+msgGreeting:	.asciz "Greetings, data analyzer.\n\n"
+msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\n"
+msgByeNow:	.asciz "'Bye now!\n"
 
 actionsJumpTable:
 		.word actionEditCell
@@ -2502,10 +2508,6 @@ formulaJumpTable:
 		.word calcSheetMinMax
 		.word calcSheetMinMax
 
-msgGreeting:	.asciz "Greetings, data analyzer.\n\n"
-msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\n"
-msgByeNow:	.asciz "'Bye now!\n"
-
 .section .text
 .global main
 
@@ -2518,11 +2520,12 @@ msgByeNow:	.asciz "'Bye now!\n"
 	rSpreadsheetAddress		.req v7
 
 main:
+	ldr fp, =.L0_localVariables	@ setup local stack frame
+
 	mov r1, #1	@ default to test mode
-	cmp r0, #1
+	cmp r0, #1	@ number of cmdline args
 	moveq r1, #0	@ if only one cmdline arg (prog name), not test mode
-	ldr r0, =testMode
-	str r1, [r0]	@ remember which mode
+	str r1, [fp, #testMode]
 
 	mov a1, #0
 	bl time
@@ -2543,6 +2546,8 @@ showSetupIntro:
 	ldr a1, =msgSetupIntro
 	bl printf
 
+	ldr r0, [fp, #testMode]
+	push {r0}
 	bl getSpreadsheetSpecs
 	mov rNumberOfCellsInSpreadsheet, r1
 	mov rCellWidthInBytes, r2
@@ -2566,9 +2571,9 @@ showSetupIntro:
 	bl resetSheet
 
 recalculateSheet:
-	ldr r0, =overflowFlag
 	mov r1, #0
-	str r1, [r0]	@ clear overflow flag
+	str r1, [fp, #overflowFlag]
+	add r0, fp, #overflowFlag
 	push {r0}	@ pass address of overflow flag to calc function
 	ldr r0, =formulaJumpTable
 	ldr ip, [r0, rFormula, lsl #2]	@ calc function for formula
@@ -2581,8 +2586,7 @@ recalculateSheet:
 redisplaySheet:
 	mTerminalCommand #terminalCommand_clearScreen
 
-	ldr r0, =overflowFlag
-	ldr r0, [r0]
+	ldr r0, [fp, #overflowFlag]
 	push {r0}
 	push {rFormula}
 	push {rPresentation}
@@ -2600,8 +2604,7 @@ redisplaySheet:
 @ Main Menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuMain:
-	ldr r0, =testMode
-	ldr r0, [r0]
+	ldr r0, [fp, #testMode]
 	push {r0}
 	bl getMainSelection
 
@@ -2613,9 +2616,8 @@ menuMain:
 @ Change Formula Menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuChangeFormula:
-	ldr a1, =testMode
-	ldr a1, [a1]
-	push {a1}
+	ldr r0, [fp, #testMode]
+	push {r0}
 	bl getFormula
 
 	cmp r1, #inputStatus_acceptedControlCharacter
@@ -2634,9 +2636,8 @@ setFormula:
 @ Change data presentation menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuChangePresentation:
-	ldr a1, =testMode
-	ldr a1, [a1]
-	push {a1}
+	ldr r0, [fp, #testMode]
+	push {r0}
 	bl getPresentation
 
 	cmp r1, #inputStatus_acceptedControlCharacter
@@ -2655,9 +2656,8 @@ setPresentation:
 @ Get cell to edit menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuGetCellToEdit:
-	ldr a1, =testMode
-	ldr a1, [a1]
-	push {a1}
+	ldr r0, [fp, #testMode]
+	push {r0}
 	mov a1, #1				@ lowest acceptable cell number
 	mov a2, rNumberOfCellsInSpreadsheet	@ highest acceptable
 	bl getCellToEdit
@@ -2679,8 +2679,7 @@ gotCellToEdit:
 @ Get new value for cell menu
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 menuGetNewValueForCell:
-	ldr r0, =testMode
-	ldr r0, [r0]
+	ldr r0, [fp, #testMode]
 	push {r0}
 	mov a1, rOperationsFunction
 	ldr a2, =cellToEdit
