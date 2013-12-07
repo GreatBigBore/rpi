@@ -68,6 +68,37 @@
 .equ inputBufferSize, 100
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Some macros to make the code a little bit easier to read
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.macro mFunctionSetup
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+.endm
+
+.macro mFunctionBreakdown argumentCount
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	.if \argumentCount
+	add sp, #\argumentCount * 4
+	.endif
+.endm
+
+.macro mTerminalCommand operation
+	mov a1, \operation
+	bl terminalCommand
+.endm
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ calcSheetMinMax
 @
 @ stack:
@@ -85,14 +116,7 @@
 .section .text
 
 calcSheetMinMax:
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	cmp v4, #formula_minimum
 	beq .L7_initForMin
@@ -134,13 +158,8 @@ calcSheetMinMax:
 	mov a4, #operation_store
 	blx v1		@ store result
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
 	bx lr		@ return
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -815,12 +834,10 @@ displaySheet:
 
 	ldr a1, =.L1_msgSpace
 	bl printf
-	mov a1, #terminalCommand_colorsError
-	bl terminalCommand
+	mTerminalCommand #terminalCommand_colorsError
 	ldr a1, =.L1_msgOverflow
 	bl printf
-	mov a1, #terminalCommand_colorsNormal
-	bl terminalCommand
+	mTerminalCommand #terminalCommand_colorsNormal
 
 .L1_checkedOverflow:
 	bl newline
@@ -2493,18 +2510,14 @@ sayYuck:
 	push {a1 - a4}	@ Transfer argument registers...
 	pop  {v1 - v4}	@ to local variable registers
 
-	mov a1, #terminalCommand_cursorUp
-	bl terminalCommand
-	mov a1, #terminalCommand_clearToEOL
-	bl terminalCommand
+	mTerminalCommand #terminalCommand_cursorUp
+	mTerminalCommand #terminalCommand_clearToEOL
 
 	cmp v3, #1	@ skip second cursor up?
 	beq .L18_cursingComplete
 
-	mov a1, #terminalCommand_cursorUp
-	bl terminalCommand
-	mov a1, #terminalCommand_clearToEOL
-	bl terminalCommand
+	mTerminalCommand #terminalCommand_cursorUp
+	mTerminalCommand #terminalCommand_clearToEOL
 
 .L18_cursingComplete:
 	ldr a1, =.L18_yuckMessage
@@ -2713,10 +2726,8 @@ main:
 	bl time
 	bl srand
 
-	mov a1, #terminalCommand_colorsNormal
-	bl terminalCommand
-	mov a1, #terminalCommand_clearScreen
-	bl terminalCommand
+	mTerminalCommand #terminalCommand_colorsNormal
+	mTerminalCommand #terminalCommand_clearScreen
 
 greet:
 	ldr a1, =msgGreeting
@@ -2766,8 +2777,7 @@ recalculateSheet:
 	blx ip			@ calculate sheet
 
 redisplaySheet:
-	mov a1, #terminalCommand_clearScreen
-	bl terminalCommand
+	mTerminalCommand #terminalCommand_clearScreen
 
 	push {rPresentation}
 	push {rFormula}
@@ -2915,8 +2925,7 @@ actionChangePresentation:
 actionResetSpreadsheet:
 	mov a1, rSpreadsheetAddress
 	bl free
-	mov a1, #terminalCommand_clearScreen
-	bl terminalCommand
+	mTerminalCommand #terminalCommand_clearScreen
 	b showSetupIntro
 
 actionFillRandom:
