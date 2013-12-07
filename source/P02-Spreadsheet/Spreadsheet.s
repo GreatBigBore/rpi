@@ -88,9 +88,7 @@
 	mov sp, fp	@ restore caller's stack frame
 	pop {fp}
 
-	.if \argumentCount
 	add sp, #\argumentCount * 4
-	.endif
 .endm
 
 .macro mTerminalCommand operation
@@ -159,8 +157,7 @@ calcSheetMinMax:
 	blx v1		@ store result
 
 	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-
-	bx lr		@ return
+	bx lr
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ calcSheetSumAverage
@@ -177,14 +174,7 @@ calcSheetMinMax:
 .section .text
 
 calcSheetSumAverage:
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 .L11_loopInit:
 	mov v5, #0	@ accumulator
@@ -225,14 +215,8 @@ calcSheetSumAverage:
 	str v7, [r0]		@ set caller's overflow flag for entire sheet
 
 .L11_epilogue:
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ convertBitStringToNumber 
@@ -241,18 +225,7 @@ calcSheetSumAverage:
 @	a/v2 - data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 convertBitStringToNumber:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rDataWidthInBytes	.req r1
 	rNumberOfBitsToCapture	.req r2
@@ -373,13 +346,8 @@ convertBitStringToNumber:
 	.unreq rStringToConvert	
 	.unreq rFirstSigfigFound
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	bx lr		@ return
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ convertHexStringToNumber 
@@ -388,18 +356,7 @@ convertBitStringToNumber:
 @	a/v2 - data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 convertHexStringToNumber:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rFirstSigfigFound		.req r1
 	rStringToConvert		.req v1
@@ -501,13 +458,8 @@ convertHexStringToNumber:
 	.unreq rFirstSigfigFound
 	.unreq rStringToConvert	
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	bx lr		@ return
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueBinMenu
@@ -539,21 +491,7 @@ convertHexStringToNumber:
 .align 3
 
 displayGetCellValueBinMenu:
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr a1, =.L14_msgInstructions
 	ldr a2, =.L14_msgInstructionsTemplate
@@ -565,17 +503,8 @@ displayGetCellValueBinMenu:
 	mov a3, #'%'	@ prompt for binary
 	bl runGetCellValueMenu
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Restore caller's locals and stack frame
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueDecMenu
@@ -607,18 +536,7 @@ displayGetCellValueBinMenu:
 .align 3
 
 displayGetCellValueDecMenu:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rCellIndex		.req v1
 	rDataWidthInBytes	.req v2
@@ -655,14 +573,8 @@ displayGetCellValueDecMenu:
 	.unreq rDataWidthInBytes
 	.unreq rOperationsFunction
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueHexMenu
@@ -692,18 +604,7 @@ displayGetCellValueDecMenu:
 .align 3
 
 displayGetCellValueHexMenu:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rCellIndex		.req v1
 	rDataWidthInBytes	.req v2
@@ -729,14 +630,8 @@ displayGetCellValueHexMenu:
 	.unreq rCellIndex
 	.unreq rDataWidthInBytes
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
@@ -771,14 +666,7 @@ displayGetCellValueHexMenu:
 .align 3
 
 displaySheet:
-	push {fp}
-	mov fp, sp
-
-	push {lr}
-	push {v1 - v7}
-
-	push {a1 - a4}	@ transfer argument registers...
-	pop {v1 - v4}	@ to local variable registers
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr a1, =.L1_msgSpreadsheetHeader
 	bl printf
@@ -843,12 +731,7 @@ displaySheet:
 	bl newline
 	bl newline
 
-	pop {v1 - v7}
-	pop {lr}
-
-	mov sp, fp
-	pop {fp}
-	add sp, #12
+	mFunctionBreakdown 3	@ restore caller's locals and stack frame
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -891,14 +774,7 @@ divide:
 .align 3
 
 getCellToEdit:
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr r0, =.L12_msgInstructions
 	bl printf
@@ -920,14 +796,8 @@ getCellToEdit:
 	mov a4, #r_accept	@ accept 'r' to go up a menu
 	bl getMenuSelection
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueBin
@@ -947,17 +817,7 @@ getCellToEdit:
 .align 3
 
 getCellValueBin:
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rTestMode		.req v1
 	rOperationsFunction	.req v2
@@ -1017,14 +877,8 @@ getCellValueBin:
 	.unreq rOperationsFunction
 	.unreq rTestMode
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueDec
@@ -1045,17 +899,7 @@ getCellValueBin:
 .align 3
 
 getCellValueDec:
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rOperationsFunction	.req v1
 	rFirstPass		.req v2
@@ -1145,14 +989,8 @@ getCellValueDec:
 	.unreq rOperationsFunction
 	.unreq rTestMode
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueHex
@@ -1172,18 +1010,7 @@ getCellValueDec:
 .align 3
 
 getCellValueHex:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rOperationsFunction	.req v1
 	rDataWidthInBytes	.req v2
@@ -1245,14 +1072,8 @@ getCellValueHex:
 	.unreq rOperationsFunction
 	.unreq rTestMode
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getFormula
@@ -1277,11 +1098,7 @@ getCellValueHex:
 .align 3
 
 getFormula:
-	push {fp}
-	mov fp, sp
-
-	push {lr}
-	push {v1 - v6}
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	add r0, fp, #4	@ test mode
 	ldr r0, [r0]
@@ -1296,11 +1113,7 @@ getFormula:
 	mov a4, #.L8_menuOptionsCount
 	bl runMenu
 
-	pop {v1 - v6}
-	pop {lr}
-	mov sp, fp
-	pop {fp}
-	add sp, #4
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1326,14 +1139,7 @@ getFormula:
 .align 3
 
 getNewValueForCell:
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr r0, =.L13_jumpTable
 	add r0, v4, lsl #3
@@ -1355,14 +1161,8 @@ getNewValueForCell:
 	mov a2, v3	@ data width in bytes
 	blx v6		@ get user input for this presentation mode
 
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getPresentation
@@ -1386,11 +1186,7 @@ getNewValueForCell:
 .align 3
 
 getPresentation:
-	push {fp}
-	mov fp, sp
-
-	push {lr}
-	push {v1 - v6}
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	add r0, fp, #4	@ test mode
 	ldr r0, [r0]
@@ -1405,11 +1201,7 @@ getPresentation:
 	mov a4, #.L9_menuOptionsCount
 	bl runMenu
 
-	pop {v1 - v6}
-	pop {lr}
-	mov sp, fp
-	pop {fp}
-	add sp, #4
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1479,17 +1271,7 @@ getMainSelection:
 .align 3
 
 getMenuSelection:
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rMinimum	.req v1
 	rMaximum	.req v2
@@ -1596,14 +1378,8 @@ getMenuSelection:
 	.unreq rFirstPass
 
 .L2_epilogue:
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	add sp, #4	@ clear caller's stack parameters
-	bx lr		@ return
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getSpreadsheetSpecs
@@ -1634,8 +1410,7 @@ dataWidthOptions: .word dwo8, dwo16, dwo32
 .section .text
 
 getSpreadsheetSpecs:
-	push {lr}
-	push {v1 - v7}
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rInputStatus		.req v1
 	rNumberOfCells		.req v2
@@ -1701,8 +1476,8 @@ epilogue:
 	.unreq rNumberOfCells
 	.unreq rCellWidthInBytes
 
-	pop {v1 - v7}
-	pop {pc}
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ matchInputToResult
@@ -1719,18 +1494,7 @@ epilogue:
 .align 3
 
 matchInputToResult:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rOriginalUserInput	.req v1
 	rFormatString		.req v2
@@ -1822,18 +1586,7 @@ newline:
 .align 3	@ in case there's an issue with jumping to this via register
 
 operations8:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rOperationResult	.req r0
 	rOverflowIndicator	.req r1
@@ -1944,13 +1697,8 @@ operations8:
 	.unreq rOperation
 
 .ops8_epilogue:
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	bx lr		@ return
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations16
@@ -1974,18 +1722,7 @@ operations8:
 .align 3	@ in case there's an issue with jumping to this via register
 
 operations16:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rOperationResult	.req r0
 	rOverflowIndicator	.req r1
@@ -2110,13 +1847,8 @@ operations16:
 	.unreq rMaximum
 
 .ops16_epilogue:
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	bx lr		@ return
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations32
@@ -2140,18 +1872,7 @@ operations16:
 .align 3	@ in case there's an issue with jumping to this via register
 
 operations32:
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	rOperationResult	.req r0
 	rInputStatus		.req r1
@@ -2266,13 +1987,8 @@ operations32:
 	.unreq rMaximum
 
 .ops32_epilogue:
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	bx lr		@ return
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ promptForSelection 
@@ -2301,11 +2017,7 @@ promptForSelection:
 @	a/v3 = cell count
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 randomFill:
-	push {lr}
-	push {v1 - v7}
-
-	push {a1 - a3}	@ Transfer arguments to...
-	pop  {v1 - v3}	@ local variables
+	mFunctionSetup	@ Setup stack frame and local variables
 
 .L6_loopInit:
 	mov v6, #0
@@ -2332,46 +2044,50 @@ randomFill:
 	b .L6_loopTop
 
 .L6_loopExit:
-
-	pop {v1 - v7}
-	pop {pc}
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ resetSheet
-@	r0/6 = operations function
-@	r1/7 = sheet base address
-@	r2/8 = cell count
+@	a1 = operations function
+@	a2 = sheet base address
+@	a3 = cell count
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
-resetSheet:
-	push {lr}
-	push {v1 - v7}
+	rOperationsFunction	.req v1
+	rSheetAddress		.req v2
+	rCellCount		.req v3
+	rLoopCounter		.req v4
 
-	@ Is there a better way to copy registers?
-	push {r0 - r2}
-	pop {r6 - r8}
+resetSheet:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 .L4_init:
-	mov r4, #0
+	mov rLoopCounter, #0
 
 .L4_top:
-	cmp r4, r8
+	cmp rLoopCounter, rCellCount
 	bhs .L4_loopExit
 
-	mov r0, #0	@ data to store
-	mov r1, r7	@ base address of array
-	mov r2, r4	@ index of target cell
-	mov r3, #operation_store
-	blx r6		@ store the zero
+	mov a1, #0		@ data to store
+	mov a2, rSheetAddress	@ base address of array
+	mov a3, rLoopCounter	@ index of target cell
+	mov a4, #operation_store
+	blx rOperationsFunction	@ store the zero
 
 .L4_loopBottom:
-	add r4, #1
+	add rLoopCounter, #1
 	b .L4_top
 
 .L4_loopExit:
-	pop {v1 - v7}
-	pop {pc}
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rOperationsFunction
+	.unreq rSheetAddress
+	.unreq rCellCount
+	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ runGetCellValueMenu
@@ -2396,17 +2112,7 @@ resetSheet:
 .align 3
 
 runGetCellValueMenu:
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Stack frame and local variable setup
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	push {fp}	@ setup local stack frame
-	mov fp, sp
-
-	push {lr}	@ preserve return address
-	push {v1 - v7}	@ always preserve caller's locals
-
-	push {a1 - a4}	@ Transfer scratch regs to...
-	pop  {v1 - v4}	@ local variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@@@ All set up -- meat of function begins here
@@ -2428,16 +2134,8 @@ runGetCellValueMenu:
 	cmp a1, #0	@ decimal has no prompt postfix
 	blne putchar	@ awesome arm conditional instruction
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Restore caller's locals and stack frame
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	bx lr		@ return
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ runMenu
@@ -2454,14 +2152,7 @@ runGetCellValueMenu:
 @	r3/7 number of options in table
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 runMenu:
-	push {fp}
-	mov fp, sp
-
-	push {lr}
-	push {v1 - v6}
-
-	push {a1 - a4}	@ transfer scratch regs...
-	pop  {v1 - v4}	@ to variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	mov r0, r4	@ instructions
 	bl printf
@@ -2482,12 +2173,7 @@ runMenu:
 	ldr a4, [fp, #4]	@ r accept/reject
 	bl getMenuSelection
 
-	pop {v1 - v6}
-	pop {lr}
-
-	mov sp, fp
-	pop {fp}
-	add sp, #12
+	mFunctionBreakdown 3	@ restore caller's locals and stack frame
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2505,10 +2191,7 @@ runMenu:
 .align 3
 
 sayYuck:
-	push {v1 - v7, lr}
-
-	push {a1 - a4}	@ Transfer argument registers...
-	pop  {v1 - v4}	@ to local variable registers
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	mTerminalCommand #terminalCommand_cursorUp
 	mTerminalCommand #terminalCommand_clearToEOL
@@ -2531,7 +2214,7 @@ sayYuck:
 	bl putchar
 
 .L18_epilogue:
-	pop {v1 - v7, lr}
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2540,13 +2223,11 @@ sayYuck:
 .section .data
 
 msgListElement: .asciz "%d. %s\n"
-.L3_debug1: .asciz "r4 = 0x%08X, r5 = 0x%08X, r6 = 0x%08X\n"
 
 .section .text
 
 showList:
-	push {lr}
-	push {r4 - r6}
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	mov r4, r0	@ list offset
 	mov r5, r1	@ number of elements
@@ -2565,8 +2246,8 @@ showList:
 	subs r5, r5, #1
 	bne .L3_loopTop
 
-	pop {r4 - r6}
-	pop {pc}
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ showNumberAsBin 
@@ -2574,11 +2255,7 @@ showList:
 @	a2 number of bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 showNumberAsBin:
-	push {lr}
-	push {v1 - v6}
-
-	push {a1 - a4}	@ transfer scratch regs...
-	pop  {v1 - v4}	@ to variable regs
+	mFunctionSetup	@ Setup stack frame and local variables
 
 .L10_loopInit:
 	mov a1, #'%'
@@ -2618,8 +2295,8 @@ showNumberAsBin:
 	b .L10_loopTop
 
 .L10_loopExit:
-	pop {v1 - v6}
-	pop {pc}
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ terminalCommand
