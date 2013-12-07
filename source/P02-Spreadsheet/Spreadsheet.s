@@ -419,11 +419,12 @@ convertHexStringToNumber:
 					@ get current digit from string
 	ldrb rDigitTempStore, [rStringToConvert, rLoopCounter]
 
+	@ convert to lowercase -- safe even for digits because 0x30 - 0x39
+	orr rDigitTempStore, #0x20
 	cmp rDigitTempStore, #'0'
 	blo .L23_badCharacter
 	cmp rDigitTempStore, #'9'
 	bls .L23_numeric
-	orr rDigitTempStore, #0x20	@ convert to lowercase
 	cmp rDigitTempStore, #'a'
 	blo .L23_badCharacter
 	cmp rDigitTempStore, #'f'
@@ -518,21 +519,27 @@ convertHexStringToNumber:
 .section .text
 .align 3
 
+	rCellIndex		.req v1
+	rDataWidthInBytes	.req v2
+
 displayGetCellValueBinMenu:
 	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr a1, =.L14_msgInstructions
 	ldr a2, =.L14_msgInstructionsTemplate
-	mov a3, v2, lsl #3	@ number of bits allowed for input
+	mov a3, rDataWidthInBytes, lsl #3	@ number of bits allowed
 	bl sprintf
 
 	ldr a1, =.L14_msgInstructions
-	mov a2, v1	@ cell index
-	mov a3, #'%'	@ prompt for binary
+	mov a2, rCellIndex	@ cell index
+	mov a3, #'%'		@ prompt for binary
 	bl runGetCellValueMenu
 
 	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rCellIndex
+	.unreq rDataWidthInBytes
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueDecMenu
@@ -694,6 +701,12 @@ displayGetCellValueHexMenu:
 .section .text
 .align 3
 
+	rOperationsFunction	.req v1
+	rSpreadsheetAddress	.req v2
+	rNumberOfCellsToDisplay	.req v3
+	rDataWidthInBytes	.req v4
+	rLoopCounter		.req v5
+
 displaySheet:
 	mFunctionSetup	@ Setup stack frame and local variables
 
@@ -701,49 +714,46 @@ displaySheet:
 	bl printf
 
 	ldr a1, =.L1_msgDataWidth
-	mov a2, v4, lsl #3	@ convert data width in bytes to width in bits
+	mov a2, rDataWidthInBytes, lsl #3	@ convert data width in bytes to width in bits
 	bl printf
 
 .L1_loopInit:
-	mov v6, #0
+	mov rLoopCounter, #0
 
 .L1_loopTop:
-	cmp v6, v3
+	cmp rLoopCounter, rNumberOfCellsToDisplay
 	bhs .L1_loopExit
 
 	ldr a1, =.L1_cellNumber
-	add a2, v6, #1
+	add a2, rLoopCounter, #1
 	bl printf
 
 	add a1, fp, #12	@ a1 -> presentation indicator
 	ldr a1, [a1]	@ a1 = presentation indicator
-	mov a2, v2	@ spreadsheet
-	mov a3, v6	@ cell index
+	mov a2, rSpreadsheetAddress	@ spreadsheet
+	mov a3, rLoopCounter	@ cell index
 	mov a4, #operation_display
-	blx v1		@ display current cell per data width 
+	blx rOperationsFunction		@ display current cell per data width 
 	bl newline
 
 .L1_loopBottom:
-	add v6, v6, #1
+	add rLoopCounter, rLoopCounter, #1
 	b .L1_loopTop
 
 .L1_loopExit:
 	bl newline
 
-	add r1, fp, #8		@ r1 -> formula indicator
-	ldr r1, [r1]		@ r1 = formula indicator
-	ldr r0, =.L1_formulas
-	add r0, r1, lsl #2	@ r0 -> formula message pointer
-	ldr r1, [r0]		@ r1 -> formula message
-	ldr r0, =.L1_msgFormula
+	ldr a2, [fp, #8]		@ a2 = formula indicator
+	ldr a1, =.L1_formulas
+	ldr a2, [a1, a2, lsl #2]	@ a2 -> formula message
+	ldr a1, =.L1_msgFormula
 	bl printf
 
-	add a1, fp, #12	@ a1 -> presentation indicator
-	ldr a1, [a1]	@ a1 = presentation indicator
-	mov a2, v2	@ spreadsheet
-	mov a3, v6	@ "index" of result cell 
+	ldr a1, [fp, #12]		@ a1 = presentation indicator
+	mov a2, rSpreadsheetAddress	@ spreadsheet
+	mov a3, rLoopCounter		@ "index" of result cell 
 	mov a4, #operation_display
-	blx v1		@ display result cell per data width
+	blx rOperationsFunction		@ display result cell per data width
 
 	ldr r0, [fp, #4]	@ get overflow indicator
 	cmp r0, #1
@@ -762,6 +772,12 @@ displaySheet:
 
 	mFunctionBreakdown 3	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rOperationsFunction
+	.unreq rSpreadsheetAddress
+	.unreq rNumberOfCellsToDisplay
+	.unreq rDataWidthInBytes
+	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ divide:
@@ -803,6 +819,9 @@ divide:
 .section .text
 .align 3
 
+	rMinimumCellNumber	.req v1
+	rMaximumCellNumber	.req v2
+
 getCellToEdit:
 	mFunctionSetup	@ Setup stack frame and local variables
 
@@ -812,22 +831,25 @@ getCellToEdit:
 	bl printf
 
 	ldr a1, =.L12_msgSelectCell
-	mov a2, v1	@ min cell number
-	mov a3, v2	@ max cell number
+	mov a2, rMinimumCellNumber
+	mov a3, rMaximumCellNumber
 	bl printf
 
 	bl promptForSelection
 
-	ldr r0, [fp, #4]	@ test mode
+	ldr r0, [fp, #4]		@ test mode
 	push {r0}
-	mov a1, v1		@ min cell number
-	mov a2, v2		@ max cell number
-	mov a3, #q_accept	@ accept 'q' for quit
-	mov a4, #r_accept	@ accept 'r' to go up a menu
+	mov a1, rMinimumCellNumber
+	mov a2, rMaximumCellNumber
+	mov a3, #q_accept		@ accept 'q' for quit
+	mov a4, #r_accept		@ accept 'r' to go up a menu
 	bl getMenuSelection
 
 	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rMinimumCellNumber
+	.unreq rMaximumCellNumber
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueBin
@@ -1132,13 +1154,10 @@ getCellValueHex:
 getFormula:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-	add r0, fp, #4	@ test mode
-	ldr r0, [r0]
+	ldr r0, [fp, #4]	@ test mode
 	mov r1, #q_accept
 	mov r2, #r_accept
-	push {r0}
-	push {r1}
-	push {r2}
+	push {r0 - r2}
 	ldr a1, =.L8_msgInstructions
 	ldr a2, =.L8_msgSeparator
 	ldr a3, =.L8_menuOptions
@@ -1170,31 +1189,43 @@ getFormula:
 .section .text
 .align 3
 
+	rOperationsFunction	.req v1
+	rCellIndex		.req v2
+	rDataWidthInBytes	.req v3
+	rPresentationMode	.req v4
+	rMenuFunction		.req v5
+	rInputFunction		.req v6
+
 getNewValueForCell:
 	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr r0, =.L13_jumpTable
-	add r0, v4, lsl #3
-	ldr v5, [r0]	@ menu for presentation mode
-	add r0, #4
-	ldr v6, [r0]	@ get value function for presentation mode
+	add r0, rPresentationMode, lsl #3
+	ldr rMenuFunction, [r0]
+	ldr rInputFunction, [r0, #4]
 
 	ldr r0, [fp, #4]
-	push {r0}	@ test mode
-	mov a1, v2	@ cell index
-	mov a2, v3	@ data width in bytes
-	mov a3, v1	@ operations function
-	blx v5		@ run the menu for this presentation mode
+	push {r0}			@ test mode
+	mov a1, rCellIndex
+	mov a2, rDataWidthInBytes
+	mov a3, rOperationsFunction
+	blx rMenuFunction
 
-	add r0, fp, #4
-	ldr r0, [r0]
-	push {r0}	@ test mode
-	mov a1, v1	@ operations function
-	mov a2, v3	@ data width in bytes
-	blx v6		@ get user input for this presentation mode
+	ldr r0, [fp, #4]
+	push {r0}			@ test mode
+	mov a1, rOperationsFunction
+	mov a2, rDataWidthInBytes
+	blx rInputFunction
 
 	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rOperationsFunction
+	.unreq rCellIndex
+	.unreq rDataWidthInBytes
+	.unreq rPresentationMode
+	.unreq rMenuFunction
+	.unreq rInputFunction
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getPresentation
