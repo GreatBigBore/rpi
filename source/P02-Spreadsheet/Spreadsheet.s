@@ -2067,9 +2067,9 @@ msgPrompt:		.asciz "-> "
 promptForSelection:
 	push {lr}
 	bl newline
-	ldr r0, =msgEnterSelection
+	ldr a1, =msgEnterSelection
 	bl printf
-	ldr r0, =msgPrompt
+	ldr a1, =msgPrompt
 	bl printf
 	pop {pc}
 
@@ -2080,14 +2080,20 @@ promptForSelection:
 @	a2 = sheet base address
 @	a3 = cell count
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	rOperationsFunction	.req v1
+	rSheetAddress		.req v2
+	rCellCount		.req v3
+	rLoopCounter		.req v4
+
 randomFill:
 	mFunctionSetup	@ Setup stack frame and local variables
 
 .L6_loopInit:
-	mov v6, #0
+	mov rLoopCounter, #0
 
 .L6_loopTop:
-	cmp v6, v3
+	cmp rLoopCounter, rCellCount
 	bhs .L6_loopExit
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2096,20 +2102,25 @@ randomFill:
 	@ mix things up a bit and hopefully give me both positive and negative
 	@ values in a random, or at least apparently random distribution. 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	bl rand		@ returns rand in a1 (r0)
-	ror a1, #1	@ because I want a full range
-	mov a2, v2	@ sheet base address
-	mov a3, v6	@ current cell index
+	bl rand				@ returns rand in a1 (r0)
+	ror a1, #1			@ because I want a full range
+	mov a2, rSheetAddress
+	mov a3, rLoopCounter		@ current cell index
 	mov r3, #operation_store
-	blx v1		@ store a1
+	blx rOperationsFunction		@ store a1
 
 .L6_loopBottom:
-	add v6, #1
+	add rLoopCounter, #1
 	b .L6_loopTop
 
 .L6_loopExit:
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rOperationsFunction
+	.unreq rSheetAddress
+	.unreq rCellCount
+	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ resetSheet
@@ -2176,6 +2187,10 @@ resetSheet:
 .section .text
 .align 3
 
+	rInstructions	.req v1
+	rCellIndex	.req v2
+	rPromptPostfix	.req v3
+
 runGetCellValueMenu:
 	mFunctionSetup	@ Setup stack frame and local variables
 
@@ -2188,19 +2203,23 @@ runGetCellValueMenu:
 	ldr a1, =.L15_msgSeparator
 	bl printf
 
-	mov a1, v1	@ specific instructions
+	mov a1, rInstructions
 	bl printf
 
 	ldr a1, =.L15_msgNewValue
-	mov a2, v2	@ cell index
+	mov a2, rCellIndex
 	bl printf
 
-	mov a1, v3	@ prompt postfix
+	mov a1, rPromptPostfix
 	cmp a1, #0	@ decimal has no prompt postfix
 	blne putchar	@ awesome arm conditional instruction
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rInstructions
+	.unreq rCellIndex
+	.unreq rPromptPostfix
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ runMenu
@@ -2211,35 +2230,45 @@ runGetCellValueMenu:
 @	+12 r accept/reject
 @
 @ registers:
-@	r0/4 instructions message
-@	r1/5 separator
-@	r2/6 menu options table
-@	r3/7 number of options in table
+@	a1 instructions message
+@	a2 separator
+@	a3 menu options table
+@	a4 number of options in table
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	rInstructionsMessage	.req v1
+	rSeparator		.req v2
+	rMenuOptionsTable	.req v3
+	rNumberOfMenuOptions	.req v4
+
 runMenu:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-	mov r0, r4	@ instructions
+	mov a1, rInstructionsMessage
 	bl printf
-	mov r0, r5	@ separator
+	mov a1, rSeparator
 	bl printf
 
-	mov r0, r6	@ menu options
-	mov r1, r7	@ number of options available
+	mov a1, rMenuOptionsTable
+	mov a2, rNumberOfMenuOptions
 	bl showList
 
 	bl promptForSelection
 
-	ldr r0, [fp, #4]	@ test mode
+	ldr r0, [fp, #4]		@ test mode
 	push {r0}
-	mov a1, #1		@ minimum
-	mov a2, v4		@ maximum
-	ldr a3, [fp, #8]	@ q accept/reject
-	ldr a4, [fp, #12]	@ r accept/reject
+	mov a1, #1			@ minimum
+	mov a2, rNumberOfMenuOptions	@ maximum
+	ldr a3, [fp, #8]		@ q accept/reject
+	ldr a4, [fp, #12]		@ r accept/reject
 	bl getMenuSelection
 
 	mFunctionBreakdown 3	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rInstructionsMessage
+	.unreq rSeparator
+	.unreq rMenuOptionsTable
+	.unreq rNumberOfMenuOptions
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ sayYuck
@@ -2255,13 +2284,17 @@ runMenu:
 .section .text
 .align 3
 
+	rYuckyValue		.req v1
+	rPromptSuffix		.req v2
+	rSkipSecondCursorUp	.req v3
+
 sayYuck:
 	mFunctionSetup	@ Setup stack frame and local variables
 
 	mTerminalCommand #terminalCommand_cursorUp
 	mTerminalCommand #terminalCommand_clearToEOL
 
-	cmp v3, #1	@ skip second cursor up?
+	cmp rSkipSecondCursorUp, #1
 	beq .L18_cursingComplete
 
 	mTerminalCommand #terminalCommand_cursorUp
@@ -2269,21 +2302,26 @@ sayYuck:
 
 .L18_cursingComplete:
 	ldr a1, =.L18_yuckMessage
-	mov a2, v1
+	mov a2, rYuckyValue
 	bl printf
 
-	cmp v2, #0	@ dec mode doesn't have a prompt suffix
-	beq .L18_epilogue
-
 	mov a1, v2
-	bl putchar
+	cmp v2, #0	@ dec mode doesn't have a prompt suffix
+	blne putchar	@ awesome arm conditional instruction
 
 .L18_epilogue:
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
+	.unreq rYuckyValue
+	.unreq rPromptSuffix
+	.unreq rSkipSecondCursorUp
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ showList
+@
+@	a1 list address
+@	a2 number of elements in list
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -2291,28 +2329,33 @@ msgListElement: .asciz "%d. %s\n"
 
 .section .text
 
+	rListAddress		.req v1
+	rNumberOfListElements	.req v2
+	rLoopCounter		.req v3
+
 showList:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-	mov r4, r0	@ list offset
-	mov r5, r1	@ number of elements
-
 .L3_loopInit:
-	mov r6, #0
+	mov rLoopCounter, #0
 
 .L3_loopTop:
-	add r6, r6, #1
-	ldr r0, =msgListElement
-	mov r1, r6
-	ldr r2, [r4]
+	add rLoopCounter, rLoopCounter, #1
+	ldr a1, =msgListElement
+	mov a2, rLoopCounter
+	ldr a3, [rListAddress]
 	bl printf
 
-	add r4, r4, #4
-	subs r5, r5, #1
+	add rListAddress, #4
+	subs rNumberOfListElements, #1
 	bne .L3_loopTop
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rListAddress
+	.unreq rNumberOfListElements
+	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ showNumberAsBin 
@@ -2320,6 +2363,12 @@ showList:
 @	a1 number to show
 @	a2 number of bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	rNumberToShow	.req v1
+	rNumberOfBytes	.req v2
+	rNumberOfBits	.req v3
+	rFirstPass	.req v4
+
 showNumberAsBin:
 	mFunctionSetup	@ Setup stack frame and local variables
 
@@ -2327,42 +2376,52 @@ showNumberAsBin:
 	mov a1, #'%'
 	bl putchar
 
+	@ 4 minus width in bytes: 1, 2, 4 becomes 3, 2, 0
 	mov r0, #4
-	sub v3, r0, v2	@ width in bytes - 4: 1, 2, 4 becomes 3, 2, 0
-	lsl v3, #3	@ 3, 2, 0 becomes 24, 16, 0 to shift val to top of reg
-	lsl v1, v3	@ shift value up to top of register
+	sub r1, r0, rNumberOfBytes
 
-	mov v4, #4 - 1	@ for testing whether to show underscore
-	mov v3, #1	@ remember we're on the first pass
-	lsl v2, #3	@ width in bytes 1, 2, 4 -> width in bits 8, 16, 32
+	@ 3, 2, 0 becomes 24, 16, 0 to shift val to top of reg
+	lsl r1, #3
+
+	@ shift value up to top of register
+	lsl rNumberToShow, r1
+
+	@ width in bytes 1, 2, 4 -> width in bits 8, 16, 32
+	mov rNumberOfBits, rNumberOfBytes, lsl #3
+
+	mov rFirstPass, #1	@ remember we're on the first pass
 
 .L10_loopTop:
-	cmp v2, #0
+	cmp rNumberOfBits, #0
 	beq .L10_loopExit
 
-	tst v2, v4	@ time for underscore?
+	tst rNumberOfBits, #4 - 1	@ time for underscore?
 	bne .L10_showbit
 
-	cmp v3, #1	@ no underscore on first pass through
+	cmp rFirstPass, #1	@ no underscore on first pass through
 	beq .L10_showbit
 
 	mov a1, #'_'
 	bl putchar
 
 .L10_showbit:
-	mov a1, #'0'	@ default to displaying zero
-	lsls v1, #1	@ cool arm conditional instruction coming up
-	movcs a1, #'1'	@ move 1 if carry set by above instruction -- cool 
+	mov a1, #'0'		@ default to displaying zero
+	lsls rNumberToShow, #1	@ cool arm conditional instruction coming up
+	movcs a1, #'1'		@ move 1 if carry set by above instruction -- cool 
 	bl putchar
 
 .L10_loopBottom:
-	mov v3, #0	@ no longer on first pass
-	sub v2, #1
+	mov rFirstPass, #0	@ no longer on first pass
+	sub rNumberOfBits, #1
 	b .L10_loopTop
 
 .L10_loopExit:
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rNumberToShow
+	.unreq rNumberOfBytes
+	.unreq rFirstPass
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ terminalCommand
