@@ -252,8 +252,6 @@ calcSheetSumAverage:
 @	a1 string to convert
 @	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-convertBitStringToNumber:
-	mFunctionSetup	@ Setup stack frame and local variables
 
 	rDataWidthInBytes	.req r1
 	rNumberOfBitsToCapture	.req r2
@@ -267,9 +265,8 @@ convertBitStringToNumber:
 	rAccumulator		.req v7
 	rFirstSigfigFound	.req ip
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+convertBitStringToNumber:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 .L17_loopInit:
 	mov a1, rStringToConvert
@@ -357,10 +354,8 @@ convertBitStringToNumber:
 	mov r1, #inputStatus_inputNotOk
 
 .L17_epilogue:
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 	.unreq rAccumulator
 	.unreq rDataWidthInBytes
@@ -374,17 +369,12 @@ convertBitStringToNumber:
 	.unreq rStringToConvert	
 	.unreq rFirstSigfigFound
 
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
-
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ convertHexStringToNumber 
 @
 @	a1 string to convert
 @	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-convertHexStringToNumber:
-	mFunctionSetup	@ Setup stack frame and local variables
 
 	rFirstSigfigFound		.req r1
 	rStringToConvert		.req v1
@@ -396,9 +386,8 @@ convertHexStringToNumber:
 	rHexDigitCounter		.req v6
 	rNumberOfNybblesToCapture	.req v7
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+convertHexStringToNumber:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 .L23_loopInit:
 	mov a1, rStringToConvert
@@ -472,10 +461,9 @@ convertHexStringToNumber:
 	mov r1, #inputStatus_inputNotOk
 
 .L23_epilogue:
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 	.unreq rAccumulator
 	.unreq rDataWidthInBytes
@@ -486,9 +474,6 @@ convertHexStringToNumber:
 	.unreq rLoopCounter
 	.unreq rFirstSigfigFound
 	.unreq rStringToConvert	
-
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueBinMenu
@@ -570,16 +555,12 @@ displayGetCellValueBinMenu:
 .section .text
 .align 3
 
-displayGetCellValueDecMenu:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rCellIndex		.req v1
 	rDataWidthInBytes	.req v2
 	rOperationsFunction	.req v3
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Ready to roll
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+displayGetCellValueDecMenu:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	mov a4, #operation_initAForMax
 	blx rOperationsFunction
@@ -600,16 +581,12 @@ displayGetCellValueDecMenu:
 	mov a3, #0	@ no prompt postfix for decimal
 	bl runGetCellValueMenu
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Restore caller's locals and stack frame
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 	.unreq rCellIndex
 	.unreq rDataWidthInBytes
 	.unreq rOperationsFunction
-
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueHexMenu
@@ -638,15 +615,11 @@ displayGetCellValueDecMenu:
 .section .text
 .align 3
 
-displayGetCellValueHexMenu:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rCellIndex		.req v1
 	rDataWidthInBytes	.req v2
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+displayGetCellValueHexMenu:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr a1, =.L21_msgInstructions
 	ldr a2, =.L21_msgInstructionsTemplate
@@ -658,15 +631,11 @@ displayGetCellValueHexMenu:
 	mov a3, #'$'
 	bl runGetCellValueMenu
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	.unreq rCellIndex
-	.unreq rDataWidthInBytes
-
 	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rCellIndex
+	.unreq rDataWidthInBytes
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
@@ -867,19 +836,15 @@ getCellToEdit:
 .section .text
 .align 3
 
-getCellValueBin:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rTestMode		.req v1
 	rOperationsFunction	.req v2
 	rDataWidthInBytes	.req v3
 	rFirstPass		.req v4
 
-	ldr rTestMode, [fp, #4]
+getCellValueBin:
+	mFunctionSetup	@ Setup stack frame and local variables
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	ldr rTestMode, [fp, #4]
 
 	mov rFirstPass, #1	@ cursor behavior different on first pass
 
@@ -920,16 +885,13 @@ getCellValueBin:
 	b .L16_tryAgain
 
 .L16_epilogue:
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Restore caller's locals and stack frame
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
+
 	.unreq rFirstPass
 	.unreq rDataWidthInBytes
 	.unreq rOperationsFunction
 	.unreq rTestMode
-
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueDec
@@ -950,18 +912,14 @@ getCellValueBin:
 .section .text
 .align 3
 
-getCellValueDec:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rOperationsFunction	.req v1
 	rFirstPass		.req v2
 	rTestMode		.req v3
 
-	ldr rTestMode, [fp, #4]
+getCellValueDec:
+	mFunctionSetup	@ Setup stack frame and local variables
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	ldr rTestMode, [fp, #4]
 
 	mov rFirstPass, #1	@ remember we're on the first pass
 
@@ -1031,18 +989,13 @@ getCellValueDec:
 	mov rFirstPass, #0
 	b .L19_tryAgain
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .L19_epilogue:
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
 
 	.unreq rFirstPass
 	.unreq rOperationsFunction
 	.unreq rTestMode
-
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueHex
@@ -1061,19 +1014,15 @@ getCellValueDec:
 .section .text
 .align 3
 
-getCellValueHex:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rOperationsFunction	.req v1
 	rDataWidthInBytes	.req v2
 	rFirstPass		.req v3
 	rTestMode		.req v4
 
-	ldr rTestMode, [fp, #4]
+getCellValueHex:
+	mFunctionSetup	@ Setup stack frame and local variables
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	ldr rTestMode, [fp, #4]
 
 	mov rFirstPass, #1	@ cursor behavior different on first pass
 
@@ -1114,18 +1063,14 @@ getCellValueHex:
 	mov rFirstPass, #0
 	b .L22_tryAgain
 	
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .L22_epilogue:
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
+
 	.unreq rFirstPass
 	.unreq rDataWidthInBytes
 	.unreq rOperationsFunction
 	.unreq rTestMode
-
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getFormula
@@ -1330,9 +1275,6 @@ getMainSelection:
 .section .text
 .align 3
 
-getMenuSelection:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rMinimum	.req v1
 	rMaximum	.req v2
 	rQControl	.req v3
@@ -1340,11 +1282,10 @@ getMenuSelection:
 	rTestMode	.req v5
 	rFirstPass	.req v6
 
-	ldr rTestMode, [fp, #4]
+getMenuSelection:
+	mFunctionSetup	@ Setup stack frame and local variables
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	ldr rTestMode, [fp, #4]
 
 	mov rFirstPass, #1
 
@@ -1427,19 +1368,16 @@ getMenuSelection:
 .L2_acceptControlCharacter:
 	mov r1, #inputStatus_acceptedControlCharacter
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ Restore caller's locals and stack frame
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.L2_epilogue:
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
+
 	.unreq rMinimum
 	.unreq rMaximum
 	.unreq rQControl
 	.unreq rRControl
 	.unreq rTestMode
 	.unreq rFirstPass
-
-.L2_epilogue:
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getSpreadsheetSpecs
@@ -1472,12 +1410,12 @@ dataWidthOptions: .word dwo8, dwo16, dwo32
 
 .section .text
 
-getSpreadsheetSpecs:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rInputStatus		.req v1
 	rNumberOfCells		.req v2
 	rCellWidthInBytes	.req v3
+
+getSpreadsheetSpecs:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr r0, =msgEnterSpreadsheetSize
 	bl printf
@@ -1533,12 +1471,12 @@ epilogue:
 	mov r1, rNumberOfCells
 	mov r2, rCellWidthInBytes
 
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
+
 	.unreq rInputStatus
 	.unreq rNumberOfCells
 	.unreq rCellWidthInBytes
-
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ matchInputToResult
@@ -1554,16 +1492,12 @@ epilogue:
 .section .text
 .align 3
 
-matchInputToResult:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rOriginalUserInput	.req v1
 	rFormatString		.req v2
 	rScanfResult		.req v3
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+matchInputToResult:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr a1, =.L24_sprintfBuffer
 	mov a2, rFormatString
@@ -1594,23 +1528,13 @@ matchInputToResult:
 	movne r1, #inputStatus_inputNotOk
 	b .L24_epilogue
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.L24_epilogue:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 	.unreq rOriginalUserInput
 	.unreq rFormatString
 	.unreq rScanfResult
-
-.L24_epilogue:
-	pop {v1 - v7}	@ restore caller's locals
-	pop {lr}	@ restore return address
-
-	mov sp, fp	@ restore caller's stack frame
-	pop {fp}
-
-	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ newline
@@ -1647,9 +1571,6 @@ newline:
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
-operations8:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rOperationResult	.req r0
 	rOverflowIndicator	.req r1
 	rInputStatus		.req r1
@@ -1661,9 +1582,8 @@ operations8:
 	rCellIndex		.req v3
 	rOperation		.req v4
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+operations8:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr r0, =.ops8_jumpTable
 	ldr r0, [r0, rOperation, lsl #2]
@@ -1742,10 +1662,9 @@ operations8:
 	strb rOperand, [rSheetBaseAddress, rCellIndex]
 	b .ops8_epilogue
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.ops8_epilogue:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 	.unreq rOperationResult
 	.unreq rOverflowIndicator
@@ -1757,10 +1676,6 @@ operations8:
 	.unreq rSheetBaseAddress
 	.unreq rCellIndex
 	.unreq rOperation
-
-.ops8_epilogue:
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations16
@@ -1784,9 +1699,6 @@ operations8:
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
-operations16:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rOperationResult	.req r0
 	rOverflowIndicator	.req r1
 	rInputStatus		.req r1
@@ -1801,9 +1713,8 @@ operations16:
 	rMinimum		.req v6
 	rMaximum		.req v7
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+operations16:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	mov r0, #0
 	sub r0, #1	@ r0 = 0xFFFFFFFF
@@ -1890,10 +1801,9 @@ operations16:
 	strh rOperand, [r0]
 	b .ops16_epilogue
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.ops16_epilogue:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 	.unreq rOperationResult
 	.unreq rOverflowIndicator
@@ -1908,10 +1818,6 @@ operations16:
 	.unreq rHwordMask
 	.unreq rMinimum
 	.unreq rMaximum
-
-.ops16_epilogue:
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations32
@@ -1935,9 +1841,6 @@ operations16:
 .section .text
 .align 3	@ in case there's an issue with jumping to this via register
 
-operations32:
-	mFunctionSetup	@ Setup stack frame and local variables
-
 	rOperationResult	.req r0
 	rInputStatus		.req r1
 	rCellContents		.req r1
@@ -1952,9 +1855,8 @@ operations32:
 	rMinimum		.req v6
 	rMaximum		.req v7
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up-- meat of the function starts here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+operations32:
+	mFunctionSetup	@ Setup stack frame and local variables
 
 	mov r0, #0
 	sub r0, #1	@ r0 = 0xFFFFFFFF
@@ -2031,10 +1933,9 @@ operations32:
 	str rOperand, [r0]
 	b .ops32_epilogue
 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All done. Undefine register synonyms and
-	@@@ restore caller's variables and stack frame. 
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.ops32_epilogue:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 	.unreq rOperationResult
 	.unreq rOverflowIndicator
@@ -2049,10 +1950,6 @@ operations32:
 	.unreq rWordMask
 	.unreq rMinimum
 	.unreq rMaximum
-
-.ops32_epilogue:
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ promptForSelection 
@@ -2194,10 +2091,6 @@ resetSheet:
 
 runGetCellValueMenu:
 	mFunctionSetup	@ Setup stack frame and local variables
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@@@ All set up -- meat of function begins here
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	ldr a1, =.L15_msgDirections
 	bl printf
@@ -2467,10 +2360,9 @@ terminalCommand:
 .L0_localVariables:
 
 testMode	= .-.L0_localVariables; .word 0
-@cellToEdit	= .-.L0_localVariables; .word 0
+cellToEdit	= .-.L0_localVariables; .word 0
 overflowFlag	= .-.L0_localVariables; .word 0
 
-cellToEdit: .word 0
 msgGreeting:	.asciz "Greetings, data analyzer.\n\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\n"
 msgByeNow:	.asciz "'Bye now!\n"
@@ -2571,9 +2463,9 @@ showSetupIntro:
 	bl resetSheet
 
 recalculateSheet:
-	mov r1, #0
-	str r1, [fp, #overflowFlag]
 	add r0, fp, #overflowFlag
+	mov r1, #0
+	str r1, [r0]	@ reset overflow flag
 	push {r0}	@ pass address of overflow flag to calc function
 	ldr r0, =formulaJumpTable
 	ldr ip, [r0, rFormula, lsl #2]	@ calc function for formula
@@ -2670,8 +2562,7 @@ menuGetCellToEdit:
 	b returnToMain	@ control char not q, must be r
 
 gotCellToEdit:
-	ldr r1, =cellToEdit
-	str r0, [r1]
+	str r0, [fp, #cellToEdit]
 	mov rMenuMode, #menuMode_getNewValueForCell
 	b redisplaySheet
 
@@ -2682,8 +2573,7 @@ menuGetNewValueForCell:
 	ldr r0, [fp, #testMode]
 	push {r0}
 	mov a1, rOperationsFunction
-	ldr a2, =cellToEdit
-	ldr a2, [a2]
+	ldr a2, [fp, #cellToEdit]
 	mov a3, rCellWidthInBytes
 	mov a4, rPresentation
 	bl getNewValueForCell
@@ -2697,8 +2587,7 @@ menuGetNewValueForCell:
 
 gotNewValueForCell:	@ r0/a1 = new value for cell
 	mov a2, rSpreadsheetAddress
-	ldr a3, =cellToEdit
-	ldr a3, [a3]
+	ldr a3, [fp, #cellToEdit]
 	sub a3, #1	@ cell to edit, zero-based
 	mov a4, #operation_store
 	blx rOperationsFunction
