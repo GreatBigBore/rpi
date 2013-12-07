@@ -672,9 +672,9 @@ displayGetCellValueHexMenu:
 @ displaySheet()
 @
 @ stack:
-@	+12 presentation mode
+@	 +4 presentation mode
 @	 +8 formula
-@	 +4 overflow accumulator
+@	 +12 overflow accumulator
 @
 @ registers:
 @	a1 ops function
@@ -728,10 +728,9 @@ displaySheet:
 	add a2, rLoopCounter, #1
 	bl printf
 
-	add a1, fp, #12	@ a1 -> presentation indicator
-	ldr a1, [a1]	@ a1 = presentation indicator
+	ldr a1, [fp, #4]		@ a1 = presentation indicator
 	mov a2, rSpreadsheetAddress	@ spreadsheet
-	mov a3, rLoopCounter	@ cell index
+	mov a3, rLoopCounter		@ cell index
 	mov a4, #operation_display
 	blx rOperationsFunction		@ display current cell per data width 
 	bl newline
@@ -749,13 +748,13 @@ displaySheet:
 	ldr a1, =.L1_msgFormula
 	bl printf
 
-	ldr a1, [fp, #12]		@ a1 = presentation indicator
+	ldr a1, [fp, #4]		@ a1 = presentation indicator
 	mov a2, rSpreadsheetAddress	@ spreadsheet
 	mov a3, rLoopCounter		@ "index" of result cell 
 	mov a4, #operation_display
 	blx rOperationsFunction		@ display result cell per data width
 
-	ldr r0, [fp, #4]	@ get overflow indicator
+	ldr r0, [fp, #12]		@ get overflow indicator
 	cmp r0, #1
 	bne .L1_checkedOverflow
 
@@ -1252,13 +1251,10 @@ getNewValueForCell:
 getPresentation:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-	add r0, fp, #4	@ test mode
-	ldr r0, [r0]
+	ldr r0, [fp, #4]	@ test mode
 	mov r1, #q_accept
 	mov r2, #r_accept
-	push {r0}
-	push {r1}
-	push {r2}
+	push {r0 - r2}
 	ldr a1, =.L9_msgInstructions
 	ldr a2, =.L9_msgSeparator
 	ldr a3, =.L9_menuOptions
@@ -1294,20 +1290,19 @@ menuOptions: .word mo_editCell, mo_changeFormula, mo_changeDataRep
 .align 3
 
 getMainSelection:
-	push {lr}
-	ldr r0, =testMode
-	ldr r0, [r0]
+	mFunctionSetup
+
+	ldr r0, [fp, #4]
 	mov r1, #q_accept
 	mov r2, #r_reject
-	push {r0}
-	push {r1}
-	push {r2}
+	push {r0 - r2}
 	ldr a1, =.L5_msgInstructions
 	ldr a2, =.L5_msgSeparator
 	ldr a3, =menuOptions
 	mov a4, #menuOptionsCount
 	bl runMenu
-	pop {lr}
+
+	mFunctionBreakdown 1
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2211,9 +2206,9 @@ runGetCellValueMenu:
 @ runMenu
 @
 @ stack:
-@	testMode
-@	q accept/reject
-@	r accept/reject
+@	 +4 testMode
+@	 +8 q accept/reject
+@	+12 r accept/reject
 @
 @ registers:
 @	r0/4 instructions message
@@ -2235,12 +2230,12 @@ runMenu:
 
 	bl promptForSelection
 
-	ldr r0, [fp, #12]	@ test mode
+	ldr r0, [fp, #4]	@ test mode
 	push {r0}
 	mov a1, #1		@ minimum
 	mov a2, v4		@ maximum
 	ldr a3, [fp, #8]	@ q accept/reject
-	ldr a4, [fp, #4]	@ r accept/reject
+	ldr a4, [fp, #12]	@ r accept/reject
 	bl getMenuSelection
 
 	mFunctionBreakdown 3	@ restore caller's locals and stack frame
@@ -2527,11 +2522,11 @@ recalculateSheet:
 redisplaySheet:
 	mTerminalCommand #terminalCommand_clearScreen
 
-	push {rPresentation}
-	push {rFormula}
 	ldr r0, =overflowFlag
 	ldr r0, [r0]
 	push {r0}
+	push {rFormula}
+	push {rPresentation}
 	mov a1, rOperationsFunction
 	mov a2, rSpreadsheetAddress
 	mov a3, rNumberOfCellsInSpreadsheet
