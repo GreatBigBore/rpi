@@ -44,12 +44,6 @@
 .equ inputStatus_inputNotOk,			1
 .equ inputStatus_acceptedControlCharacter,	2
 
-.equ q_reject,	0
-.equ q_accept,	1
-
-.equ r_reject,	0
-.equ r_accept,	1
-
 .equ operation_store, 0
 .equ operation_display, 1
 .equ operation_initAForMin, 2
@@ -59,7 +53,17 @@
 .equ operation_accumulate, 6
 .equ operation_validateRange, 7
 
-.equ longestCalculationString, 9
+.equ terminalCommand_clearScreen, 0
+.equ terminalCommand_cursorUp, 1
+.equ terminalCommand_clearToEOL, 2
+.equ terminalCommand_colorsError, 3
+.equ terminalCommand_colorsNormal, 4
+
+.equ q_reject,	0
+.equ q_accept,	1
+
+.equ r_reject,	0
+.equ r_accept,	1
 
 .equ inputBufferSize, 100
 
@@ -487,87 +491,6 @@ convertHexStringToNumber:
 	bx lr		@ return
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ clearScreen()
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-msgClearScreen: .ascii "\033[2J\033[H"
-LmsgClearScreen = . - msgClearScreen
-
-.section .text
-
-clearScreen:
-	push {v1, v2, lr}
-
-.msgClearScreenLoopInit:
-	ldr v1, =msgClearScreen
-	mov v2, #LmsgClearScreen
-
-.msgClearScreenLoopTop:
-	ldrb a1, [v1]
-	bl putchar
-	add v1, #1
-	subs v2, #1
-	bne .msgClearScreenLoopTop
-
-	pop {v1, v2, lr}
-	bx lr
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ clearToEOL
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-msgClearToEOL: .ascii "\033[K"
-LmsgClearToEOL = . - msgClearToEOL
-
-.section .text
-
-clearToEOL:
-	push {v1, v2, lr}
-
-.msgClearToEOLLoopInit:
-	ldr v1, =msgClearToEOL
-	mov v2, #LmsgClearToEOL
-
-.msgClearToEOLLoopTop:
-	ldrb a1, [v1]
-	bl putchar
-	add v1, #1
-	subs v2, #1
-	bne .msgClearToEOLLoopTop
-
-	pop {v1, v2, lr}
-	bx lr
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ cursorUp
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-msgCursorUp: .ascii "\033[A"
-LmsgCursorUp = . - msgCursorUp
-
-.section .text
-
-cursorUp:
-	push {v1, v2, lr}
-
-.msgCursorUpLoopInit:
-	ldr v1, =msgCursorUp
-	mov v2, #LmsgCursorUp
-
-.msgCursorUpLoopTop:
-	ldrb a1, [v1]
-	bl putchar
-	add v1, #1
-	subs v2, #1
-	bne .msgCursorUpLoopTop
-
-	pop {v1, v2, lr}
-	bx lr
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displayGetCellValueBinMenu
 @
 @ stack:
@@ -822,7 +745,8 @@ displayGetCellValueHexMenu:
 .L1_formulas:	.word .L1_fSum, .L1_fAverage, .L1_fMinimum, .L1_fMaximum
 
 .L1_msgDataWidth:	.asciz "%d-bit signed integer mode\n\n"
-.L1_msgOverflow:	.asciz " \033[37;41m[ERROR]\033[37;40m"
+.L1_msgSpace:		.asciz " "
+.L1_msgOverflow:	.asciz "[ERROR]"
 
 .section .text
 .align 3
@@ -889,8 +813,14 @@ displaySheet:
 	cmp r0, #1
 	bne .L1_checkedOverflow
 
-	ldr r0, =.L1_msgOverflow
+	ldr a1, =.L1_msgSpace
 	bl printf
+	mov a1, #terminalCommand_colorsError
+	bl terminalCommand
+	ldr a1, =.L1_msgOverflow
+	bl printf
+	mov a1, #terminalCommand_colorsNormal
+	bl terminalCommand
 
 .L1_checkedOverflow:
 	bl newline
@@ -2544,33 +2474,6 @@ runMenu:
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ setColors 
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-msgSetColors: .ascii "\033[37;40m"
-LmsgSetColors = . - msgSetColors
-
-.section .text
-
-setColors:
-	push {v1, v2, lr}
-
-.msgSetColorsLoopInit:
-	ldr v1, =msgSetColors
-	mov v2, #LmsgSetColors
-
-.msgSetColorsLoopTop:
-	ldrb a1, [v1]
-	bl putchar
-	add v1, #1
-	subs v2, #1
-	bne .msgSetColorsLoopTop
-
-	pop {v1, v2, lr}
-	bx lr
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ sayYuck
 @
 @	a/v1 string with yucky value
@@ -2590,14 +2493,18 @@ sayYuck:
 	push {a1 - a4}	@ Transfer argument registers...
 	pop  {v1 - v4}	@ to local variable registers
 
-	bl cursorUp
-	bl clearToEOL
+	mov a1, #terminalCommand_cursorUp
+	bl terminalCommand
+	mov a1, #terminalCommand_clearToEOL
+	bl terminalCommand
 
 	cmp v3, #1	@ skip second cursor up?
 	beq .L18_cursingComplete
 
-	bl cursorUp
-	bl clearToEOL
+	mov a1, #terminalCommand_cursorUp
+	bl terminalCommand
+	mov a1, #terminalCommand_clearToEOL
+	bl terminalCommand
 
 .L18_cursingComplete:
 	ldr a1, =.L18_yuckMessage
@@ -2702,6 +2609,33 @@ showNumberAsBin:
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ terminalCommand
+@
+@	a1 the command to send
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L25_cmdClearScreen:	.asciz "\033[2J\033[H"
+.L25_msgCursorUp:	.asciz "\033[A"
+.L25_msgClearToEOL:	.asciz "\033[K"
+.L25_colorsError:	.asciz "\033[37;41m"
+.L25_colorsNormal:	.asciz "\033[37;40m"
+
+.L25_commands:
+	.word .L25_cmdClearScreen, .L25_msgCursorUp, .L25_msgClearToEOL
+	.word .L25_colorsError, .L25_colorsNormal
+
+.section .text
+
+terminalCommand:
+	push {lr}
+	ldr r1, =.L25_commands
+	ldr a1, [r1, a1, lsl #2]	@ the command to send
+	bl printf
+	pop {lr}
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ main
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .ltorg	@ not too clear on this, but this directive does something
@@ -2756,7 +2690,6 @@ formulaJumpTable:
 msgGreeting:	.asciz "Greetings, data analyzer.\n\n"
 msgSetupIntro:	.asciz "To set up, enter spreadsheet size and data width.\n"
 msgByeNow:	.asciz "'Bye now!\n"
-msgArg:		.asciz "r0 = 0x%08X; r1 = %s"
 
 .section .text
 .global main
@@ -2780,8 +2713,10 @@ main:
 	bl time
 	bl srand
 
-	bl setColors
-	bl clearScreen
+	mov a1, #terminalCommand_colorsNormal
+	bl terminalCommand
+	mov a1, #terminalCommand_clearScreen
+	bl terminalCommand
 
 greet:
 	ldr a1, =msgGreeting
@@ -2831,7 +2766,8 @@ recalculateSheet:
 	blx ip			@ calculate sheet
 
 redisplaySheet:
-	bl clearScreen 
+	mov a1, #terminalCommand_clearScreen
+	bl terminalCommand
 
 	push {rPresentation}
 	push {rFormula}
@@ -2979,7 +2915,8 @@ actionChangePresentation:
 actionResetSpreadsheet:
 	mov a1, rSpreadsheetAddress
 	bl free
-	bl clearScreen
+	mov a1, #terminalCommand_clearScreen
+	bl terminalCommand
 	b showSetupIntro
 
 actionFillRandom:
