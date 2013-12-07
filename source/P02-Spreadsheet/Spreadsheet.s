@@ -100,16 +100,14 @@
 @ calcSheetMinMax
 @
 @ stack:
-@	+4: unused but required so
-@		main can call minmax
-@		and sumavg with the
-@		same mechanism
+@	+4: unused but required so main can call minmax
+@		and sumavg with the same mechanism
 @
 @ registers:
-@	a/v1: operations function
-@	a/v2: spreadsheet address
-@	a/v3: number of cells in sheet
-@	a/v4: operation - min or max
+@	a1: operations function
+@	a2: spreadsheet address
+@	a3: number of cells in sheet
+@	a4: operation - min or max
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
@@ -166,10 +164,10 @@ calcSheetMinMax:
 @	+4 POINTER TO overflow flag
 @
 @ registers:
-@	a/v1 operations function
-@	a/v2 spreadsheet base address
-@	a/v3 number of cells in sheet
-@	a/v4 sum/avg indicator
+@	a1 operations function
+@	a2 spreadsheet base address
+@	a3 number of cells in sheet
+@	a4 sum/avg indicator
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
@@ -221,8 +219,8 @@ calcSheetSumAverage:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ convertBitStringToNumber 
 @
-@	a/v1 - string to convert
-@	a/v2 - data width in bytes
+@	a1 string to convert
+@	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 convertBitStringToNumber:
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -352,8 +350,8 @@ convertBitStringToNumber:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ convertHexStringToNumber 
 @
-@	a/v1 - string to convert
-@	a/v2 - data width in bytes
+@	a1 string to convert
+@	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 convertHexStringToNumber:
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -467,9 +465,9 @@ convertHexStringToNumber:
 @ stack:
 @	+4 test mode
 @
-@ registers
-@	a/v1 - cell index
-@	a/v2 - data width in bytes
+@ registers:
+@	a1 cell index
+@	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -512,10 +510,10 @@ displayGetCellValueBinMenu:
 @ stack:
 @	+4 test mode
 @
-@ registers
-@	a/v1 - cell index
-@	a/v2 - data width in bytes
-@	a/v3 - operations function
+@ registers:
+@	a1 cell index
+@	a2 data width in bytes
+@	a3 operations function
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -582,9 +580,9 @@ displayGetCellValueDecMenu:
 @ stack:
 @	+4 test mode
 @
-@ registers
-@	a/v1 - cell index
-@	a/v2 - data width in bytes
+@ registers:
+@	a1 cell index
+@	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -641,10 +639,11 @@ displayGetCellValueHexMenu:
 @	 +8 formula
 @	 +4 overflow accumulator
 @
-@	a/v1 - ops function
-@	a/v2 - spreadsheet data
-@	a/v3 - number of cells to display
-@	a/v4 - data width
+@ registers:
+@	a1 ops function
+@	a2 spreadsheet data
+@	a3 number of cells to display
+@	a4 data width
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -737,12 +736,13 @@ displaySheet:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ divide:
 @	floating-point divide, store truncated result in r0
-@	r0 numerator
-@	r1 denominator
+@
+@	a1 numerator
+@	a2 denominator
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 divide:
-	vmov s0, r0
-	vmov s1, r1
+	vmov s0, a1
+	vmov s1, a2
 	vcvt.f32.s32 s0, s0
 	vcvt.f32.s32 s1, s1
 	vdiv.f32 s0, s0, s1
@@ -757,8 +757,8 @@ divide:
 @	+4 testMode
 @
 @ registers:
-@	a/v1 lowest acceptable cell number
-@	a/v2 highest acceptable cell number
+@	a1 lowest acceptable cell number
+@	a2 highest acceptable cell number
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -806,8 +806,8 @@ getCellToEdit:
 @	+4 test mode
 @
 @ registers:
-@	a/v1 - operations function
-@	a/v2 - data width in bytes
+@	a1 operations function
+@	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -882,11 +882,12 @@ getCellValueBin:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueDec
+@
 @ stack:
 @	+4 test mode
 @
 @ registers:
-@	a/v1 - operations function
+@	a1 operations function
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 .section .data
@@ -999,8 +1000,8 @@ getCellValueDec:
 @	+4 test mode
 @
 @ registers:
-@	a/v1 - operations function
-@	a/v2 - data width in bytes
+@	a1 operations function
+@	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -1077,8 +1078,9 @@ getCellValueHex:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getFormula
-@	stack: 
-@		testMode
+@
+@ stack: 
+@	+4 testMode
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -1122,11 +1124,11 @@ getFormula:
 @ stack: 
 @	+4 testMode
 @
-@ registers
-@	a/v1 operations function
-@	a/v2 cell index
-@	a/v3 data width in bytes
-@	a/v4 data presentation mode
+@ registers:
+@	a1 operations function
+@	a2 cell index
+@	a3 data width in bytes
+@	a4 data presentation mode
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -1166,8 +1168,9 @@ getNewValueForCell:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getPresentation
-@	stack: 
-@		testMode
+@
+@ stack: 
+@	+4 testMode
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -1206,8 +1209,9 @@ getPresentation:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getMainSelection
-@	stack: 
-@		testMode
+@
+@ stack: 
+@	+4 testMode
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -1566,6 +1570,7 @@ newline:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations8
+@
 @	a1 = accumulator/source
 @		except for operation_display -- there it's presentation mode
 @	a2 = sheet base address
@@ -1702,6 +1707,7 @@ operations8:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations16
+@
 @	a1 = accumulator/source
 @		except for operation_display -- there it's presentation mode
 @	a2 = sheet base address
@@ -1852,6 +1858,7 @@ operations16:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations32
+@
 @	a1 = accumulator/source
 @		except for operation_display -- there it's presentation mode
 @	a2 = sheet base address
@@ -2012,9 +2019,10 @@ promptForSelection:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ randomFill
-@	a/v1 = operations function
-@	a/v2 = sheet base address
-@	a/v3 = cell count
+@
+@	a1 = operations function
+@	a2 = sheet base address
+@	a3 = cell count
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 randomFill:
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -2049,6 +2057,7 @@ randomFill:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ resetSheet
+@
 @	a1 = operations function
 @	a2 = sheet base address
 @	a3 = cell count
@@ -2092,9 +2101,9 @@ resetSheet:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ runGetCellValueMenu
 @
-@	a/v1 - instructions
-@	a/v2 - cell index
-@	a/v3 - prompt postfix
+@	a1 instructions
+@	a2 cell index
+@	a3 prompt postfix
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -2179,9 +2188,9 @@ runMenu:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ sayYuck
 @
-@	a/v1 string with yucky value
-@	a/v2 prompt suffix
-@	a/v3 skip second cursor-up
+@	a1 string with yucky value
+@	a2 prompt suffix
+@	a3 skip second cursor-up
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -2251,6 +2260,7 @@ showList:
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ showNumberAsBin 
+@
 @	a1 number to show
 @	a2 number of bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
