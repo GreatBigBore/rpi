@@ -2,7 +2,7 @@
 @*
 @* written by			Rob Bishop
 @* created on			05 November 2013
-@* last modified on		03 December 2013
+@* last modified on		07 December 2013
 @*
 @* Create a simple one-row spreadsheet. The number of cells in the row
 @*		will be selected by the user (minimum number of cells: 2, maximum
