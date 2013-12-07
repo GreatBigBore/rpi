@@ -111,51 +111,65 @@
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
+	rOperationsFunction	.req v1
+	rSpreadsheetAddress	.req v2
+	rNumberOfCellsInSheet	.req v3
+	rFormulaMinMax		.req v4
+	rFormulaCurrentResult	.req v5
+	rLoopCounter		.req v6
+
 calcSheetMinMax:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-	cmp v4, #formula_minimum
+	cmp rFormulaMinMax, #formula_minimum
 	beq .L7_initForMin
 
 	mov a4, #operation_initAForMax
-	blx v1		@ init A for max
+	blx rOperationsFunction		@ init A for max
 
 	mov a4, #operation_max
 	b .L7_loopInit
 
 .L7_initForMin:
 	mov a1, #operation_initAForMin
-	blx v1		@ init A for min
+	blx rOperationsFunction		@ init A for min
 
 	mov a4, #operation_min
 
 .L7_loopInit:
-	mov v6, #0
-	mov v5, r0	@ init from the initA result
+	mov rLoopCounter, #0
+	mov rFormulaCurrentResult, r0	@ init from the initA result
 
 .L7_loopTop:
-	cmp v6, v3
+	cmp rLoopCounter, rNumberOfCellsInSheet
 	bhs .L7_loopExit
 
-	mov a1, v5	@ current min/max
-	mov a2, v2	@ sheet address
-	mov a3, v6	@ cell index
-	blx v1		@ get min/max between curr and a1
-	mov v5, r0	@ save comparison result
+	mov a1, rFormulaCurrentResult	@ current min/max
+	mov a2, rSpreadsheetAddress	@ sheet address
+	mov a3, rLoopCounter	@ cell index
+	blx rOperationsFunction		@ get min/max between curr and a1
+	mov rFormulaCurrentResult, r0	@ save comparison result
 
 .L7_loopBottom:
-	add v6, #1
+	add rLoopCounter, #1
 	b .L7_loopTop
 
 .L7_loopExit:
-	mov a1, v5	@ result
-	mov a2, v2	@ sheet
-	mov a3, v6	@ cell "index" -- result cell
+	mov a1, rFormulaCurrentResult	@ result
+	mov a2, rSpreadsheetAddress	@ sheet
+	mov a3, rLoopCounter	@ cell "index" -- result cell
 	mov a4, #operation_store
-	blx v1		@ store result
+	blx rOperationsFunction		@ store result
 
 	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rOperationsFunction
+	.unreq rSpreadsheetAddress
+	.unreq rNumberOfCellsInSheet
+	.unreq rFormulaMinMax
+	.unreq rFormulaCurrentResult
+	.unreq rLoopCounter
 	
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ calcSheetSumAverage
@@ -171,50 +185,66 @@ calcSheetMinMax:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .text
 
+	rOperationsFunction	.req v1
+	rSpreadsheetAddress	.req v2
+	rNumberOfCellsInSheet	.req v3
+	rFormulaSumAvg		.req v4
+	rFormulaCurrentResult	.req v5
+	rLoopCounter		.req v6
+	rOverflowAccumulator	.req v7
+
 calcSheetSumAverage:
 	mFunctionSetup	@ Setup stack frame and local variables
 
 .L11_loopInit:
-	mov v5, #0	@ accumulator
-	mov v6, #0	@ cell index
-	mov v7, #0	@ overflow indicator
+	mov rFormulaCurrentResult, #0	@ accumulator
+	mov rLoopCounter, #0	@ cell index
+	mov rOverflowAccumulator, #0	@ overflow indicator
 
 .L11_loopTop:
-	cmp v6, v3	@ end of loop?
+	cmp rLoopCounter, rNumberOfCellsInSheet	@ end of loop?
 	bhs .L11_loopExit
 
-	mov a1, v5	@ accumulator
-	mov a2, v2	@ sheet base address
-	mov a3, v6	@ cell index
+	mov a1, rFormulaCurrentResult	@ accumulator
+	mov a2, rSpreadsheetAddress	@ sheet base address
+	mov a3, rLoopCounter	@ cell index
 	mov a4, #operation_accumulate
-	blx v1		@ accumulate sum 
-	mov v5, r0	@ track accumulator
-	orr v7, r1	@ track overflow flag over entire sheet
+	blx rOperationsFunction		@ accumulate sum 
+	mov rFormulaCurrentResult, r0	@ track accumulator
+	orr rOverflowAccumulator, r1	@ track overflow flag over entire sheet
 
 .L11_loopBottom:
-	add v6, #1
+	add rLoopCounter, #1
 	b .L11_loopTop
 
 .L11_loopExit:
-	mov a1, v5	@ sum
-	cmp v4, #formula_sum
+	mov a1, rFormulaCurrentResult	@ sum
+	cmp rFormulaSumAvg, #formula_sum
 	beq .L11_storeResult
 
-	mov a2, v3	@ denominator for average
+	mov a2, rNumberOfCellsInSheet	@ denominator for average
 	bl divide	@ result in r0
 
 .L11_storeResult:
-	mov a2, v2	@ spreadsheet
-	mov a3, v6	@ cell "index" -- just past main sheet is result cell
+	mov a2, rSpreadsheetAddress	@ spreadsheet
+	mov a3, rLoopCounter	@ cell "index" -- just past main sheet is result cell
 	mov a4, #operation_store
-	blx v1		@ store result
+	blx rOperationsFunction		@ store result
 
 	ldr r0, [fp, #4]	@ r0 -> caller's overflow flag
-	str v7, [r0]		@ set caller's overflow flag for entire sheet
+	str rOverflowAccumulator, [r0]		@ set caller's overflow flag for entire sheet
 
 .L11_epilogue:
 	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rOperationsFunction
+	.unreq rSpreadsheetAddress
+	.unreq rNumberOfCellsInSheet
+	.unreq rFormulaSumAvg
+	.unreq rFormulaCurrentResult
+	.unreq rLoopCounter
+	.unreq rOverflowAccumulator
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ convertBitStringToNumber 
