@@ -997,29 +997,39 @@ i2c_smbus_access:
 	stmfd	sp!, {fp, lr}
 	add	fp, sp, #4
 	sub	sp, sp, #32
-	str	r0, [fp, #-24]
-	str	r3, [fp, #-32]
-	mov	r3, r1
+
+	str	r0, [fp, #-24]	@ parameter: fd		in a1, store at fp - 24
+	str	r3, [fp, #-32]	@ parameter: size	in a4, store at fp - 32
+	mov	r3, r1		@ parameter: rw		in a2, store at fp - 25
 	strb	r3, [fp, #-25]
-	mov	r3, r2
+	mov	r3, r2		@ parameter: command	in a3, store at fp - 26
 	strb	r3, [fp, #-26]
+
+	@@@
+	@ printf("B")
+	@@@
 	mov	r0, #66
 	bl	putchar
+
 	ldrb	r3, [fp, #-25]
-	strb	r3, [fp, #-16]
+	strb	r3, [fp, #-16]	@ args.read_write = rw
 	ldrb	r3, [fp, #-26]
-	strb	r3, [fp, #-15]
+	strb	r3, [fp, #-15]	@ args.command = command
 	ldr	r3, [fp, #-32]
-	str	r3, [fp, #-12]
+	str	r3, [fp, #-12]	@ args.size = size
 	ldr	r3, [fp, #4]
-	str	r3, [fp, #-8]
-	sub	r3, fp, #16
-	ldr	r0, [fp, #-24]
-	mov	r1, #1824
-	mov	r2, r3
+	str	r3, [fp, #-8]	@ args.data = data
+
+	@@@
+	@ ioctl(fd, I2C_SMBUS, &args)
+	@@@
+	ldr	a1, [fp, #-24]	@ fd is at fp -24
+	mov	a2, #0x720
+	sub	a3, fp, #16	@ args is at fp - 16
 	bl	ioctl
-	mov	r3, r0
-	mov	r0, r3
+
+	mov	r3, r0		@ result of ioctl
+	mov	r0, r3		@ is now this function's result
 	sub	sp, fp, #4
 	ldmfd	sp!, {fp, pc}
 	.size	i2c_smbus_access, .-i2c_smbus_access
