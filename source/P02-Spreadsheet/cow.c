@@ -211,6 +211,48 @@ static int sysFds [64] =
 } ;
 static int wiringPiMode;
 //static uint64_t epochMilli, epochMicro ;
+ 
+struct wiringPiNodeStruct *robnode;
+
+
+int rwiringPiI2CSetupInterface (const char *device, int devId)
+{
+  int fd ;
+
+  if ((fd = open (device, O_RDWR)) < 0) {
+    printf( "Unable to open I2C device: %s\n", strerror (errno)) ;
+	exit(-1);
+	}
+
+  if (ioctl (fd, I2C_SLAVE, devId) < 0) {
+    printf("Unable to select I2C device: %s\n", strerror (errno)) ;
+	exit(-1);
+	}
+
+  return fd ;
+}
+
+
+/*
+ * rwiringPiI2CSetup:
+ *	Open the I2C device, and regsiter the target device
+ *********************************************************************************
+ */
+
+int rwiringPiI2CSetup (const int devId)
+{
+  int rev ;
+  const char *device ;
+
+  rev = rpiBoardRev () ;
+
+  if (rev == 1)
+    device = "/dev/i2c-0" ;
+  else
+    device = "/dev/i2c-1" ;
+
+  return rwiringPiI2CSetupInterface (device, devId) ;
+}
 
 /*
  * wiringPiNewNode:
@@ -226,6 +268,74 @@ static void pwmWriteDummy            (struct wiringPiNodeStruct *node, int pin, 
 static int  analogReadDummy          (struct wiringPiNodeStruct *node, int pin)            { return 0 ; }
 static void analogWriteDummy         (struct wiringPiNodeStruct *node, int pin, int value) { return ; }
 
+static void rpiBoardRevOops (const char *why)
+{
+  fprintf (stderr, "piBoardRev: Unable to determine board revision from /proc/cpuinfo\n") ;
+  fprintf (stderr, " -> %s\n", why) ;
+  fprintf (stderr, " ->  You may want to check:\n") ;
+  fprintf (stderr, " ->  http://www.raspberrypi.org/phpBB3/viewtopic.php?p=184410#p184410\n") ;
+  exit (EXIT_FAILURE) ;
+}
+
+int rpiBoardRev (void)
+{
+  FILE *cpuFd ;
+  char line [120] ;
+  char *c, lastChar ;
+  static int  boardRev = -1 ;
+
+  if (boardRev != -1)	// No point checking twice
+    return boardRev ;
+
+  if ((cpuFd = fopen ("/proc/cpuinfo", "r")) == NULL)
+    rpiBoardRevOops ("Unable to open /proc/cpuinfo") ;
+
+  while (fgets (line, 120, cpuFd) != NULL)
+    if (strncmp (line, "Revision", 8) == 0)
+      break ;
+
+  fclose (cpuFd) ;
+
+  if (strncmp (line, "Revision", 8) != 0)
+    rpiBoardRevOops ("No \"Revision\" line") ;
+
+  for (c = &line [strlen (line) - 1] ; (*c == '\n') || (*c == '\r') ; --c)
+    *c = 0 ;
+  
+  if (wiringPiDebug)
+    printf ("piboardRev: Revision string: %s\n", line) ;
+
+  for (c = line ; *c ; ++c)
+    if (isdigit (*c))
+      break ;
+
+  if (!isdigit (*c))
+    rpiBoardRevOops ("No numeric revision string") ;
+
+// If you have overvolted the Pi, then it appears that the revision
+//	has 100000 added to it!
+
+  if (wiringPiDebug)
+    if (strlen (c) != 4)
+      printf ("piboardRev: This Pi has/is overvolted!\n") ;
+
+  lastChar = line [strlen (line) - 1] ;
+
+  if (wiringPiDebug)
+    printf ("piboardRev: lastChar is: '%c' (%d, 0x%02X)\n", lastChar, lastChar, lastChar) ;
+
+  /**/ if ((lastChar == '2') || (lastChar == '3'))
+    boardRev = 1 ;
+  else
+    boardRev = 2 ;
+
+  if (wiringPiDebug)
+    printf ("piBoardRev: Returning revision: %d\n", boardRev) ;
+
+  return boardRev ;
+}
+
+
 struct wiringPiNodeStruct *rwiringPiNewNode (int pinBase, int numPins)
 {
   int    pin ;
@@ -233,34 +343,19 @@ struct wiringPiNodeStruct *rwiringPiNewNode (int pinBase, int numPins)
 
 	printf("C");
 
-// Minimum pin base is 64
+  robnode = (struct wiringPiNodeStruct *)calloc (sizeof (struct wiringPiNodeStruct), 1) ;	// calloc zeros
 
-  if (pinBase < 64)
-    (void)wiringPiFailure (WPI_FATAL, "wiringPiNewNode: pinBase of %d is < 64\n", pinBase) ;
+  robnode->pinBase         = pinBase ;
+  robnode->pinMax          = pinBase + numPins - 1 ;
+  robnode->pinMode         = pinModeDummy ;
+  robnode->pullUpDnControl = pullUpDnControlDummy ;
+  robnode->digitalRead     = digitalReadDummy ;
+  robnode->digitalWrite    = digitalWriteDummy ;
+  robnode->pwmWrite        = pwmWriteDummy ;
+  robnode->analogRead      = analogReadDummy ;
+  robnode->analogWrite     = analogWriteDummy ;
 
-// Check all pins in-case there is overlap:
-
-  for (pin = pinBase ; pin < (pinBase + numPins) ; ++pin)
-    if (wiringPiFindNode (pin) != NULL)
-      (void)wiringPiFailure (WPI_FATAL, "wiringPiNewNode: Pin %d overlaps with existing definition\n", pin) ;
-
-  node = (struct wiringPiNodeStruct *)calloc (sizeof (struct wiringPiNodeStruct), 1) ;	// calloc zeros
-  if (node == NULL)
-    (void)wiringPiFailure (WPI_FATAL, "wiringPiNewNode: Unable to allocate memory: %s\n", strerror (errno)) ;
-
-  node->pinBase         = pinBase ;
-  node->pinMax          = pinBase + numPins - 1 ;
-  node->pinMode         = pinModeDummy ;
-  node->pullUpDnControl = pullUpDnControlDummy ;
-  node->digitalRead     = digitalReadDummy ;
-  node->digitalWrite    = digitalWriteDummy ;
-  node->pwmWrite        = pwmWriteDummy ;
-  node->analogRead      = analogReadDummy ;
-  node->analogWrite     = analogWriteDummy ;
-  node->next            = wiringPiNodes ;
-  wiringPiNodes         = node ;
-
-  return node ;
+  return robnode ;
 }
 
 
@@ -286,12 +381,9 @@ static inline int i2c_smbus_access (int fd, char rw, uint8_t command, int size, 
 
 void ranalogWrite (int pin, int value)
 {
-  struct wiringPiNodeStruct *node = wiringPiNodes ;
+  struct wiringPiNodeStruct *node = robnode;
 
 	printf("A");
-  if ((node = wiringPiFindNode (pin)) == NULL)
-    return ;
-
   node->analogWrite (node, pin, value) ;
 }
 
@@ -332,7 +424,7 @@ int rwiringPiSetupSys (void)
 
     printf ("wiringPi: wiringPiSetupSys called\n") ;
 
-  boardRev = piBoardRev () ;
+  boardRev = rpiBoardRev () ;
 
   if (boardRev == 1)
   {
@@ -396,7 +488,7 @@ int rsn3218Setup (const int pinBase)
   int fd ;
   struct wiringPiNodeStruct *node ;
 
-  if ((fd = wiringPiI2CSetup (0x54)) < 0)
+  if ((fd = rwiringPiI2CSetup (0x54)) < 0)
     return fd ;
 
 	printf("F");
