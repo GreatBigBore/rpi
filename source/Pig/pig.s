@@ -1,3 +1,27 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Some macros to make the code a little bit easier to read
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.macro mFunctionSetup
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+.endm
+
+.macro mFunctionBreakdown argumentCount
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	add sp, #\argumentCount * 4
+.endm
+
 	.arch armv6
 	.eabi_attribute 27, 3
 	.eabi_attribute 28, 1
@@ -989,50 +1013,64 @@ rwiringPiNewNode:
 	.word	analogReadDummy
 	.word	analogWriteDummy
 	.size	rwiringPiNewNode, .-rwiringPiNewNode
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ writePigCommand
+@
+@ registers:
+@	a1 file descriptor
+@	a2 piglow command
+@	a3 command size in bytes
+@	a4 command parameters
+@
+@ returns:
+@	r0 result of ioctl call
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.section .data
+	.align 2
+
+.L1_pigCommandBlock:
+.L1_rwIndicator		= .-.L1_pigCommandBlock;	.byte 0
+.L1_command		= .-.L1_pigCommandBlock;	.byte 0
+							.byte 0
+							.byte 0
+.L1_commandSizeInBytes	= .-.L1_pigCommandBlock;	.word 0
+.L1_commandParameters	= .-.L1_pigCommandBlock;	.word 0
+
+	.section .text
 	.align	2
-	.type	i2c_smbus_access, %function
-i2c_smbus_access:
-	@ args = 4, pretend = 0, frame = 32
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #32
 
-	str	r0, [fp, #-24]	@ parameter: fd		in a1, store at fp - 24
-	str	r3, [fp, #-32]	@ parameter: size	in a4, store at fp - 32
-	mov	r3, r1		@ parameter: rw		in a2, store at fp - 25
-	strb	r3, [fp, #-25]
-	mov	r3, r2		@ parameter: command	in a3, store at fp - 26
-	strb	r3, [fp, #-26]
+	rFileDescriptor		.req v1
+	rPigCommand		.req v2
+	rCommandSizeInBytes	.req v3
+	rCommandParameters	.req v4
 
-	@@@
-	@ printf("B")
-	@@@
-	mov	r0, #66
-	bl	putchar
+writePigCommand:
+	mFunctionSetup	@ Setup stack frame and local variables
 
-	ldrb	r3, [fp, #-25]
-	strb	r3, [fp, #-16]	@ args.read_write = rw
-	ldrb	r3, [fp, #-26]
-	strb	r3, [fp, #-15]	@ args.command = command
-	ldr	r3, [fp, #-32]
-	str	r3, [fp, #-12]	@ args.size = size
-	ldr	r3, [fp, #4]
-	str	r3, [fp, #-8]	@ args.data = data
+	ldr	r0, =.L1_pigCommandBlock
+	mov	r1, #0			@ I2C(?) write command -- 1 means read
+	strb	r1,			[r0, #.L1_rwIndicator]
+	strb	rPigCommand,		[r0, #.L1_command]
+	str	rCommandSizeInBytes,	[r0, #.L1_commandSizeInBytes]
+	str	rCommandParameters,	[r0, #.L1_commandParameters] 
 
 	@@@
 	@ ioctl(fd, I2C_SMBUS, &args)
 	@@@
-	ldr	a1, [fp, #-24]	@ fd is at fp -24
+	mov	a1, rFileDescriptor
 	mov	a2, #0x720
-	sub	a3, fp, #16	@ args is at fp - 16
+	ldr	a3, =.L1_pigCommandBlock
 	bl	ioctl
 
-	mov	r3, r0		@ result of ioctl
-	mov	r0, r3		@ is now this function's result
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-	.size	i2c_smbus_access, .-i2c_smbus_access
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rPigCommand
+	.unreq rCommandSizeInBytes
+	.unreq rCommandParameters
+
 	.align	2
 	.global	ranalogWrite
 	.type	ranalogWrite, %function
@@ -1176,11 +1214,13 @@ rwiringPiI2CWriteReg8:
 	uxtb	r3, r3
 	sub	r2, fp, #40
 	str	r2, [sp, #0]
-	ldr	r0, [fp, #-48]
-	mov	r1, #0
-	mov	r2, r3
-	mov	r3, #2
-	bl	i2c_smbus_access
+
+	ldr	a1, [fp, #-48]		@ file descriptor
+	mov	a2, r3			@ I2C command
+	mov	a3, #2			@ parameters size
+	sub	a4, fp, #40		@ parameters
+	bl	writePigCommand
+
 	mov	r3, r0
 	mov	r0, r3
 	sub	sp, fp, #4
