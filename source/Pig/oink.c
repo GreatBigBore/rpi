@@ -100,9 +100,26 @@ struct i2c_smbus_ioctl_data
   char *data;
 } ;
 
-int rwiringPiI2CSetupInterface (const char *device, int devId)
-{
+int rpiBoardRev (void);
+
+/*
+ * I2CSetup:
+ *	Open the I2C device, and regsiter the target device
+ *********************************************************************************
+ */
+
   int fd ;
+  int rev ;
+  const char *device ;
+
+int I2CSetup (const int devId)
+{
+  rev = rpiBoardRev () ;
+
+  if (rev == 1)
+    device = "/dev/i2c-0" ;
+  else
+    device = "/dev/i2c-1" ;
 
   if ((fd = open (device, O_RDWR)) < 0) {
     printf( "Unable to open I2C device: %s\n", strerror (errno)) ;
@@ -114,29 +131,7 @@ int rwiringPiI2CSetupInterface (const char *device, int devId)
 	exit(-1);
 	}
 
-  return fd ;
-}
-
-
-/*
- * rwiringPiI2CSetup:
- *	Open the I2C device, and regsiter the target device
- *********************************************************************************
- */
-
-int rwiringPiI2CSetup (const int devId)
-{
-  int rev ;
-  const char *device ;
-
-  rev = rpiBoardRev () ;
-
-  if (rev == 1)
-    device = "/dev/i2c-0" ;
-  else
-    device = "/dev/i2c-1" ;
-
-  return rwiringPiI2CSetupInterface (device, devId) ;
+  return fd;
 }
 
 static void rpiBoardRevOops (const char *why)
@@ -148,13 +143,13 @@ static void rpiBoardRevOops (const char *why)
   exit (EXIT_FAILURE) ;
 }
 
-int rpiBoardRev (void)
-{
   FILE *cpuFd ;
   char line [120] ;
   char *c, lastChar ;
-  static int  boardRev = -1 ;
+  int  boardRev = -1 ;
 
+int rpiBoardRev (void)
+{
   if (boardRev != -1)	// No point checking twice
     return boardRev ;
 
@@ -208,11 +203,12 @@ int rpiBoardRev (void)
  *********************************************************************************
  */
 
-int rwiringPiI2CWriteReg8 (int fd, int reg, int value)
-{
-  char theData = value;
+  char theData;
   struct i2c_smbus_ioctl_data args ;
 
+int writeI2CRegister (int fd, int reg, int value)
+{
+	theData = value;
   args.read_write = I2C_SMBUS_WRITE;
   args.command    = reg ;
   args.size       = I2C_SMBUS_BYTE_DATA ;
@@ -221,10 +217,10 @@ int rwiringPiI2CWriteReg8 (int fd, int reg, int value)
   return ioctl (fd, I2C_SMBUS, &args) ;
 }
 
-static void ranalogWrite (int fd, int pin, int value)
+static void lightPigLED (int fd, int pin, int value)
 {
-  rwiringPiI2CWriteReg8 (fd, (pin + 1), value & 0xFF) ;	// Value
-  rwiringPiI2CWriteReg8 (fd, 0x16, 0x00) ;		// Update
+  writeI2CRegister (fd, (pin + 1), value & 0xFF) ;	// Value
+  writeI2CRegister (fd, 0x16, 0x00) ;		// Update
 }
 
 /*
@@ -234,39 +230,36 @@ static void ranalogWrite (int fd, int pin, int value)
  *********************************************************************************
  */
 
-int rsn3218Setup ()
-{
-  int fd ;
-  struct wiringPiNodeStruct *node ;
+int i, j;
 
-  if ((fd = rwiringPiI2CSetup (0x54)) < 0)
+int pigSetup ()
+{
+  if ((fd = I2CSetup (0x54)) < 0)
     return fd ;
 
 // Setup the chip - initialise all 18 LEDs to off
 
 //wiringPiI2CWriteReg8 (fd, 0x17, 0) ;		// Reset
-  rwiringPiI2CWriteReg8 (fd, 0x00, 1) ;		// Not Shutdown
-  rwiringPiI2CWriteReg8 (fd, 0x13, 0x3F) ;	// Enable LEDs  0- 5
-  rwiringPiI2CWriteReg8 (fd, 0x14, 0x3F) ;	// Enable LEDs  6-11
-  rwiringPiI2CWriteReg8 (fd, 0x15, 0x3F) ;	// Enable LEDs 12-17
-  rwiringPiI2CWriteReg8 (fd, 0x16, 0x00) ;	// Update
+  writeI2CRegister (fd, 0x00, 1) ;		// Not Shutdown
+  writeI2CRegister (fd, 0x13, 0x3F) ;	// Enable LEDs  0- 5
+  writeI2CRegister (fd, 0x14, 0x3F) ;	// Enable LEDs  6-11
+  writeI2CRegister (fd, 0x15, 0x3F) ;	// Enable LEDs 12-17
+  writeI2CRegister (fd, 0x16, 0x00) ;	// Update
 
   return fd ;
 }
 
 int main (void)
 {
-  int i, j, fd ;
-
-  fd = rsn3218Setup () ;
+  fd = pigSetup () ;
 
     for (i = 0 ; i < 10 ; ++i)
       for (j = 0 ; j < 18 ; ++j)
-	ranalogWrite (fd, j, i) ;
+	lightPigLED (fd, j, i) ;
 
     for (i = 10 ; i >= 0 ; --i)
       for (j = 0 ; j < 18 ; ++j)
-	ranalogWrite (fd, j, i) ;
+	lightPigLED (fd, j, i) ;
 
 	return 0;
 }
