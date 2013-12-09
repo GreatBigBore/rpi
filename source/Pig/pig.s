@@ -1015,12 +1015,12 @@ rwiringPiNewNode:
 	.size	rwiringPiNewNode, .-rwiringPiNewNode
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ writePigCommand
+@ writeI2CCommand
 @
 @ registers:
 @	a1 file descriptor
 @	a2 piglow command
-@	a3 command size in bytes
+@	a3 I2C transaction type
 @	a4 command parameters
 @
 @ returns:
@@ -1028,6 +1028,8 @@ rwiringPiNewNode:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	.section .data
 	.align 2
+
+.equ I2C_BUS, 0x720
 
 .L1_pigCommandBlock:
 .L1_rwIndicator		= .-.L1_pigCommandBlock;	.byte 0
@@ -1042,24 +1044,24 @@ rwiringPiNewNode:
 
 	rFileDescriptor		.req v1
 	rPigCommand		.req v2
-	rCommandSizeInBytes	.req v3
+	rI2CTransactionType	.req v3
 	rCommandParameters	.req v4
 
-writePigCommand:
+writeI2CCommand:
 	mFunctionSetup	@ Setup stack frame and local variables
 
 	ldr	r0, =.L1_pigCommandBlock
 	mov	r1, #0			@ I2C(?) write command -- 1 means read
 	strb	r1,			[r0, #.L1_rwIndicator]
 	strb	rPigCommand,		[r0, #.L1_command]
-	str	rCommandSizeInBytes,	[r0, #.L1_commandSizeInBytes]
+	str	rI2CTransactionType,	[r0, #.L1_commandSizeInBytes]
 	str	rCommandParameters,	[r0, #.L1_commandParameters] 
 
 	@@@
 	@ ioctl(fd, I2C_SMBUS, &args)
 	@@@
 	mov	a1, rFileDescriptor
-	mov	a2, #0x720
+	mov	a2, #I2C_BUS
 	ldr	a3, =.L1_pigCommandBlock
 	bl	ioctl
 
@@ -1068,7 +1070,7 @@ writePigCommand:
 
 	.unreq rFileDescriptor
 	.unreq rPigCommand
-	.unreq rCommandSizeInBytes
+	.unreq rI2CTransactionType
 	.unreq rCommandParameters
 
 	.align	2
@@ -1193,39 +1195,43 @@ rwiringPiSetupSys:
 	.word	sysFds
 	.word	wiringPiMode
 	.size	rwiringPiSetupSys, .-rwiringPiSetupSys
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ writeI2CReg8
+@
+@ registers:
+@	a1 file descriptor
+@	a2 register to write
+@	a3 value to write
+@
+@ returns:
+@	nothing
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.equ I2C_SMBUS_BYTE_DATA, 2
+
+	.section .data
+	.align 2
+
+.L2_I2CTransactionData:
+.L2_valueToWrite	= .-.L2_I2CTransactionData;	.byte 0
+							.fill 31, 1, 0
+
+	.section .text
 	.align	2
-	.global	rwiringPiI2CWriteReg8
-	.type	rwiringPiI2CWriteReg8, %function
-rwiringPiI2CWriteReg8:
-	@ args = 0, pretend = 0, frame = 56
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #64
-	str	r0, [fp, #-48]
-	str	r1, [fp, #-52]
-	str	r2, [fp, #-56]
-	ldr	r3, [fp, #-56]
-	uxtb	r3, r3
-	strb	r3, [fp, #-40]
-	mov	r0, #68
-	bl	putchar
-	ldr	r3, [fp, #-52]
-	uxtb	r3, r3
-	sub	r2, fp, #40
-	str	r2, [sp, #0]
 
-	ldr	a1, [fp, #-48]		@ file descriptor
-	mov	a2, r3			@ I2C command
-	mov	a3, #2			@ parameters size
-	sub	a4, fp, #40		@ parameters
-	bl	writePigCommand
+writeI2CReg8:
+	mFunctionSetup	@ Setup stack frame and local variables
 
-	mov	r3, r0
-	mov	r0, r3
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-	.size	rwiringPiI2CWriteReg8, .-rwiringPiI2CWriteReg8
+	ldr	r3, =.L2_I2CTransactionData
+	strb	r2, [r3, #.L2_valueToWrite]
+
+	mov	a3, #I2C_SMBUS_BYTE_DATA	@ I2C transaction type
+	ldr	a4, =.L2_I2CTransactionData
+	bl	writeI2CCommand
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
 	.align	2
 	.type	rmyAnalogWrite, %function
 rmyAnalogWrite:
@@ -1253,11 +1259,11 @@ rmyAnalogWrite:
 	ldr	r0, [fp, #-8]
 	ldr	r1, [fp, #-12]
 	mov	r2, r3
-	bl	rwiringPiI2CWriteReg8
+	bl	writeI2CReg8
 	ldr	r0, [fp, #-8]
 	mov	r1, #22
 	mov	r2, #0
-	bl	rwiringPiI2CWriteReg8
+	bl	writeI2CReg8
 	sub	sp, fp, #4
 	ldmfd	sp!, {fp, pc}
 	.size	rmyAnalogWrite, .-rmyAnalogWrite
@@ -1285,23 +1291,23 @@ rsn3218Setup:
 	ldr	r0, [fp, #-8]
 	mov	r1, #0
 	mov	r2, #1
-	bl	rwiringPiI2CWriteReg8
+	bl	writeI2CReg8
 	ldr	r0, [fp, #-8]
 	mov	r1, #19
 	mov	r2, #63
-	bl	rwiringPiI2CWriteReg8
+	bl	writeI2CReg8
 	ldr	r0, [fp, #-8]
 	mov	r1, #20
 	mov	r2, #63
-	bl	rwiringPiI2CWriteReg8
+	bl	writeI2CReg8
 	ldr	r0, [fp, #-8]
 	mov	r1, #21
 	mov	r2, #63
-	bl	rwiringPiI2CWriteReg8
+	bl	writeI2CReg8
 	ldr	r0, [fp, #-8]
 	mov	r1, #22
 	mov	r2, #0
-	bl	rwiringPiI2CWriteReg8
+	bl	writeI2CReg8
 	ldr	r0, [fp, #-16]
 	mov	r1, #18
 	bl	rwiringPiNewNode
