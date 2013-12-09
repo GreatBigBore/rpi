@@ -464,7 +464,6 @@ rpiBoardRev:
 	.comm	theData,1,1
 	.comm	args,12,4
 
-
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ writeI2CRegister
 @
@@ -524,31 +523,37 @@ writeI2CRegister:
 	.unreq rPigCommand
 	.unreq rI2CCommand
 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigLED
+@
+@ registers:
+@	a1 file descriptor
+@	a2 pin to write
+@	a3 value to write
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	rFileDescriptor	.req v1
+	rPinToWrite	.req v2
+	rValueToWrite	.req v3
+
 	.align	2
 	.type	lightPigLED, %function
 lightPigLED:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #16
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	str	r2, [fp, #-16]
-	ldr	r3, [fp, #-12]
-	add	r2, r3, #1
-	ldr	r3, [fp, #-16]
-	uxtb	r3, r3
-	ldr	r0, [fp, #-8]
-	mov	r1, r2
-	mov	r2, r3
-	bl	writeI2CRegister
-	ldr	r0, [fp, #-8]
-	mov	r1, #22
-	mov	r2, #0
-	bl	writeI2CRegister
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	mov	a1, rFileDescriptor
+	add	a2, rPinToWrite, #1
+	and	a3, rValueToWrite, #0xFF
+	bl	writeI2CRegister		@ write the value
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0x16
+	mov	a3, #0
+	bl	writeI2CRegister		@ update? commit?
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
 	.size	lightPigLED, .-lightPigLED
 	.comm	i,4,4
 	.comm	j,4,4
