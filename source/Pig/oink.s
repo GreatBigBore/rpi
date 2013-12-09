@@ -1,3 +1,27 @@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Some macros to make the code a little bit easier to read
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.macro mFunctionSetup
+	push {fp}	@ setup local stack frame
+	mov fp, sp
+
+	push {lr}	@ preserve return address
+	push {v1 - v7}	@ always preserve caller's locals
+
+	push {a1 - a4}	@ Transfer scratch regs to...
+	pop  {v1 - v4}	@ local variable regs
+.endm
+
+.macro mFunctionBreakdown argumentCount
+	pop {v1 - v7}	@ restore caller's locals
+	pop {lr}	@ restore return address
+
+	mov sp, fp	@ restore caller's stack frame
+	pop {fp}
+
+	add sp, #\argumentCount * 4
+.endm
+
 	.arch armv6
 	.eabi_attribute 27, 3
 	.eabi_attribute 28, 1
@@ -16,109 +40,91 @@
 	.comm	device,4,4
 	.section	.rodata
 	.align	2
-.LC0:
-	.ascii	"/dev/i2c-0\000"
-	.align	2
-.LC1:
-	.ascii	"/dev/i2c-1\000"
-	.align	2
-.LC2:
-	.ascii	"Unable to open I2C device: %s\012\000"
-	.align	2
-.LC3:
-	.ascii	"Unable to select I2C device: %s\012\000"
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ I2CSetup
+@
+@ returns
+@	r0 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.data
+	.align 2
+
+.L1_devicePath:		.ascii "/dev/i2c-"
+.L1_deviceNumber:	.asciz "0"
+
+.L1_msgUnableToOpen:	.asciz "Unable to open %s; error = %s\n"
+.L1_msgUnableToSelect:	.asciz "Unable to select %s: error = %s\n"
+
 	.text
 	.align	2
 	.global	I2CSetup
+
+.L1_I2CSlaveID:		.word 0x703
+
+	rFileDescriptor	.req v1
+	rBoardRevision	.req v2
+
 	.type	I2CSetup, %function
 I2CSetup:
-	@ args = 0, pretend = 0, frame = 8
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {r4, fp, lr}
-	add	fp, sp, #8
-	sub	sp, sp, #12
-	str	r0, [fp, #-16]
+
+	mFunctionSetup	@ Setup stack frame and local variables
+
 	bl	rpiBoardRev
-	mov	r2, r0
-	ldr	r3, .L6
-	str	r2, [r3, #0]
-	ldr	r3, .L6
-	ldr	r3, [r3, #0]
-	cmp	r3, #1
-	bne	.L2
-	ldr	r3, .L6+4
-	ldr	r2, .L6+8
-	str	r2, [r3, #0]
-	b	.L3
-.L2:
-	ldr	r3, .L6+4
-	ldr	r2, .L6+12
-	str	r2, [r3, #0]
-.L3:
-	ldr	r3, .L6+4
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	mov	r1, #2
+
+	mov	rBoardRevision, r0
+	ldr	r0, =.L1_deviceNumber
+	add	r1, rBoardRevision, #'0' - 1	@ 0-based, plus make it ascii
+	strb	r1, [r0]			@ device path ready to use
+
+	ldr	a1, =.L1_devicePath
+	mov	a2, #2				@ O_RDWR for open
 	bl	open
-	mov	r2, r0
-	ldr	r3, .L6+16
-	str	r2, [r3, #0]
-	ldr	r3, .L6+16
-	ldr	r3, [r3, #0]
-	cmp	r3, #0
-	bge	.L4
-	ldr	r4, .L6+20
+
+	mov	rFileDescriptor, r0
+	cmp	rFileDescriptor, #0
+	bge	.L1_openOk
+
 	bl	__errno_location
-	mov	r3, r0
-	ldr	r3, [r3, #0]
-	mov	r0, r3
+	ldr	a1, [r0]
 	bl	strerror
-	mov	r3, r0
-	mov	r0, r4
-	mov	r1, r3
+	mov	a3, r0
+	ldr	a2, =.L1_devicePath
+	ldr	a1, =.L1_msgUnableToOpen
 	bl	printf
 	mvn	r0, #0
 	bl	exit
-.L4:
-	ldr	r3, .L6+16
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	ldr	r1, .L6+24
-	ldr	r2, [fp, #-16]
+
+.L1_openOk:
+	mov	a1, rFileDescriptor
+	ldr	a2, .L1_I2CSlaveID
+	mov	a3, #0x54		@ magic number from wiringPi library
 	bl	ioctl
-	mov	r3, r0
-	cmp	r3, #0
-	bge	.L5
-	ldr	r4, .L6+28
+
+	cmp	r0, #0
+	bge	.L1_ioctlOk
+
 	bl	__errno_location
-	mov	r3, r0
-	ldr	r3, [r3, #0]
-	mov	r0, r3
+	ldr	a1, [r0]
 	bl	strerror
-	mov	r3, r0
-	mov	r0, r4
-	mov	r1, r3
+	mov	a3, r0
+	ldr	a2, =.L1_devicePath
+	ldr	a1, =.L1_msgUnableToSelect
 	bl	printf
 	mvn	r0, #0
 	bl	exit
-.L5:
-	ldr	r3, .L6+16
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	sub	sp, fp, #8
-	ldmfd	sp!, {r4, fp, pc}
-.L7:
+
+.L1_ioctlOk:
+	mov	r0, rFileDescriptor
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rBoardRevision
+	.unreq rFileDescriptor
+
 	.align	2
-.L6:
-	.word	rev
-	.word	device
-	.word	.LC0
-	.word	.LC1
-	.word	fd
-	.word	.LC2
-	.word	1795
-	.word	.LC3
-	.size	I2CSetup, .-I2CSetup
 	.section	.rodata
 	.align	2
 .LC4:
@@ -457,6 +463,17 @@ rpiBoardRev:
 	.size	rpiBoardRev, .-rpiBoardRev
 	.comm	theData,1,1
 	.comm	args,12,4
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ writeI2CRegister
+@
+@ registers:
+@	a1 file descriptor
+@	a2 register to write to
+@	a3 value to write
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 	.align	2
 	.global	writeI2CRegister
 	.type	writeI2CRegister, %function
