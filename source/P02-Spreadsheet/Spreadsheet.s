@@ -476,168 +476,6 @@ convertHexStringToNumber:
 	.unreq rStringToConvert	
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ displayGetCellValueBinMenu
-@
-@ stack:
-@	+4 test mode
-@
-@ registers:
-@	a1 cell index
-@	a2 data width in bytes
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-.L14_msgInstructionsTemplate:
-	.ascii "Enter up to %d binary digits; underscores optional, but "
-	.ascii "complete\nnybbles required after each: 11_1111 ok, but "
-	.asciz "not 11_111 or 11_11_1111\n"
-
-.L14_msgInstructionsLength = . - .L14_msgInstructionsTemplate
-
-@@@@@@@@@
-@ Buffer to contain the instructions with actual number inserted
-@ in the %d. I had to do it this way because the runMenu function
-@ wants the full string.
-@@@@@@@@@
-.L14_msgInstructions: .skip .L14_msgInstructionsLength 
-
-.section .text
-.align 3
-
-	rCellIndex		.req v1
-	rDataWidthInBytes	.req v2
-
-displayGetCellValueBinMenu:
-	mFunctionSetup	@ Setup stack frame and local variables
-
-	ldr a1, =.L14_msgInstructions
-	ldr a2, =.L14_msgInstructionsTemplate
-	mov a3, rDataWidthInBytes, lsl #3	@ number of bits allowed
-	bl sprintf
-
-	ldr a1, =.L14_msgInstructions
-	mov a2, rCellIndex	@ cell index
-	mov a3, #'%'		@ prompt for binary
-	bl runGetCellValueMenu
-
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
-
-	.unreq rCellIndex
-	.unreq rDataWidthInBytes
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ displayGetCellValueDecMenu
-@
-@ stack:
-@	+4 test mode
-@
-@ registers:
-@	a1 cell index
-@	a2 data width in bytes
-@	a3 operations function
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-.L20_msgInstructionsTemplate:
-	.asciz "Enter an integer from %d to %d\n"
-
-.L20_msgInstructionsLength = . - .L20_msgInstructionsTemplate
-
-@@@@@@@@@
-@ Buffer to contain the instructions with actual number inserted
-@ in the %d. I had to do it this way because the runMenu function
-@ wants the full string. The 11 is to allow for the maximum
-@ length of a 32-bit integer, digits plus sign
-@@@@@@@@@
-.L20_msgInstructions: .skip .L20_msgInstructionsLength + (2 * 11) 
-
-.section .text
-.align 3
-
-	rCellIndex		.req v1
-	rDataWidthInBytes	.req v2
-	rOperationsFunction	.req v3
-
-displayGetCellValueDecMenu:
-	mFunctionSetup	@ Setup stack frame and local variables
-
-	mov a4, #operation_initAForMax
-	blx rOperationsFunction
-	mov v4, r0
-
-	mov a4, #operation_initAForMin
-	blx rOperationsFunction
-	mov v5, r0
-
-	ldr a1, =.L20_msgInstructions
-	ldr a2, =.L20_msgInstructionsTemplate
-	mov a3, v4	@ min
-	mov a4, v5	@ max
-	bl sprintf	@ r0 -> complete instructions string
-
-	ldr a1, =.L20_msgInstructions
-	mov a2, rCellIndex
-	mov a3, #0	@ no prompt postfix for decimal
-	bl runGetCellValueMenu
-
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
-
-	.unreq rCellIndex
-	.unreq rDataWidthInBytes
-	.unreq rOperationsFunction
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ displayGetCellValueHexMenu
-@
-@ stack:
-@	+4 test mode
-@
-@ registers:
-@	a1 cell index
-@	a2 data width in bytes
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .data
-
-.L21_msgInstructionsTemplate:
-	.asciz "Enter up to %d (significant) hex digits\n" 
-
-.L21_msgInstructionsLength = . - .L20_msgInstructionsTemplate
-
-@@@@@@@@@
-@ Buffer to contain the instructions with actual number inserted
-@ in the %d. I had to do it this way because the runMenu function
-@ wants the full string.
-@@@@@@@@@
-.L21_msgInstructions: .skip .L21_msgInstructionsLength
-
-.section .text
-.align 3
-
-	rCellIndex		.req v1
-	rDataWidthInBytes	.req v2
-
-displayGetCellValueHexMenu:
-	mFunctionSetup	@ Setup stack frame and local variables
-
-	ldr a1, =.L21_msgInstructions
-	ldr a2, =.L21_msgInstructionsTemplate
-	mov a3, rDataWidthInBytes, lsl #1	@ max number of hex digits
-	bl sprintf
-
-	ldr a1, =.L21_msgInstructions
-	mov a2, rCellIndex
-	mov a3, #'$'
-	bl runGetCellValueMenu
-
-	mFunctionBreakdown 1	@ restore caller's locals and stack frame
-	bx lr
-
-	.unreq rCellIndex
-	.unreq rDataWidthInBytes
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
 @
 @ stack:
@@ -1126,9 +964,9 @@ getFormula:
 .section .data
 
 .L13_jumpTable:
-	.word displayGetCellValueBinMenu, getCellValueBin
-	.word displayGetCellValueDecMenu, getCellValueDec
-	.word displayGetCellValueHexMenu, getCellValueHex
+	.word menuGetCellValueBin, getCellValueBin
+	.word menuGetCellValueDec, getCellValueDec
+	.word menuGetCellValueHex, getCellValueHex
 
 .section .text
 .align 3
@@ -1535,6 +1373,168 @@ matchInputToResult:
 	.unreq rOriginalUserInput
 	.unreq rFormatString
 	.unreq rScanfResult
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ menuGetCellValueBin
+@
+@ stack:
+@	+4 test mode
+@
+@ registers:
+@	a1 cell index
+@	a2 data width in bytes
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L14_msgInstructionsTemplate:
+	.ascii "Enter up to %d binary digits; underscores optional, but "
+	.ascii "complete\nnybbles required after each: 11_1111 ok, but "
+	.asciz "not 11_111 or 11_11_1111\n"
+
+.L14_msgInstructionsLength = . - .L14_msgInstructionsTemplate
+
+@@@@@@@@@
+@ Buffer to contain the instructions with actual number inserted
+@ in the %d. I had to do it this way because the runMenu function
+@ wants the full string.
+@@@@@@@@@
+.L14_msgInstructions: .skip .L14_msgInstructionsLength 
+
+.section .text
+.align 3
+
+	rCellIndex		.req v1
+	rDataWidthInBytes	.req v2
+
+menuGetCellValueBin:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	ldr a1, =.L14_msgInstructions
+	ldr a2, =.L14_msgInstructionsTemplate
+	mov a3, rDataWidthInBytes, lsl #3	@ number of bits allowed
+	bl sprintf
+
+	ldr a1, =.L14_msgInstructions
+	mov a2, rCellIndex	@ cell index
+	mov a3, #'%'		@ prompt for binary
+	bl runGetCellValueMenu
+
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rCellIndex
+	.unreq rDataWidthInBytes
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ menuGetCellValueDec
+@
+@ stack:
+@	+4 test mode
+@
+@ registers:
+@	a1 cell index
+@	a2 data width in bytes
+@	a3 operations function
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L20_msgInstructionsTemplate:
+	.asciz "Enter an integer from %d to %d\n"
+
+.L20_msgInstructionsLength = . - .L20_msgInstructionsTemplate
+
+@@@@@@@@@
+@ Buffer to contain the instructions with actual number inserted
+@ in the %d. I had to do it this way because the runMenu function
+@ wants the full string. The 11 is to allow for the maximum
+@ length of a 32-bit integer, digits plus sign
+@@@@@@@@@
+.L20_msgInstructions: .skip .L20_msgInstructionsLength + (2 * 11) 
+
+.section .text
+.align 3
+
+	rCellIndex		.req v1
+	rDataWidthInBytes	.req v2
+	rOperationsFunction	.req v3
+
+menuGetCellValueDec:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	mov a4, #operation_initAForMax
+	blx rOperationsFunction
+	mov v4, r0
+
+	mov a4, #operation_initAForMin
+	blx rOperationsFunction
+	mov v5, r0
+
+	ldr a1, =.L20_msgInstructions
+	ldr a2, =.L20_msgInstructionsTemplate
+	mov a3, v4	@ min
+	mov a4, v5	@ max
+	bl sprintf	@ r0 -> complete instructions string
+
+	ldr a1, =.L20_msgInstructions
+	mov a2, rCellIndex
+	mov a3, #0	@ no prompt postfix for decimal
+	bl runGetCellValueMenu
+
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rCellIndex
+	.unreq rDataWidthInBytes
+	.unreq rOperationsFunction
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ menuGetCellValueHex
+@
+@ stack:
+@	+4 test mode
+@
+@ registers:
+@	a1 cell index
+@	a2 data width in bytes
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L21_msgInstructionsTemplate:
+	.asciz "Enter up to %d (significant) hex digits\n" 
+
+.L21_msgInstructionsLength = . - .L20_msgInstructionsTemplate
+
+@@@@@@@@@
+@ Buffer to contain the instructions with actual number inserted
+@ in the %d. I had to do it this way because the runMenu function
+@ wants the full string.
+@@@@@@@@@
+.L21_msgInstructions: .skip .L21_msgInstructionsLength
+
+.section .text
+.align 3
+
+	rCellIndex		.req v1
+	rDataWidthInBytes	.req v2
+
+menuGetCellValueHex:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	ldr a1, =.L21_msgInstructions
+	ldr a2, =.L21_msgInstructionsTemplate
+	mov a3, rDataWidthInBytes, lsl #1	@ max number of hex digits
+	bl sprintf
+
+	ldr a1, =.L21_msgInstructions
+	mov a2, rCellIndex
+	mov a3, #'$'
+	bl runGetCellValueMenu
+
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rCellIndex
+	.unreq rDataWidthInBytes
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ newline
