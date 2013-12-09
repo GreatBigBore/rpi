@@ -473,50 +473,57 @@ rpiBoardRev:
 @	a2 register to write to
 @	a3 value to write
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.section .data
+	.align 2
 
+.L2_PigCommand:	.word 0
+.L2_I2CCommand:	.word 0
+		.word 0
+		.word 0
+
+	.section .text
 	.align	2
 	.global	writeI2CRegister
 	.type	writeI2CRegister, %function
+
+	rFileDescriptor		.req v1
+	rTargetRegister		.req v2
+	rValueToWrite		.req v3
+	rPigCommand		.req v4
+	rI2CCommand		.req v5
+
 writeI2CRegister:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #16
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	str	r2, [fp, #-16]
-	ldr	r3, [fp, #-16]
-	uxtb	r2, r3
-	ldr	r3, .L36
-	strb	r2, [r3, #0]
-	ldr	r3, .L36+4
-	mov	r2, #0
-	strb	r2, [r3, #0]
-	ldr	r3, [fp, #-12]
-	uxtb	r2, r3
-	ldr	r3, .L36+4
-	strb	r2, [r3, #1]
-	ldr	r3, .L36+4
-	mov	r2, #2
-	str	r2, [r3, #4]
-	ldr	r3, .L36+4
-	ldr	r2, .L36
-	str	r2, [r3, #8]
-	ldr	r0, [fp, #-8]
-	mov	r1, #1824
-	ldr	r2, .L36+4
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	ldr	rPigCommand, =.L2_PigCommand
+	ldr	rI2CCommand, =.L2_I2CCommand
+
+	strb	rValueToWrite, [rPigCommand]
+
+	mov	r0, #0
+	strb	r0, [rI2CCommand, #0]			@ i2cCommand.rw = I2C_SMBUS_WRITE
+	strb	rTargetRegister, [rI2CCommand, #1]	@ i2cCommand.register = register
+	mov	r0, #2
+	str	r0, [rI2CCommand, #4]			@ i2cCommand. "size" = I2C_SMBUS_BYTE_DATA
+	ldr	r0, =.L2_PigCommand
+	str	r0, [rI2CCommand, #8]			@ i2cCommand.data = &theData
+
+	mov	a1, rFileDescriptor	@ file descriptor
+	mov	a2, #0x720		@ I2C_SMBUS
+	mov	a3, rI2CCommand		@ a3 -> i2cCommand
 	bl	ioctl
 	mov	r3, r0
 	mov	r0, r3
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-.L37:
-	.align	2
-.L36:
-	.word	theData
-	.word	args
-	.size	writeI2CRegister, .-writeI2CRegister
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rTargetRegister
+	.unreq rValueToWrite
+	.unreq rPigCommand
+	.unreq rI2CCommand
+
 	.align	2
 	.type	lightPigLED, %function
 lightPigLED:
