@@ -474,6 +474,7 @@ rwiringPiI2CSetup:
 	stmfd	sp!, {fp, lr}
 	add	fp, sp, #4
 	sub	sp, sp, #16
+
 	str	r0, [fp, #-16]
 	bl	rpiBoardRev
 	str	r0, [fp, #-12]
@@ -720,23 +721,24 @@ rpiBoardRev:
 	stmfd	sp!, {fp, lr}
 	add	fp, sp, #4
 	sub	sp, sp, #136
-	ldr	r3, .L46
-	ldr	r3, [r3, #0]
+
+	ldr	r3, .L46	@ board rev static var
+	ldr	r3, [r3, #0]	@ get board rev in r3
 	cmn	r3, #1
-	beq	.L22
-	ldr	r3, .L46
-	ldr	r3, [r3, #0]
-	b	.L23
+	beq	.L22		@ if it hasn't been initialized
+	ldr	r3, .L46	@ board rev static var
+	ldr	r3, [r3, #0]	@ get board rev in r3
+	b	.L23		@ return r3
 .L22:
-	ldr	r2, .L46+4
-	ldr	r3, .L46+8
+	ldr	r2, .L46+4	@ "proc/cpuinfo"
+	ldr	r3, .L46+8	@ "r"
 	mov	r0, r2
 	mov	r1, r3
 	bl	fopen
-	str	r0, [fp, #-12]
+	str	r0, [fp, #-12]	@ store file descriptor
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L43
+	bne	.L43		@ good file descriptor
 	ldr	r0, .L46+12
 	bl	rpiBoardRevOops
 	b	.L43
@@ -1276,35 +1278,37 @@ rsn3218Setup:
 	stmfd	sp!, {fp, lr}
 	add	fp, sp, #4
 	sub	sp, sp, #16
-	str	r0, [fp, #-16]
+
+	str	r0, [fp, #-16]	@pinBase
+
 	mov	r0, #84
 	bl	rwiringPiI2CSetup
-	str	r0, [fp, #-8]
+	str	r0, [fp, #-8]	@fd
+
 	ldr	r3, [fp, #-8]
 	cmp	r3, #0
 	bge	.L65
 	ldr	r3, [fp, #-8]
 	b	.L66
 .L65:
-	mov	r0, #70
-	bl	putchar
-	ldr	r0, [fp, #-8]
+	ldr	v1, [fp, #-8]
+	mov	r0, v1
 	mov	r1, #0
 	mov	r2, #1
 	bl	writeI2CReg8
-	ldr	r0, [fp, #-8]
+	mov	r0, v1
 	mov	r1, #19
 	mov	r2, #63
 	bl	writeI2CReg8
-	ldr	r0, [fp, #-8]
+	mov	r0, v1
 	mov	r1, #20
 	mov	r2, #63
 	bl	writeI2CReg8
-	ldr	r0, [fp, #-8]
+	mov	r0, v1
 	mov	r1, #21
 	mov	r2, #63
 	bl	writeI2CReg8
-	ldr	r0, [fp, #-8]
+	mov	r0, v1
 	mov	r1, #22
 	mov	r2, #0
 	bl	writeI2CReg8

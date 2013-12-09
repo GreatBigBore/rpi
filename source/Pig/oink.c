@@ -212,8 +212,8 @@ static int sysFds [64] =
 static int wiringPiMode;
 //static uint64_t epochMilli, epochMicro ;
  
-struct wiringPiNodeStruct *robnode;
-
+struct wiringPiNodeStruct theWiringPiNodeStruct;
+struct wiringPiNodeStruct *robnode = &theWiringPiNodeStruct;
 
 int rwiringPiI2CSetupInterface (const char *device, int devId)
 {
@@ -334,30 +334,6 @@ int rpiBoardRev (void)
 
   return boardRev ;
 }
-
-
-struct wiringPiNodeStruct *rwiringPiNewNode (int pinBase, int numPins)
-{
-  int    pin ;
-  struct wiringPiNodeStruct *node ;
-
-	printf("C");
-
-  robnode = (struct wiringPiNodeStruct *)calloc (sizeof (struct wiringPiNodeStruct), 1) ;	// calloc zeros
-
-  robnode->pinBase         = pinBase ;
-  robnode->pinMax          = pinBase + numPins - 1 ;
-  robnode->pinMode         = pinModeDummy ;
-  robnode->pullUpDnControl = pullUpDnControlDummy ;
-  robnode->digitalRead     = digitalReadDummy ;
-  robnode->digitalWrite    = digitalWriteDummy ;
-  robnode->pwmWrite        = pwmWriteDummy ;
-  robnode->analogRead      = analogReadDummy ;
-  robnode->analogWrite     = analogWriteDummy ;
-
-  return robnode ;
-}
-
 
 static inline int i2c_smbus_access (int fd, char rw, uint8_t command, int size, union i2c_smbus_data *data)
 {
@@ -501,10 +477,10 @@ int rsn3218Setup (const int pinBase)
   rwiringPiI2CWriteReg8 (fd, 0x15, 0x3F) ;	// Enable LEDs 12-17
   rwiringPiI2CWriteReg8 (fd, 0x16, 0x00) ;	// Update
   
-  node = rwiringPiNewNode (pinBase, 18) ;
-
-  node->fd          = fd ;
-  node->analogWrite = rmyAnalogWrite ;
+  robnode->pinBase         = pinBase ;
+  robnode->pinMax          = pinBase + 18 - 1 ;
+  robnode->fd          = fd ;
+  robnode->analogWrite = rmyAnalogWrite ;
 
   return 0 ;
 }
