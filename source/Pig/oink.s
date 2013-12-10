@@ -528,8 +528,8 @@ writeI2CRegister:
 @
 @ registers:
 @	a1 file descriptor
-@	a2 pin to write
-@	a3 value to write
+@	a2 led to light 0 - 17
+@	a3 intensity 0 - 255
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	rFileDescriptor	.req v1
@@ -616,112 +616,75 @@ pigSetup:
 
 	.unreq rFileDescriptor
 
-.L43:
-	.align	2
-.L42:
-	.word	fd
-	.size	pigSetup, .-pigSetup
-	.align	2
 	.global	main
-	.type	main, %function
+
+	rFileDescriptor	.req v1
+	rLEDLevel	.req v2
+	rWhichLED	.req v3
+
 main:
-	@ args = 0, pretend = 0, frame = 0
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
 	bl	pigSetup
-	mov	r2, r0
-	ldr	r3, .L53
-	str	r2, [r3, #0]
-	ldr	r3, .L53+4
-	mov	r2, #0
-	str	r2, [r3, #0]
-	b	.L45
-.L48:
-	ldr	r3, .L53+8
-	mov	r2, #0
-	str	r2, [r3, #0]
-	b	.L46
-.L47:
-	ldr	r3, .L53
-	ldr	r1, [r3, #0]
-	ldr	r3, .L53+8
-	ldr	r2, [r3, #0]
-	ldr	r3, .L53+4
-	ldr	r3, [r3, #0]
-	mov	r0, r1
-	mov	r1, r2
-	mov	r2, r3
+	mov	rFileDescriptor, r0
+
+.L0_loopInit:
+	mov	rWhichLED, #0
+
+.L0_loopTop:
+	cmp	rWhichLED, #18
+	bhs	.L0_loopExit
+
+.L0_level_loopInit:
+	mov	rLEDLevel, #0
+
+.L0_level_loopTop:
+	cmp	rLEDLevel, #10
+	bhs	.L0_level_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rWhichLED
+	mov	a3, rLEDLevel
 	bl	lightPigLED
-	ldr	r3, .L53+8
-	ldr	r3, [r3, #0]
-	add	r2, r3, #1
-	ldr	r3, .L53+8
-	str	r2, [r3, #0]
-.L46:
-	ldr	r3, .L53+8
-	ldr	r3, [r3, #0]
-	cmp	r3, #17
-	ble	.L47
-	ldr	r3, .L53+4
-	ldr	r3, [r3, #0]
-	add	r2, r3, #1
-	ldr	r3, .L53+4
-	str	r2, [r3, #0]
-.L45:
-	ldr	r3, .L53+4
-	ldr	r3, [r3, #0]
-	cmp	r3, #9
-	ble	.L48
-	ldr	r3, .L53+4
-	mov	r2, #10
-	str	r2, [r3, #0]
-	b	.L49
-.L52:
-	ldr	r3, .L53+8
-	mov	r2, #0
-	str	r2, [r3, #0]
-	b	.L50
-.L51:
-	ldr	r3, .L53
-	ldr	r1, [r3, #0]
-	ldr	r3, .L53+8
-	ldr	r2, [r3, #0]
-	ldr	r3, .L53+4
-	ldr	r3, [r3, #0]
-	mov	r0, r1
-	mov	r1, r2
-	mov	r2, r3
+
+.L0_level_loopBottom:
+	add	rLEDLevel, #1
+	b	.L0_level_loopTop
+
+.L0_level_loopExit:
+.L0_loopBottom:
+	add	rWhichLED, #1
+	b	.L0_loopTop
+
+.L0_loopExit:
+
+.L0_downloopInit:
+	mov	rWhichLED, #17
+
+.L0_downloopTop:
+	cmp	rWhichLED, #0
+	blt	.L0_downloopExit
+
+.L0_level_downloopInit:
+	mov	rLEDLevel, #10
+
+.L0_level_downloopTop:
+	cmp	rLEDLevel, #0
+	blt	.L0_level_downloopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rWhichLED
+	mov	a3, rLEDLevel
 	bl	lightPigLED
-	ldr	r3, .L53+8
-	ldr	r3, [r3, #0]
-	add	r2, r3, #1
-	ldr	r3, .L53+8
-	str	r2, [r3, #0]
-.L50:
-	ldr	r3, .L53+8
-	ldr	r3, [r3, #0]
-	cmp	r3, #17
-	ble	.L51
-	ldr	r3, .L53+4
-	ldr	r3, [r3, #0]
-	sub	r2, r3, #1
-	ldr	r3, .L53+4
-	str	r2, [r3, #0]
-.L49:
-	ldr	r3, .L53+4
-	ldr	r3, [r3, #0]
-	cmp	r3, #0
-	bge	.L52
-	mov	r3, #0
-	mov	r0, r3
-	ldmfd	sp!, {fp, pc}
-.L54:
-	.align	2
-.L53:
-	.word	fd
-	.word	i
-	.word	j
-	.size	main, .-main
-	.ident	"GCC: (Debian 4.6.3-14+rpi1) 4.6.3"
-	.section	.note.GNU-stack,"",%progbits
+
+.L0_level_downloopBottom:
+	sub	rLEDLevel, #1
+	b	.L0_level_downloopTop
+
+.L0_level_downloopExit:
+.L0_downloopBottom:
+	sub	rWhichLED, #1
+	b	.L0_downloopTop
+
+.L0_downloopExit:
+	b .L0_loopInit
+	mov	r0, #0
+	bl	exit
