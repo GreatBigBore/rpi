@@ -557,62 +557,65 @@ lightPigLED:
 	.size	lightPigLED, .-lightPigLED
 	.comm	i,4,4
 	.comm	j,4,4
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ pigSetup
+@
+@ returns:
+@	r0 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	.align	2
 	.global	pigSetup
 	.type	pigSetup, %function
+
+	rFileDescriptor	.req v1
+
 pigSetup:
-	@ args = 0, pretend = 0, frame = 0
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	mov	r0, #84
+	mFunctionSetup	@ Setup stack frame and local variables
+
 	bl	I2CSetup
-	mov	r2, r0
-	ldr	r3, .L42
-	str	r2, [r3, #0]
-	ldr	r3, .L42
-	ldr	r3, [r3, #0]
-	cmp	r3, #0
-	bge	.L40
-	ldr	r3, .L42
-	ldr	r3, [r3, #0]
-	b	.L41
-.L40:
-	ldr	r3, .L42
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	mov	r1, #0
-	mov	r2, #1
+	mov	rFileDescriptor, r0
+	cmp	rFileDescriptor, #0
+	blo	.L41
+
+	@ wiringPi lib says "not shutdown" -- reset?
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	mov	a3, #1
 	bl	writeI2CRegister
-	ldr	r3, .L42
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	mov	r1, #19
-	mov	r2, #63
+
+	@ enable LEDs 0 - 5
+	mov	a1, rFileDescriptor
+	mov	a2, #0x13
+	mov	a3, #0x3F
 	bl	writeI2CRegister
-	ldr	r3, .L42
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	mov	r1, #20
-	mov	r2, #63
+
+	@ enable LEDs 6 - 11
+	mov	a1, rFileDescriptor
+	mov	a2, #0x14
+	mov	a3, #0x3F
 	bl	writeI2CRegister
-	ldr	r3, .L42
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	mov	r1, #21
-	mov	r2, #63
+
+	@ enable LEDs 12 - 17
+	mov	a1, rFileDescriptor
+	mov	a2, #0x15
+	mov	a3, #0x3F
 	bl	writeI2CRegister
-	ldr	r3, .L42
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	mov	r1, #22
-	mov	r2, #0
+
+	@ update
+	mov	a1, rFileDescriptor
+	mov	a2, #0x16
+	mov	a3, #0
 	bl	writeI2CRegister
-	ldr	r3, .L42
-	ldr	r3, [r3, #0]
+
 .L41:
-	mov	r0, r3
-	ldmfd	sp!, {fp, pc}
+	mov	r0, rFileDescriptor
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+
 .L43:
 	.align	2
 .L42:
