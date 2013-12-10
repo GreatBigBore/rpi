@@ -627,7 +627,7 @@ writeI2CRegister:
 	.unreq rI2CCommand
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ lightPigLED
+@ setPigLEDRegister
 @
 @ registers:
 @	a1 file descriptor
@@ -640,8 +640,8 @@ writeI2CRegister:
 	rValueToWrite	.req v3
 
 	.align	2
-	.type	lightPigLED, %function
-lightPigLED:
+	.type	setPigLEDRegister, %function
+setPigLEDRegister:
 	mFunctionSetup	@ Setup stack frame and local variables
 
 	mov	a1, rFileDescriptor
@@ -662,6 +662,48 @@ lightPigLED:
 	.unreq rValueToWrite
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigAll
+@
+@ registers:
+@	a1 file descriptor
+@	a2 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.text
+	.align	2
+
+	rFileDescriptor	.req v1
+	rIntensity	.req v2
+	rLoopCounter	.req v3
+
+lightPigAll:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+.L8_loopInit:
+	mov	rLoopCounter, #0
+
+.L8_loopTop:
+	cmp	rLoopCounter, #17
+	bhs	.L8_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter
+	mov	a3, rIntensity
+	bl	setPigLEDRegister
+
+.L8_loopBottom:
+	add	rLoopCounter, #1
+	b	.L8_loopTop
+
+.L8_loopExit:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rIntensity
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ lightPigLeg
 @
 @ registers:
@@ -679,6 +721,46 @@ lightPigLeg:
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigLED
+@
+@ registers:
+@	a1 file descriptor
+@	a2 ring to light 0 - 5
+@	a3 leg to lght 0 - 3
+@	a4 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.text
+	.align	2
+
+	rFileDescriptor	.req v1
+	rRingToLight	.req v2
+	rLegToLight	.req v3
+	rLEDToLight	.req v4
+	rIntensity	.req v5
+
+lightPigLED:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	ldr	r0, =pigRings
+	ldr	r0, [r0, rRingToLight, lsl #2]
+	ldr	rLEDToLight, [r0, rLegToLight, lsl #2]
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLEDToLight
+	mov	a3, rIntensity
+	bl	setPigLEDRegister
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rRingToLight
+	.unreq rLegToLight
+	.unreq rLEDToLight
+	.unreq rIntensity
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ lightPigRing
@@ -713,7 +795,7 @@ lightPigRing:
 	mov	a1, rFileDescriptor
 	ldr	a2, [rThisRingBase, rLoopCounter, lsl #2]
 	mov	a3, rIntensity
-	bl	lightPigLED
+	bl	setPigLEDRegister
 
 .L6_loopBottom:
 	add	rLoopCounter, #1
@@ -803,12 +885,12 @@ pigSetup:
 	.align 2
 
 .L7_limits:
-.L7_whiteLimit:		.word 4294967295	@ 2^32 - 1
-.L7_blueLimit:		.word 3865470566	@ 90%
-.L7_greenLimit:		.word 3221225472	@ 75%
-.L7_yellowLimit:	.word 2362232012	@ 55%
-.L7_orangeLimit:	.word 1288490188	@ 30%
 .L7_redLimit:		.word 0			@ 0% of 2^32
+.L7_orangeLimit:	.word 1288490188	@ 30%
+.L7_yellowLimit:	.word 2362232012	@ 55%
+.L7_greenLimit:		.word 3221225472	@ 75%
+.L7_blueLimit:		.word 3865470566	@ 90%
+.L7_whiteLimit:		.word 4294967295	@ 2^32 - 1
 
 	.text
 	.align 2
@@ -826,20 +908,19 @@ getSlotForValue:
 	mov	rLoopCounter, #1
 
 .L7_loopTop:
-	cmp	rLoopCounter, #5
+	cmp	rLoopCounter, #6
 	bhs	.L7_loopExit
 
 	ldr	rSlotLimit, [rLimitsBase, rLoopCounter, lsl #2]
-	cmp	rValue, rSlotLimit	@ if rValue >= rSlotLimit
-	subhs	rLoopCounter, #1	@ rLoopCounter -= 1
-	bhs	.L7_loopExit		@ rLoopCounter is the slot number
+	cmp	rValue, rSlotLimit	@ if rValue < rSlotLimit
+	blo	.L7_loopExit		@ we have our slot number
 
 .L7_loopBottom:
 	add	rLoopCounter, #1
 	b	.L7_loopTop
 
 .L7_loopExit:
-	mov	r0, rLoopCounter
+	mov	r0, rLoopCounter	@ return value is the slot number
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
@@ -882,10 +963,14 @@ getSlotForValue:
 	rLoopCounter	.req v2
 	rSlot1		.req v3
 	rSlot2		.req v4
-	rSlot3		.req v5
+	rSlot0		.req v5
 
 spinWheels:
 	mFunctionSetup	@ Setup stack frame and local variables
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn off all the LEDs
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@ Something strange happens with rand that causes me to get all
@@ -896,17 +981,17 @@ spinWheels:
 	bl	rand		@ returns rand in r0
 	ror	r0, #1		@ because I want a full range
 	bl	getSlotForValue	@ convert value to slot, ie, ring #
+	mov	rSlot0, r0
+
+	bl	rand		@ returns rand in r0
+	ror	r0, #1		@ because I want a full range
+	bl	getSlotForValue	@ convert value to slot, ie, ring #
 	mov	rSlot1, r0
 
 	bl	rand		@ returns rand in r0
 	ror	r0, #1		@ because I want a full range
 	bl	getSlotForValue	@ convert value to slot, ie, ring #
 	mov	rSlot2, r0
-
-	bl	rand		@ returns rand in r0
-	ror	r0, #1		@ because I want a full range
-	bl	getSlotForValue	@ convert value to slot, ie, ring #
-	mov	rSlot3, r0
 
 .L4_loopInit:
 	mov	rLoopCounter, #0
@@ -942,23 +1027,32 @@ spinWheels:
 	mov	a3, #0			@ intensity
 	bl	lightPigRing
 
-	@mov	a1, rSlot1
-	@bl	lightLEDForSlot
+	mov	a1, rFileDescriptor
+	mov	a2, rSlot0	@ which ring
+	mov	a3, #0		@ which leg
+	mov	a4, #1		@ intensity
+	bl	lightPigLED
 
-	@mov	a1, rSlot2
-	@bl	lightLEDForSlot
+	mov	a1, rFileDescriptor
+	mov	a2, rSlot1	@ which ring
+	mov	a3, #1		@ which leg
+	mov	a4, #1		@ intensity
+	bl	lightPigLED
 
-	@mov	a1, rSlot3
-	@bl	lightLEDForSlot
+	mov	a1, rFileDescriptor
+	mov	a2, rSlot2	@ which ring
+	mov	a3, #2		@ which leg
+	mov	a4, #1		@ intensity
+	bl	lightPigLED
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
 	.unreq rFileDescriptor
 	.unreq rLoopCounter
+	.unreq rSlot0
 	.unreq rSlot1
 	.unreq rSlot2
-	.unreq rSlot3
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ terminalCommand
