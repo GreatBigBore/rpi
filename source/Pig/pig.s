@@ -1,4 +1,14 @@
-	.equ inputBufferSize, 100
+.equ inputStatus_inputOk,			0
+.equ inputStatus_inputNotOk,			1
+.equ inputStatus_acceptedControlCharacter,	2
+
+.equ q_reject,	0
+.equ q_accept,	1
+
+.equ r_reject,	0
+.equ r_accept,	1
+
+.equ inputBufferSize, 100
 
 .equ terminalCommand_clearScreen, 0
 .equ terminalCommand_cursorUp, 1
@@ -226,6 +236,78 @@ I2CSetup:
 
 	.unreq rBoardRevision
 	.unreq rFileDescriptor
+
+kbhit:
+	@ args = 0, pretend = 0, frame = 128
+	@ frame_needed = 1, uses_anonymous_args = 0
+	stmfd	sp!, {fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #128
+	sub	r3, fp, #72
+	mov	r0, #0
+	mov	r1, r3
+	bl	tcgetattr
+	sub	ip, fp, #132
+	sub	lr, fp, #72
+	ldmia	lr!, {r0, r1, r2, r3}
+	stmia	ip!, {r0, r1, r2, r3}
+	ldmia	lr!, {r0, r1, r2, r3}
+	stmia	ip!, {r0, r1, r2, r3}
+	ldmia	lr!, {r0, r1, r2, r3}
+	stmia	ip!, {r0, r1, r2, r3}
+	ldmia	lr, {r0, r1, r2}
+	stmia	ip, {r0, r1, r2}
+	ldr	r3, [fp, #-120]
+	bic	r3, r3, #10
+	str	r3, [fp, #-120]
+	sub	r3, fp, #132
+	mov	r0, #0
+	mov	r1, #0
+	mov	r2, r3
+	bl	tcsetattr
+	mov	r0, #0
+	mov	r1, #3
+	mov	r2, #0
+	bl	fcntl
+	str	r0, [fp, #-8]
+	ldr	r3, [fp, #-8]
+	orr	r3, r3, #2048
+	mov	r0, #0
+	mov	r1, #4
+	mov	r2, r3
+	bl	fcntl
+	bl	getchar
+	str	r0, [fp, #-12]
+	sub	r3, fp, #72
+	mov	r0, #0
+	mov	r1, #0
+	mov	r2, r3
+	bl	tcsetattr
+	mov	r0, #0
+	mov	r1, #4
+	ldr	r2, [fp, #-8]
+	bl	fcntl
+	ldr	r3, [fp, #-12]
+	cmn	r3, #1
+	beq	.L2
+	ldr	r3, .L4
+	ldr	r3, [r3, #0]
+	ldr	r0, [fp, #-12]
+	mov	r1, r3
+	bl	ungetc
+	mov	r3, #1
+	b	.L3
+.L2:
+	mov	r3, #0
+.L3:
+	mov	r0, r3
+	sub	sp, fp, #4
+	ldmfd	sp!, {fp, pc}
+.L5:
+	.align	2
+.L4:
+	.word	stdin
+	.size	kbhit, .-kbhit
 
 	.align	2
 	.section	.rodata
@@ -873,178 +955,6 @@ pigSetup:
 	.unreq rFileDescriptor
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ getSlotForValue
-@
-@ registers:
-@	a1 value
-@
-@ returns
-@	r0 slot number
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	.data
-	.align 2
-
-.L7_limits:
-.L7_redLimit:		.word 0			@ 0% of 2^31
-.L7_orangeLimit:	.word 1610612736	@ 75%
-.L7_yellowLimit:	.word 1932735283	@ 90%
-.L7_greenLimit:		.word 2040109465	@ 95%
-.L7_blueLimit:		.word 2104533975	@ 98%
-.L7_whiteLimit:		.word 2147483648	@ 2^31 - 1
-
-	.text
-	.align 2
-
-	rValue		.req v1
-	rLoopCounter	.req v2
-	rSlotLimit	.req v3
-	rLimitsBase	.req v4
-
-getSlotForValue:
-	mFunctionSetup		@ Setup stack frame and local variables
-
-.L7_loopInit:
-	ldr	rLimitsBase, =.L7_limits
-	mov	rLoopCounter, #1
-
-.L7_loopTop:
-	cmp	rLoopCounter, #6
-	bhs	.L7_loopExit
-
-	ldr	rSlotLimit, [rLimitsBase, rLoopCounter, lsl #2]
-	cmp	rValue, rSlotLimit	@ if rValue < rSlotLimit
-	blo	.L7_loopExit		@ we have our slot number
-
-.L7_loopBottom:
-	add	rLoopCounter, #1
-	b	.L7_loopTop
-
-.L7_loopExit:
-	sub	r0, rLoopCounter, #1	@ return value is the slot number
-
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
-
-	.unreq rValue
-	.unreq rLoopCounter
-	.unreq rSlotLimit
-	.unreq rLimitsBase
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ spinWheels
-@
-@ registers:
-@	a1 file descriptor
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	.data
-	.align 2
-
-.L4_colors:
-		.word .L4_whiteName
-		.word .L4_blueName
-		.word .L4_greenName
-		.word .L4_yellowName
-		.word .L4_orangeName
-		.word .L4_redName
-
-.L4_whiteName:	.asciz "white"
-.L4_blueName:	.asciz "blue"
-.L4_greenName:	.asciz "green"
-.L4_yellowName:	.asciz "yellow"
-.L4_orangeName:	.asciz "orange"
-.L4_redName:	.asciz "red"
-
-.L4_msgYouLandedOn:	.asciz "You landed on %s\n"
-
-	.text
-	.align 2
-
-	rFileDescriptor	.req v1
-	rLoopCounter	.req v2
-	rSlot1		.req v3
-	rSlot2		.req v4
-	rSlot0		.req v5
-
-spinWheels:
-	mFunctionSetup	@ Setup stack frame and local variables
-
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@ rand() seems to return a range of 0 - 2^31
-	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	bl	rand		@ returns rand in r0
-	bl	getSlotForValue	@ convert value to slot, ie, ring #
-	mov	rSlot0, r0
-
-	bl	rand		@ returns rand in r0
-	bl	getSlotForValue	@ convert value to slot, ie, ring #
-	mov	rSlot1, r0
-
-	bl	rand		@ returns rand in r0
-	bl	getSlotForValue	@ convert value to slot, ie, ring #
-	mov	rSlot2, r0
-
-.L4_loopInit:
-	mov	rLoopCounter, #0
-
-.L4_loopTop:
-	cmp	rLoopCounter, #6
-	bhs	.L4_loopExit
-
-	mov	a1, rFileDescriptor
-	mov	a2, rLoopCounter	@ ring to light
-	mov	a3, #1			@ intensity
-	bl	lightPigRing
-
-	cmp	rLoopCounter, #0
-	beq	.L4_loopBottom
-
-	mov	a1, rFileDescriptor
-	sub	a2, rLoopCounter, #1	@ ring to extinguish
-	mov	a3, #0			@ intensity
-	bl	lightPigRing
-
-.L4_loopBottom:
-	mov	a1, #0x3D
-	lsl	a1, #12			@ get about 250k into a1
-	bl	usleep			@ sleep for about .25 sec
-
-	add	rLoopCounter, #1
-	b	.L4_loopTop
-
-.L4_loopExit:
-	mov	a1, rFileDescriptor
-	mov	a2, #5			@ turn off the last ring
-	mov	a3, #0			@ intensity
-	bl	lightPigRing
-
-	mov	a1, rFileDescriptor
-	mov	a2, rSlot0	@ which ring
-	mov	a3, #0		@ which leg
-	mov	a4, #1		@ intensity
-	bl	lightPigLED
-
-	mov	a1, rFileDescriptor
-	mov	a2, rSlot1	@ which ring
-	mov	a3, #1		@ which leg
-	mov	a4, #1		@ intensity
-	bl	lightPigLED
-
-	mov	a1, rFileDescriptor
-	mov	a2, rSlot2	@ which ring
-	mov	a3, #2		@ which leg
-	mov	a4, #1		@ intensity
-	bl	lightPigLED
-
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
-
-	.unreq rFileDescriptor
-	.unreq rLoopCounter
-	.unreq rSlot0
-	.unreq rSlot1
-	.unreq rSlot2
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ terminalCommand
 @
 @	a1 the command to send
@@ -1071,20 +981,480 @@ terminalCommand:
 	pop {lr}
 	bx lr
 
-	.section .data
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ newline
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+msgNewline: .asciz "\n"
+
+.section .text
+newline:
+	push {lr}
+	ldr r0, =msgNewline
+	bl printf
+	pop {pc}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ sayYuck
+@
+@	a1 string with yucky value
+@	a2 prompt suffix
+@	a3 skip second cursor-up
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L18_yuckMessage:	.asciz "Uhh... %s? Yuck! Try again!\n-> "
+
+.section .text
+.align 3
+
+	rYuckyValue		.req v1
+	rPromptSuffix		.req v2
+	rSkipSecondCursorUp	.req v3
+
+sayYuck:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	mTerminalCommand #terminalCommand_cursorUp
+	mTerminalCommand #terminalCommand_clearToEOL
+
+	cmp rSkipSecondCursorUp, #1
+	beq .L18_cursingComplete
+
+	mTerminalCommand #terminalCommand_cursorUp
+	mTerminalCommand #terminalCommand_clearToEOL
+
+.L18_cursingComplete:
+	ldr a1, =.L18_yuckMessage
+	mov a2, rYuckyValue
+	bl printf
+
+	mov a1, v2
+	cmp v2, #0	@ dec mode doesn't have a prompt suffix
+	blne putchar	@ awesome arm conditional instruction
+
+.L18_epilogue:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rYuckyValue
+	.unreq rPromptSuffix
+	.unreq rSkipSecondCursorUp
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getMainSelection
+@
+@ stack: 
+@	+4 testMode
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L5_msgInstructions:	.asciz "Options (enter 'Q' to quit):\n"
+.L5_msgSeparator:	.asciz "----------------------------\n"
+
+.L5_inwardSpiral:	.asciz "Inward spiral"
+.L5_blindMe:		.asciz "Blind me!"
+
+.L5_menuOptions:	.word .L5_inwardSpiral, .L5_blindMe
+
+.equ .L5_menuOptionsCount, 2
+
+	.text
 	.align 2
 
-	.equ maximumWager, 3
+getMainSelection:
+	mFunctionSetup
+
+	ldr r0, [fp, #4]
+	mov r1, #q_accept
+	mov r2, #r_reject
+	push {r0 - r2}
+	ldr a1, =.L5_msgInstructions
+	ldr a2, =.L5_msgSeparator
+	ldr a3, =.L5_menuOptions
+	mov a4, #.L5_menuOptionsCount
+	bl runMenu
+
+	mFunctionBreakdown 1
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ runMenu
+@
+@ stack:
+@	 +4 testMode
+@	 +8 q accept/reject
+@	+12 r accept/reject
+@
+@ registers:
+@	a1 instructions message
+@	a2 separator
+@	a3 menu options table
+@	a4 number of options in table
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	rInstructionsMessage	.req v1
+	rSeparator		.req v2
+	rMenuOptionsTable	.req v3
+	rNumberOfMenuOptions	.req v4
+
+runMenu:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	mov a1, rInstructionsMessage
+	bl printf
+	mov a1, rSeparator
+	bl printf
+
+	mov a1, rMenuOptionsTable
+	mov a2, rNumberOfMenuOptions
+	bl showList
+
+	bl promptForSelection
+
+	ldr r0, [fp, #4]		@ test mode
+	push {r0}
+	mov a1, #1			@ minimum
+	mov a2, rNumberOfMenuOptions	@ maximum
+	ldr a3, [fp, #8]		@ q accept/reject
+	ldr a4, [fp, #12]		@ r accept/reject
+	bl getMenuSelection
+
+	mFunctionBreakdown 3	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rInstructionsMessage
+	.unreq rSeparator
+	.unreq rMenuOptionsTable
+	.unreq rNumberOfMenuOptions
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ promptForSelection 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+msgEnterSelection:	.asciz "Enter a selection\n"
+msgPrompt:		.asciz "-> "
+
+.section .text
+.align 3
+
+promptForSelection:
+	push {lr}
+	bl newline
+	ldr a1, =msgEnterSelection
+	bl printf
+	ldr a1, =msgPrompt
+	bl printf
+	pop {pc}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ matchInputToResult
+@
+@	a1 what the user entered
+@	a2 format string used on the user input
+@	a3 the value that resulted from the scanf
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L24_sprintfBuffer: .skip inputBufferSize
+
+.section .text
+.align 3
+
+	rOriginalUserInput	.req v1
+	rFormatString		.req v2
+	rScanfResult		.req v3
+
+matchInputToResult:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	ldr a1, =.L24_sprintfBuffer
+	mov a2, rFormatString
+	mov a3, rScanfResult
+	bl sprintf
+
+	mov r0, rOriginalUserInput
+
+.L24_skipLeadingZeros:	@ caller already skipped whitespace
+	ldrb r1, [r0]
+	cmp r1, #'0'
+	bne .L24_foundMeatOfUserInput
+
+	ldrb r1, [r0, #1]		@ if following char is...
+	cmp r1, #0			@ null terminator, accept final...
+	beq .L24_foundMeatOfUserInput	@ char as whole input
+
+	add r0, #1			@ leading zero--keep looking
+	b .L24_skipLeadingZeros
+	
+.L24_foundMeatOfUserInput:
+	mov a2, r0			@ first usable char of original input
+	ldr a1, =.L24_sprintfBuffer	@ result of sprintf using that input
+	bl strcmp
+
+	mov r1, #inputStatus_inputOk
+	cmp r0, #0
+	movne r1, #inputStatus_inputNotOk
+	b .L24_epilogue
+
+.L24_epilogue:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rOriginalUserInput
+	.unreq rFormatString
+	.unreq rScanfResult
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getMenuSelection
+@
+@ stack:
+@	+4 test mode
+@
+@ registers:
+@	a1 minimum acceptable input
+@	a2 maximum acceptable input
+@	a3 accept/reject 'q'
+@	a4 accept/reject 'r'
+@
+@ returns:
+@	r0 user input
+@	r1 input status
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L2_getsBuffer:		.skip inputBufferSize
+.L2_scanf:		.asciz "%d"
+.L2_scanfResult:	.word 0
+
+.section .text
+.align 3
+
+	rMinimum	.req v1
+	rMaximum	.req v2
+	rQControl	.req v3
+	rRControl	.req v4
+	rTestMode	.req v5
+	rFirstPass	.req v6
+
+getMenuSelection:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	ldr rTestMode, [fp, #4]
+
+	mov rFirstPass, #1
+
+.L2_tryAgain:
+	ldr a1, =.L2_getsBuffer
+	bl gets
+
+	ldr r0, =.L2_getsBuffer
+	ldrh r0, [r0]		@ get only 2 bytes to check for "q\0" or "r\0"
+	orr r0, #0x20		@ make sure it's lowercase
+
+	cmp r0, #'q'
+	bne .L2_checkR
+
+	cmp rQControl, #q_accept
+	bne .L2_yuck	
+	b .L2_acceptControlCharacter
+
+.L2_checkR:
+	cmp r0, #'r'
+	bne .L2_notQnotR
+
+	cmp rRControl, #r_accept
+	bne .L2_yuck
+	b .L2_acceptControlCharacter
+
+.L2_notQnotR:
+	and r0, #0xFF		@ if in test mode, allow // comments in input
+	cmp r0, #'/'
+	bne .L2_inputFirstStep
+	cmp rTestMode, #1
+	beq .L2_tryAgain
+
+.L2_inputFirstStep:
+	ldr a1, =.L2_getsBuffer
+	ldr a2, =.L2_scanf
+	ldr a3, =.L2_scanfResult
+	bl sscanf
+
+	ldr a1, =.L2_getsBuffer
+
+.L2_skippingWhitespace:
+	ldrb r1, [a1]
+	cmp r1, #' '
+	bhi .L2_foundNonWhitespace
+	cmp r1, #0	@ null terminator--end of input
+	beq .L2_yuck	@ nothing but whitespace? yuck!
+	add a1, #1
+	b .L2_skippingWhitespace
+
+.L2_foundNonWhitespace:
+	@ a1 -> first usable char in gets buffer
+	ldr a2, =.L2_scanf
+	ldr a3, =.L2_scanfResult
+	ldr a3, [a3]
+	bl matchInputToResult
+
+	cmp r1, #inputStatus_inputOk
+	bne .L2_yuck
+
+	ldr r0, =.L2_scanfResult
+	ldr r0, [r0]
+	cmp r0, rMinimum	@ Check against min
+	blo .L2_yuck
+
+	cmp r0, rMaximum	@ Check against max
+	bhi .L2_yuck
+
+	mov r1, #inputStatus_inputOk
+	b .L2_epilogue
+
+.L2_yuck:
+	ldr a1, =.L2_getsBuffer
+	mov a2, #0		@ no prompt suffix for decimal input
+	mov a3, rFirstPass	@ first pass indicator
+	bl sayYuck
+	mov rFirstPass, #0
+	b .L2_tryAgain
+ 
+.L2_acceptControlCharacter:
+	mov r1, #inputStatus_acceptedControlCharacter
+
+.L2_epilogue:
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rMinimum
+	.unreq rMaximum
+	.unreq rQControl
+	.unreq rRControl
+	.unreq rTestMode
+	.unreq rFirstPass
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ showList
+@
+@	a1 list address
+@	a2 number of elements in list
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+msgListElement: .asciz "%d. %s\n"
+
+.section .text
+
+	rListAddress		.req v1
+	rNumberOfListElements	.req v2
+	rLoopCounter		.req v3
+
+showList:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+.L3_loopInit:
+	mov rLoopCounter, #0
+
+.L3_loopTop:
+	add rLoopCounter, rLoopCounter, #1
+	ldr a1, =msgListElement
+	mov a2, rLoopCounter
+	ldr a3, [rListAddress]
+	bl printf
+
+	add rListAddress, #4
+	subs rNumberOfListElements, #1
+	bne .L3_loopTop
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rListAddress
+	.unreq rNumberOfListElements
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoInwardSpiral
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rLoopCounter	.req v7
+
+demoInwardSpiral:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+.L9_loopInit:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ make sure everything is off to start with
+
+	mov	rLoopCounter, #0
+
+.L9_loopTop:
+	cmp	rLoopCounter, #6
+	bhs	.L9_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ ring to light
+	mov	a3, #1			@ intensity
+	bl	lightPigRing
+
+	cmp	rLoopCounter, #0
+	beq	.L9_loopBottom
+
+	mov	a1, rFileDescriptor
+	sub	a2, rLoopCounter, #1	@ ring to extinguish
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+.L9_loopBottom:
+	mov	a1, #0x3D
+	lsl	a1, #12			@ get about 250k into a1
+	bl	usleep			@ sleep for about .25 sec
+
+	add	rLoopCounter, #1
+	b	.L9_loopTop
+
+.L9_loopExit:
+	mov	a1, rFileDescriptor
+	mov	a2, #5			@ turn off the last ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L9_loopInit
+
+	bl	getchar		@ eat the key
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.section .data
+	.align 2
 
 .L0_localVariables:
 
 testMode	= .-.L0_localVariables; .word 0
-currentBankroll	= .-.L0_localVariables; .word 1000
 
-.L0_msgGreeting:	.asciz	"Greetings, big spender\n"
+.L0_msgGreeting:	.asciz	"Greetings, experimental subject.\n\n"
 .L0_msgByeNow:		.asciz "'Bye now!\n"
-.L0_msgEnterYourWager:	.asciz "Enter your wager [%d, %d] -> "
-.L0_msgYouHaveBet:	.asciz "You have bet $%d.\nSpinning..."
+
+.L0_actionsJumpTable:
+		.word .L0_inwardSpiral
+		.word .L0_blindMe
 
 	.global	main
 
@@ -1092,11 +1462,6 @@ currentBankroll	= .-.L0_localVariables; .word 1000
 	.align 2
 
 	rFileDescriptor		.req v1
-	rLEDLevel		.req v2
-	rWhichLED		.req v3
-	rCurrentBankroll	.req v4
-	rCurrentWager		.req v5
-	rMaximumWager		.req v6
 
 main:
 	ldr	fp, =.L0_localVariables	@ setup local stack frame
@@ -1113,42 +1478,39 @@ main:
 	bl	pigSetup
 	mov	rFileDescriptor, r0
 
+.L0_mainMenu:
 	mTerminalCommand #terminalCommand_clearScreen
 
 	ldr	a1, =.L0_msgGreeting
 	bl	printf
 
-	ldr	rCurrentBankroll, [fp, #currentBankroll]
+	ldr	r0, [fp, #testMode]
+	push	{r0}
+	bl	getMainSelection
 
-.L0_continuePlaying:
-	mov	rMaximumWager, #maximumWager
-	cmp	rCurrentBankroll, #maximumWager
-	movlo	rMaximumWager, rCurrentBankroll
+	cmp	r1, #inputStatus_acceptedControlCharacter
+	beq	.L0_actionQuit 
 
-.L0_getWager:
+.L0_actionSwitch:
+	sub	r0, #1			@ user menu selection to 0-based
+	ldr	r1, =.L0_actionsJumpTable
+	add	r0, r1, r0, lsl #2
+	ldr	r0, [r0]
+	bx	r0
+
+.L0_inwardSpiral:
 	mov	a1, rFileDescriptor
-	mov	a2, #0
-	bl	lightPigAll	@ turn off all the LEDs
+	bl	demoInwardSpiral
+	b	.L0_mainMenu
 
-	ldr	a1, =.L0_msgEnterYourWager
-	mov	a2, #1
-	mov	a3, rMaximumWager
-	bl	getWager
+.L0_blindMe:
+	b	.L0_mainMenu
 
-	mov	rCurrentWager, r0
-	ldr	a1, =.L0_msgYouHaveBet
-	mov	a2, rCurrentWager
+.L0_actionQuit:
+	ldr	r0, =.L0_msgByeNow
 	bl	printf
-
-	mov	a1, rFileDescriptor
-	bl	spinWheels
-
+	mov	r0, #0
+	bl	fflush		@ make sure it's all out, for our test harness
 	mov	r0, #0
 	bl	exit
 
-	.unreq rFileDescriptor
-	.unreq rLEDLevel
-	.unreq rWhichLED
-	.unreq rCurrentBankroll
-	.unreq rCurrentWager
-	.unreq rMaximumWager
