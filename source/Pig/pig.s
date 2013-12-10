@@ -1053,11 +1053,12 @@ sayYuck:
 .L5_msgSeparator:	.asciz "----------------------------\n"
 
 .L5_inwardSpiral:	.asciz "Inward spiral"
+.L5_tailChase:		.asciz "Tail chase"
 .L5_blindMe:		.asciz "Blind me!"
 
-.L5_menuOptions:	.word .L5_inwardSpiral, .L5_blindMe
+.L5_menuOptions:	.word .L5_inwardSpiral, .L5_tailChase, .L5_blindMe
 
-.equ .L5_menuOptionsCount, 2
+.equ .L5_menuOptionsCount, 3
 
 	.text
 	.align 2
@@ -1377,6 +1378,182 @@ showList:
 	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoBlindMe
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rIntensityLimit	.req v2
+	rLoopCounter	.req v7
+
+demoBlindMe:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+.L10_restartFromZero:
+	mov	rIntensityLimit, #1
+
+.L10_upLoopInit:
+	mov	rLoopCounter, #0
+
+.L10_upLoopTop:
+	cmp	rLoopCounter, rIntensityLimit
+	bhs	.L10_upLoopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter
+	bl	lightPigAll
+	
+.L10_upLoopBottom:
+	mov	a1, #0x3D
+	lsl	a1, #8			@ get about 250k into a1
+	bl	usleep			@ sleep for about .25 sec
+
+	add	rLoopCounter, #10
+	b	.L10_upLoopTop
+
+.L10_upLoopExit:
+
+.L10_downLoopInit:
+	sub	rLoopCounter, rIntensityLimit, #1
+
+.L10_downLoopTop:
+	cmp	rLoopCounter, #0
+	blt	.L10_downLoopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter
+	bl	lightPigAll
+
+.L10_downLoopBottom:
+	mov	a1, #0x3D
+	lsl	a1, #8
+	bl	usleep
+
+	sub	rLoopCounter, #10
+	b	.L10_downLoopTop
+
+.L10_downLoopExit:
+	bl	kbhit
+	cmp	r0, #0
+	bne	.L10_finished
+
+	add	rIntensityLimit, #10
+	cmp	rIntensityLimit, #250
+	bhs	.L10_restartFromZero
+	b	.L10_upLoopInit
+
+.L10_finished:
+	bl	getchar		@ eat the key
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rIntensityLimit
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoTailChase
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor		.req v1
+	rChaseLoopCounter	.req v2
+	rPreviousLeg		.req v4
+	rPreviousRing		.req v5
+	rWhichLeg		.req v6
+	rWhichRing		.req v7
+
+demoTailChase:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ make sure everything is off to start with
+
+.L11_ringLoopInit:
+	mov	rWhichRing, #0
+
+.L11_ringLoopTop:
+	cmp	rWhichRing, #6
+	bhs	.L11_ringLoopExit
+
+.L11_chaseLoopInit:
+	mov	rChaseLoopCounter, #0
+
+.L11_chaseLoopTop:
+	cmp	rChaseLoopCounter, #5
+	bhs	.L11_chaseLoopExit
+
+.L11_legLoopInit:
+	mov	rWhichLeg, #2
+
+.L11_legLoopTop:
+	cmp	rWhichLeg, #0
+	blt	.L11_legLoopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rPreviousRing
+	mov	a3, rPreviousLeg
+	mov	a4, #0			@ intensity
+	bl	lightPigLED		@ turn off the previous one
+
+	mov	a1, rFileDescriptor
+	mov	a2, rWhichRing
+	mov	a3, rWhichLeg
+	mov	a4, #5			@ intensity
+	bl	lightPigLED
+
+	mov	rPreviousRing, rWhichRing
+	mov	rPreviousLeg, rWhichLeg
+
+.L11_legLoopBottom:
+	mov	a1, #0x10
+	lsl	a1, #12
+	bl	usleep
+
+	sub	rWhichLeg, #1
+	b	.L11_legLoopTop
+
+.L11_legLoopExit:
+.L11_chaseLoopBottom:
+	add	rChaseLoopCounter, #1
+	b	.L11_chaseLoopTop
+
+.L11_chaseLoopExit:
+.L11_ringLoopBottom:
+	add	rWhichRing, #1
+	b	.L11_ringLoopTop
+
+.L11_ringLoopExit:
+	mov	a1, rFileDescriptor
+	mov	a2, #5			@ turn off the last ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L11_ringLoopInit
+
+	bl	getchar		@ eat the key
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rChaseLoopCounter
+	.unreq rPreviousLeg
+	.unreq rPreviousRing
+	.unreq rWhichLeg
+	.unreq rWhichRing
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ demoInwardSpiral
 @
 @	a1 file descriptor
@@ -1454,6 +1631,7 @@ testMode	= .-.L0_localVariables; .word 0
 
 .L0_actionsJumpTable:
 		.word .L0_inwardSpiral
+		.word .L0_tailChase
 		.word .L0_blindMe
 
 	.global	main
@@ -1504,6 +1682,13 @@ main:
 	b	.L0_mainMenu
 
 .L0_blindMe:
+	mov	a1, rFileDescriptor
+	bl	demoBlindMe
+	b	.L0_mainMenu
+
+.L0_tailChase:
+	mov	a1, rFileDescriptor
+	bl	demoTailChase
 	b	.L0_mainMenu
 
 .L0_actionQuit:
