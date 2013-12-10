@@ -38,41 +38,52 @@
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Control stuff for the lightPig functions
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	.equ	leg1_red, 0
-	.equ	leg1_orange, 1
-	.equ	leg1_yellow, 2
-	.equ	leg1_green, 3
-	.equ	leg1_white, 12
-	.equ	leg1_blue, 14
+	.equ	leg0_red, 0
+	.equ	leg0_orange, 1
+	.equ	leg0_yellow, 2
+	.equ	leg0_green, 3
+	.equ	leg0_white, 12
+	.equ	leg0_blue, 14
 
-	.equ	leg2_blue, 4
-	.equ	leg2_green, 5
-	.equ	leg2_red, 6
-	.equ	leg2_orange, 7
-	.equ	leg2_yellow, 8
-	.equ	leg2_white, 9
+	.equ	leg1_blue, 4
+	.equ	leg1_green, 5
+	.equ	leg1_red, 6
+	.equ	leg1_orange, 7
+	.equ	leg1_yellow, 8
+	.equ	leg1_white, 9
 
-	.equ	leg3_white, 10
-	.equ	leg3_blue, 11
-	.equ	leg3_green, 13
-	.equ	leg3_yellow, 15
-	.equ	leg3_orange, 16
-	.equ	leg3_red, 17
+	.equ	leg2_white, 10
+	.equ	leg2_blue, 11
+	.equ	leg2_green, 13
+	.equ	leg2_yellow, 15
+	.equ	leg2_orange, 16
+	.equ	leg2_red, 17
 
-pigLegs:	.word pigLeg1, pigLeg2, pigLeg3
+pigLegs:	.word pigLeg0, pigLeg1, pigLeg2
 pigRings:	.word pigRingRed, pigRingOrange, pigRingYellow
 		.word pigRingGreen, pigRingBlue, pigRingWhite
 
+pigLeg0:	.word leg0_red, leg0_orange, leg0_yellow, leg0_green, leg0_blue, leg0_white
 pigLeg1:	.word leg1_red, leg1_orange, leg1_yellow, leg1_green, leg1_blue, leg1_white
 pigLeg2:	.word leg2_red, leg2_orange, leg2_yellow, leg2_green, leg2_blue, leg2_white
-pigLeg3:	.word leg3_red, leg3_orange, leg3_yellow, leg3_green, leg3_blue, leg3_white
 
-pigRingRed:	.word leg1_red, leg2_red, leg3_red
-pigRingOrange:	.word leg1_orange, leg2_orange, leg3_orange
-pigRingYellow:	.word leg1_yellow, leg2_yellow, leg3_yellow
-pigRingGreen:	.word leg1_green, leg2_green, leg3_green
-pigRingBlue:	.word leg1_blue, leg2_blue, leg3_blue
-pigRingWhite:	.word leg1_white, leg2_white, leg3_white
+pigRing0:
+pigRingRed:	.word leg0_red, leg1_red, leg2_red
+
+pigRing1:
+pigRingOrange:	.word leg0_orange, leg1_orange, leg2_orange
+
+pigRing2:
+pigRingYellow:	.word leg0_yellow, leg1_yellow, leg2_yellow
+
+pigRing3:
+pigRingGreen:	.word leg0_green, leg1_green, leg2_green
+
+pigRing4:
+pigRingBlue:	.word leg0_blue, leg1_blue, leg2_blue
+
+pigRing5:
+pigRingWhite:	.word leg0_white, leg1_white, leg2_white
 
 	.arch armv6
 	.eabi_attribute 27, 3
@@ -780,6 +791,65 @@ pigSetup:
 	.unreq rFileDescriptor
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getSlotForValue
+@
+@ registers:
+@	a1 value
+@
+@ returns
+@	r0 slot number
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L7_limits:
+.L7_whiteLimit:		.word 4294967295	@ 2^32 - 1
+.L7_blueLimit:		.word 3865470566	@ 90%
+.L7_greenLimit:		.word 3221225472	@ 75%
+.L7_yellowLimit:	.word 2362232012	@ 55%
+.L7_orangeLimit:	.word 1288490188	@ 30%
+.L7_redLimit:		.word 0			@ 0% of 2^32
+
+	.text
+	.align 2
+
+	rValue		.req v1
+	rLoopCounter	.req v2
+	rSlotLimit	.req v3
+	rLimitsBase	.req v4
+
+getSlotForValue:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+.L7_loopInit:
+	ldr	rLimitsBase, =.L7_limits
+	mov	rLoopCounter, #1
+
+.L7_loopTop:
+	cmp	rLoopCounter, #5
+	bhs	.L7_loopExit
+
+	ldr	rSlotLimit, [rLimitsBase, rLoopCounter, lsl #2]
+	cmp	rValue, rSlotLimit	@ if rValue >= rSlotLimit
+	subhs	rLoopCounter, #1	@ rLoopCounter -= 1
+	bhs	.L7_loopExit		@ rLoopCounter is the slot number
+
+.L7_loopBottom:
+	add	rLoopCounter, #1
+	b	.L7_loopTop
+
+.L7_loopExit:
+	mov	r0, rLoopCounter
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rValue
+	.unreq rLoopCounter
+	.unreq rSlotLimit
+	.unreq rLimitsBase
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ spinWheels
 @
 @ registers:
@@ -787,15 +857,6 @@ pigSetup:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	.data
 	.align 2
-
-
-.L4_limits:
-.L4_whiteLimit:		.word 4294967295	@ 2^32 - 1
-.L4_blueLimit:		.word 3865470566	@ 90%
-.L4_greenLimit:		.word 3221225472	@ 75%
-.L4_yellowLimit:	.word 2362232012	@ 55%
-.L4_orangeLimit:	.word 1288490188	@ 30%
-.L4_redLimit:		.word 0			@ 0% of 2^32
 
 .L4_colors:
 		.word .L4_whiteName
@@ -819,12 +880,9 @@ pigSetup:
 
 	rFileDescriptor	.req v1
 	rLoopCounter	.req v2
-	rRandomValue1	.req v3
-	rRandomValue2	.req v4
-	rRandomValue3	.req v5
-	rSetsBase	.req v7
-	rLimitsBase	.req v7
-	rColorsBase	.req v7	@ used only when we're finished with limits
+	rSlot1		.req v3
+	rSlot2		.req v4
+	rSlot3		.req v5
 
 spinWheels:
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -835,12 +893,20 @@ spinWheels:
 	@ mix things up a bit and hopefully give me both positive and negative
 	@ values in a random, or at least apparently random distribution. 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	bl	rand			@ returns rand in r0
-	ror	rRandomValue1, r0, #1	@ because I want a full range
-	bl	rand			@ returns rand in r0
-	ror	rRandomValue2, r0, #1	@ because I want a full range
-	bl	rand			@ returns rand in r0
-	ror	rRandomValue3, r0, #1	@ because I want a full range
+	bl	rand		@ returns rand in r0
+	ror	r0, #1		@ because I want a full range
+	bl	getSlotForValue	@ convert value to slot, ie, ring #
+	mov	rSlot1, r0
+
+	bl	rand		@ returns rand in r0
+	ror	r0, #1		@ because I want a full range
+	bl	getSlotForValue	@ convert value to slot, ie, ring #
+	mov	rSlot2, r0
+
+	bl	rand		@ returns rand in r0
+	ror	r0, #1		@ because I want a full range
+	bl	getSlotForValue	@ convert value to slot, ie, ring #
+	mov	rSlot3, r0
 
 .L4_loopInit:
 	mov	rLoopCounter, #0
@@ -876,17 +942,23 @@ spinWheels:
 	mov	a3, #0			@ intensity
 	bl	lightPigRing
 
+	@mov	a1, rSlot1
+	@bl	lightLEDForSlot
+
+	@mov	a1, rSlot2
+	@bl	lightLEDForSlot
+
+	@mov	a1, rSlot3
+	@bl	lightLEDForSlot
+
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
 	.unreq rFileDescriptor
 	.unreq rLoopCounter
-	.unreq rRandomValue1
-	.unreq rRandomValue2
-	.unreq rRandomValue3
-	.unreq rSetsBase
-	.unreq rLimitsBase
-	.unreq rColorsBase
+	.unreq rSlot1
+	.unreq rSlot2
+	.unreq rSlot3
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ terminalCommand
