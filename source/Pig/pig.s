@@ -35,6 +35,45 @@
 	bl terminalCommand
 .endm
 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Control stuff for the lightPig functions
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.equ	leg1_red, 0
+	.equ	leg1_orange, 1
+	.equ	leg1_yellow, 2
+	.equ	leg1_green, 3
+	.equ	leg1_white, 12
+	.equ	leg1_blue, 14
+
+	.equ	leg2_blue, 4
+	.equ	leg2_green, 5
+	.equ	leg2_red, 6
+	.equ	leg2_orange, 7
+	.equ	leg2_yellow, 8
+	.equ	leg2_white, 9
+
+	.equ	leg3_white, 10
+	.equ	leg3_blue, 11
+	.equ	leg3_green, 13
+	.equ	leg3_yellow, 15
+	.equ	leg3_orange, 16
+	.equ	leg3_red, 17
+
+pigLegs:	.word pigLeg1, pigLeg2, pigLeg3
+pigRings:	.word pigRingRed, pigRingOrange, pigRingYellow
+		.word pigRingGreen, pigRingBlue, pigRingWhite
+
+pigLeg1:	.word leg1_red, leg1_orange, leg1_yellow, leg1_green, leg1_blue, leg1_white
+pigLeg2:	.word leg2_red, leg2_orange, leg2_yellow, leg2_green, leg2_blue, leg2_white
+pigLeg3:	.word leg3_red, leg3_orange, leg3_yellow, leg3_green, leg3_blue, leg3_white
+
+pigRingRed:	.word leg1_red, leg2_red, leg3_red
+pigRingOrange:	.word leg1_orange, leg2_orange, leg3_orange
+pigRingYellow:	.word leg1_yellow, leg2_yellow, leg3_yellow
+pigRingGreen:	.word leg1_green, leg2_green, leg3_green
+pigRingBlue:	.word leg1_blue, leg2_blue, leg3_blue
+pigRingWhite:	.word leg1_white, leg2_white, leg3_white
+
 	.arch armv6
 	.eabi_attribute 27, 3
 	.eabi_attribute 28, 1
@@ -607,7 +646,78 @@ lightPigLED:
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
-	.size	lightPigLED, .-lightPigLED
+	.unreq rFileDescriptor
+	.unreq rPinToWrite
+	.unreq rValueToWrite
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigLeg
+@
+@ registers:
+@	a1 file descriptor
+@	a2 leg to light 0 - 3
+@	a3 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.text
+	.align	2
+
+lightPigLeg:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigRing
+@
+@ registers:
+@	a1 file descriptor
+@	a2 ring to light 0 - 5
+@	a3 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.text
+	.align	2
+
+	rFileDescriptor	.req v1
+	rRingToLight	.req v2
+	rIntensity	.req v3
+	rThisRingBase	.req v4
+	rLoopCounter	.req v5
+
+lightPigRing:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+.L6_loopInit:
+	mov	rLoopCounter, #0
+	ldr	r0, =pigRings
+	ldr	rThisRingBase, [r0, rRingToLight, lsl #2]
+
+.L6_loopTop:
+	cmp	rLoopCounter, #3
+	bhs	.L6_loopExit
+
+	mov	a1, rFileDescriptor
+	ldr	a2, [rThisRingBase, rLoopCounter, lsl #2]
+	mov	a3, rIntensity
+	bl	lightPigLED
+
+.L6_loopBottom:
+	add	rLoopCounter, #1
+	b	.L6_loopTop
+
+.L6_loopExit:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rRingToLight
+	.unreq rIntensity
+	.unreq rThisRingBase
+	.unreq rLoopCounter
+
 	.comm	i,4,4
 	.comm	j,4,4
 
@@ -672,9 +782,12 @@ pigSetup:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ spinWheels
 @
+@ registers:
+@	a1 file descriptor
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	.data
 	.align 2
+
 
 .L4_limits:
 .L4_whiteLimit:		.word 4294967295	@ 2^32 - 1
@@ -704,10 +817,14 @@ pigSetup:
 	.text
 	.align 2
 
-	rLoopCounter	.req v1
-	rRandomValue	.req v2
-	rLimitsBase	.req v3
-	rColorsBase	.req v3	@ used only when we're finished with limits
+	rFileDescriptor	.req v1
+	rLoopCounter	.req v2
+	rRandomValue1	.req v3
+	rRandomValue2	.req v4
+	rRandomValue3	.req v5
+	rSetsBase	.req v7
+	rLimitsBase	.req v7
+	rColorsBase	.req v7	@ used only when we're finished with limits
 
 spinWheels:
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -719,32 +836,57 @@ spinWheels:
 	@ values in a random, or at least apparently random distribution. 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	bl	rand			@ returns rand in r0
-	ror	rRandomValue, r0, #1	@ because I want a full range
+	ror	rRandomValue1, r0, #1	@ because I want a full range
+	bl	rand			@ returns rand in r0
+	ror	rRandomValue2, r0, #1	@ because I want a full range
+	bl	rand			@ returns rand in r0
+	ror	rRandomValue3, r0, #1	@ because I want a full range
 
-.L5_loopInit:
+.L4_loopInit:
 	mov	rLoopCounter, #0
-	ldr	rLimitsBase, =.L4_limits
 
-.L5_loopTop:
-	cmp	rLoopCounter, #5	@ stop at 5 -- red is the bottom
-	bhs	.L5_loopExit
+.L4_loopTop:
+	cmp	rLoopCounter, #6
+	bhs	.L4_loopExit
 
-	ldr	r0, [rLimitsBase, rLoopCounter, lsl #2]
-	cmp	rRandomValue, r0
-	bhs	.L5_loopExit
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ ring to light
+	mov	a3, #1			@ intensity
+	bl	lightPigRing
 
-.L5_loopBottom:
+	cmp	rLoopCounter, #0
+	beq	.L4_loopBottom
+
+	mov	a1, rFileDescriptor
+	sub	a2, rLoopCounter, #1	@ ring to extinguish
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+.L4_loopBottom:
+	mov	a1, #0x3D
+	lsl	a1, #12			@ get about 250k into a1
+	bl	usleep			@ sleep for about .25 sec
+
 	add	rLoopCounter, #1
-	b	.L5_loopTop
+	b	.L4_loopTop
 
-.L5_loopExit:
-	ldr	rColorsBase, =.L4_colors
-	ldr	a1, =.L4_msgYouLandedOn
-	ldr	a2, [rColorsBase, rLoopCounter, lsl #2]
-	bl	printf
+.L4_loopExit:
+	mov	a1, rFileDescriptor
+	mov	a2, #5			@ turn off the last ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rLoopCounter
+	.unreq rRandomValue1
+	.unreq rRandomValue2
+	.unreq rRandomValue3
+	.unreq rSetsBase
+	.unreq rLimitsBase
+	.unreq rColorsBase
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ terminalCommand
@@ -838,35 +980,15 @@ main:
 	mov	a2, rCurrentWager
 	bl	printf
 
-	bl	spinWheels
-	.equ	leg1_red, 0
-	.equ	leg1_orange, 1
-	.equ	leg1_yellow, 2
-	.equ	leg1_green, 3
-	.equ	leg1_white, 12
-	.equ	leg1_blue, 14
-
-	.equ	leg2_blue, 4
-	.equ	leg2_green, 5
-	.equ	leg2_red, 6
-	.equ	leg2_orange, 7
-	.equ	leg2_yellow, 8
-	.equ	leg2_white, 9
-
-	.equ	leg3_white, 10
-	.equ	leg3_blue, 11
-	.equ	leg3_green, 13
-	.equ	leg3_yellow, 15
-	.equ	leg3_orange, 16
-	.equ	leg3_red, 17
-
-	mov	rWhichLED, #leg3_yellow
-	mov	rLEDLevel, #0
-
 	mov	a1, rFileDescriptor
-	mov	a2, rWhichLED
-	mov	a3, rLEDLevel
-	bl	lightPigLED
-	
+	bl	spinWheels
+
 	mov	r0, #0
 	bl	exit
+
+	.unreq rFileDescriptor
+	.unreq rLEDLevel
+	.unreq rWhichLED
+	.unreq rCurrentBankroll
+	.unreq rCurrentWager
+	.unreq rMaximumWager
