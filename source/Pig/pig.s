@@ -683,7 +683,7 @@ lightPigAll:
 	mov	rLoopCounter, #0
 
 .L8_loopTop:
-	cmp	rLoopCounter, #17
+	cmp	rLoopCounter, #18
 	bhs	.L8_loopExit
 
 	mov	a1, rFileDescriptor
@@ -738,8 +738,8 @@ lightPigLeg:
 	rFileDescriptor	.req v1
 	rRingToLight	.req v2
 	rLegToLight	.req v3
-	rLEDToLight	.req v4
-	rIntensity	.req v5
+	rIntensity	.req v4
+	rLEDToLight	.req v5
 
 lightPigLED:
 	mFunctionSetup		@ Setup stack frame and local variables
@@ -886,10 +886,10 @@ pigSetup:
 
 .L7_limits:
 .L7_redLimit:		.word 0			@ 0% of 2^31
-.L7_orangeLimit:	.word 1073741824	@ 50%
-.L7_yellowLimit:	.word 1503238553	@ 70%
-.L7_greenLimit:		.word 1825361100	@ 85%
-.L7_blueLimit:		.word 2040109465	@ 95%
+.L7_orangeLimit:	.word 1610612736	@ 75%
+.L7_yellowLimit:	.word 1932735283	@ 90%
+.L7_greenLimit:		.word 2040109465	@ 95%
+.L7_blueLimit:		.word 2104533975	@ 98%
 .L7_whiteLimit:		.word 2147483648	@ 2^31 - 1
 
 	.text
@@ -967,10 +967,6 @@ getSlotForValue:
 
 spinWheels:
 	mFunctionSetup	@ Setup stack frame and local variables
-
-	mov	a1, rFileDescriptor
-	mov	a2, #0
-	bl	lightPigAll	@ turn off all the LEDs
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@ rand() seems to return a range of 0 - 2^31
@@ -1130,6 +1126,10 @@ main:
 	movlo	rMaximumWager, rCurrentBankroll
 
 .L0_getWager:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn off all the LEDs
+
 	ldr	a1, =.L0_msgEnterYourWager
 	mov	a2, #1
 	mov	a3, rMaximumWager
