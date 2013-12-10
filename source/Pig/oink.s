@@ -1,3 +1,11 @@
+	.equ inputBufferSize, 100
+
+.equ terminalCommand_clearScreen, 0
+.equ terminalCommand_cursorUp, 1
+.equ terminalCommand_clearToEOL, 2
+.equ terminalCommand_colorsError, 3
+.equ terminalCommand_colorsNormal, 4
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Some macros to make the code a little bit easier to read
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -22,6 +30,11 @@
 	add sp, #\argumentCount * 4
 .endm
 
+.macro mTerminalCommand operation
+	mov a1, \operation
+	bl terminalCommand
+.endm
+
 	.arch armv6
 	.eabi_attribute 27, 3
 	.eabi_attribute 28, 1
@@ -40,6 +53,46 @@
 	.comm	device,4,4
 	.section	.rodata
 	.align	2
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getWager
+@
+@ registers
+@	a1 user prompt
+@	a2 minimum wager
+@	a3 maximum wager
+@
+@ returns
+@	r0 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L3_getsBuffer:		.skip inputBufferSize
+.L3_scanf:		.asciz "%d"
+.L3_scanfResult:	.word 0
+
+	.text
+	.align 2
+
+getWager:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	bl printf	@ display the prompt that has been set up for us
+
+	ldr	a1, =.L3_getsBuffer
+	bl	gets
+
+	ldr	a1, =.L3_getsBuffer
+	ldr	a2, =.L3_scanf
+	ldr	a3, =.L3_scanfResult
+	bl	sscanf
+
+	ldr	r1, =.L3_scanfResult
+	ldr	r0, [r1]	@ return user's wager
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ I2CSetup
@@ -616,16 +669,176 @@ pigSetup:
 
 	.unreq rFileDescriptor
 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ spinWheels
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L4_limits:
+.L4_whiteLimit:		.word 4294967295	@ 2^32 - 1
+.L4_blueLimit:		.word 3865470566	@ 90%
+.L4_greenLimit:		.word 3221225472	@ 75%
+.L4_yellowLimit:	.word 2362232012	@ 55%
+.L4_orangeLimit:	.word 1288490188	@ 30%
+.L4_redLimit:		.word 0			@ 0% of 2^32
+
+.L4_colors:
+		.word .L4_whiteName
+		.word .L4_blueName
+		.word .L4_greenName
+		.word .L4_yellowName
+		.word .L4_orangeName
+		.word .L4_redName
+
+.L4_whiteName:	.asciz "white"
+.L4_blueName:	.asciz "blue"
+.L4_greenName:	.asciz "green"
+.L4_yellowName:	.asciz "yellow"
+.L4_orangeName:	.asciz "orange"
+.L4_redName:	.asciz "red"
+
+.L4_msgYouLandedOn:	.asciz "You landed on %s\n"
+
+	.text
+	.align 2
+
+	rLoopCounter	.req v1
+	rRandomValue	.req v2
+	rLimitsBase	.req v3
+	rColorsBase	.req v3	@ used only when we're finished with limits
+
+spinWheels:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ Something strange happens with rand that causes me to get all
+	@ positive values when working with 16-bit cells. The ror is there to
+	@ mix things up a bit and hopefully give me both positive and negative
+	@ values in a random, or at least apparently random distribution. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	bl	rand			@ returns rand in r0
+	ror	rRandomValue, r0, #1	@ because I want a full range
+
+.L5_loopInit:
+	mov	rLoopCounter, #0
+	ldr	rLimitsBase, =.L4_limits
+
+.L5_loopTop:
+	cmp	rLoopCounter, #5	@ stop at 5 -- red is the bottom
+	bhs	.L5_loopExit
+
+	ldr	r0, [rLimitsBase, rLoopCounter, lsl #2]
+	cmp	rRandomValue, r0
+	bhs	.L5_loopExit
+
+.L5_loopBottom:
+	add	rLoopCounter, #1
+	b	.L5_loopTop
+
+.L5_loopExit:
+	ldr	rColorsBase, =.L4_colors
+	ldr	a1, =.L4_msgYouLandedOn
+	ldr	a2, [rColorsBase, rLoopCounter, lsl #2]
+	bl	printf
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ terminalCommand
+@
+@	a1 the command to send
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L25_cmdClearScreen:	.asciz "\033[2J\033[H"
+.L25_msgCursorUp:	.asciz "\033[A"
+.L25_msgClearToEOL:	.asciz "\033[K"
+.L25_colorsError:	.asciz "\033[37;41m"
+.L25_colorsNormal:	.asciz "\033[37;40m"
+
+.L25_commands:
+	.word .L25_cmdClearScreen, .L25_msgCursorUp, .L25_msgClearToEOL
+	.word .L25_colorsError, .L25_colorsNormal
+
+.section .text
+
+terminalCommand:
+	push {lr}
+	ldr r1, =.L25_commands
+	ldr a1, [r1, a1, lsl #2]	@ the command to send
+	bl printf
+	pop {lr}
+	bx lr
+
+	.section .data
+	.align 2
+
+	.equ maximumWager, 3
+
+.L0_localVariables:
+
+testMode	= .-.L0_localVariables; .word 0
+currentBankroll	= .-.L0_localVariables; .word 1000
+
+.L0_msgGreeting:	.asciz	"Greetings, big spender\n"
+.L0_msgByeNow:		.asciz "'Bye now!\n"
+.L0_msgEnterYourWager:	.asciz "Enter your wager [%d, %d] -> "
+.L0_msgYouHaveBet:	.asciz "You have bet $%d.\nSpinning..."
+
 	.global	main
 
-	rFileDescriptor	.req v1
-	rLEDLevel	.req v2
-	rWhichLED	.req v3
+	.section .text
+	.align 2
+
+	rFileDescriptor		.req v1
+	rLEDLevel		.req v2
+	rWhichLED		.req v3
+	rCurrentBankroll	.req v4
+	rCurrentWager		.req v5
+	rMaximumWager		.req v6
 
 main:
+	ldr	fp, =.L0_localVariables	@ setup local stack frame
+
+	mov	r1, #1	@ default to test mode
+	cmp	r0, #1	@ number of cmdline args
+	moveq	r1, #0	@ if only one cmdline arg (prog name), not test mode
+	str	r1, [fp, #testMode]
+
+	mov	a1, #0
+	bl	time
+	bl	srand
+
 	bl	pigSetup
 	mov	rFileDescriptor, r0
 
+	mTerminalCommand #terminalCommand_clearScreen
+
+	ldr	a1, =.L0_msgGreeting
+	bl	printf
+
+	ldr	rCurrentBankroll, [fp, #currentBankroll]
+
+.L0_continuePlaying:
+	mov	rMaximumWager, #maximumWager
+	cmp	rCurrentBankroll, #maximumWager
+	movlo	rMaximumWager, rCurrentBankroll
+
+.L0_getWager:
+	ldr	a1, =.L0_msgEnterYourWager
+	mov	a2, #1
+	mov	a3, rMaximumWager
+	bl	getWager
+
+	mov	rCurrentWager, r0
+	ldr	a1, =.L0_msgYouHaveBet
+	mov	a2, rCurrentWager
+	bl	printf
+
+	bl	spinWheels
 	.equ	leg1_red, 0
 	.equ	leg1_orange, 1
 	.equ	leg1_yellow, 2
@@ -647,8 +860,8 @@ main:
 	.equ	leg3_orange, 16
 	.equ	leg3_red, 17
 
-	mov	rWhichLED, #17
-	mov	rLEDLevel, #1
+	mov	rWhichLED, #leg3_yellow
+	mov	rLEDLevel, #0
 
 	mov	a1, rFileDescriptor
 	mov	a2, rWhichLED
