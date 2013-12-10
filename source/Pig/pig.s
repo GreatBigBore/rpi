@@ -115,46 +115,6 @@ pigRingWhite:	.word leg0_white, leg1_white, leg2_white
 	.align	2
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ getWager
-@
-@ registers
-@	a1 user prompt
-@	a2 minimum wager
-@	a3 maximum wager
-@
-@ returns
-@	r0 file descriptor
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	.data
-	.align 2
-
-.L3_getsBuffer:		.skip inputBufferSize
-.L3_scanf:		.asciz "%d"
-.L3_scanfResult:	.word 0
-
-	.text
-	.align 2
-
-getWager:
-	mFunctionSetup	@ Setup stack frame and local variables
-
-	bl printf	@ display the prompt that has been set up for us
-
-	ldr	a1, =.L3_getsBuffer
-	bl	gets
-
-	ldr	a1, =.L3_getsBuffer
-	ldr	a2, =.L3_scanf
-	ldr	a3, =.L3_scanfResult
-	bl	sscanf
-
-	ldr	r1, =.L3_scanfResult
-	ldr	r0, [r1]	@ return user's wager
-
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ I2CSetup
 @
 @ returns
@@ -892,9 +852,6 @@ lightPigRing:
 	.unreq rIntensity
 	.unreq rThisRingBase
 	.unreq rLoopCounter
-
-	.comm	i,4,4
-	.comm	j,4,4
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ pigSetup
