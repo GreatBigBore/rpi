@@ -1,3 +1,11 @@
+	.equ inputBufferSize, 100
+
+.equ terminalCommand_clearScreen, 0
+.equ terminalCommand_cursorUp, 1
+.equ terminalCommand_clearToEOL, 2
+.equ terminalCommand_colorsError, 3
+.equ terminalCommand_colorsNormal, 4
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Some macros to make the code a little bit easier to read
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -22,6 +30,11 @@
 	add sp, #\argumentCount * 4
 .endm
 
+.macro mTerminalCommand operation
+	mov a1, \operation
+	bl terminalCommand
+.endm
+
 	.arch armv6
 	.eabi_attribute 27, 3
 	.eabi_attribute 28, 1
@@ -34,587 +47,137 @@
 	.eabi_attribute 26, 2
 	.eabi_attribute 30, 6
 	.eabi_attribute 18, 4
-	.file	"cow.c"
-	.local	wiringPiDebug
-	.comm	wiringPiDebug,4,4
-	.local	wiringPiReturnCodes
-	.comm	wiringPiReturnCodes,4,4
-	.local	pinToGpio
-	.comm	pinToGpio,4,4
-	.data
-	.align	2
-	.type	pinToGpioR1, %object
-	.size	pinToGpioR1, 256
-pinToGpioR1:
-	.word	17
-	.word	18
-	.word	21
-	.word	22
-	.word	23
-	.word	24
-	.word	25
-	.word	4
-	.word	0
-	.word	1
-	.word	8
-	.word	7
-	.word	10
-	.word	9
-	.word	11
-	.word	14
-	.word	15
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.align	2
-	.type	pinToGpioR2, %object
-	.size	pinToGpioR2, 256
-pinToGpioR2:
-	.word	17
-	.word	18
-	.word	27
-	.word	22
-	.word	23
-	.word	24
-	.word	25
-	.word	4
-	.word	2
-	.word	3
-	.word	8
-	.word	7
-	.word	10
-	.word	9
-	.word	11
-	.word	14
-	.word	15
-	.word	28
-	.word	29
-	.word	30
-	.word	31
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.local	physToGpio
-	.comm	physToGpio,4,4
-	.align	2
-	.type	physToGpioR1, %object
-	.size	physToGpioR1, 256
-physToGpioR1:
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	0
-	.word	-1
-	.word	1
-	.word	-1
-	.word	4
-	.word	14
-	.word	-1
-	.word	15
-	.word	17
-	.word	18
-	.word	21
-	.word	-1
-	.word	22
-	.word	23
-	.word	-1
-	.word	24
-	.word	10
-	.word	-1
-	.word	9
-	.word	25
-	.word	11
-	.word	8
-	.word	-1
-	.word	7
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.align	2
-	.type	physToGpioR2, %object
-	.size	physToGpioR2, 256
-physToGpioR2:
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	2
-	.word	-1
-	.word	3
-	.word	-1
-	.word	4
-	.word	14
-	.word	-1
-	.word	15
-	.word	17
-	.word	18
-	.word	27
-	.word	-1
-	.word	22
-	.word	23
-	.word	-1
-	.word	24
-	.word	10
-	.word	-1
-	.word	9
-	.word	25
-	.word	11
-	.word	8
-	.word	-1
-	.word	7
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.align	2
-	.type	sysFds, %object
-	.size	sysFds, 256
-sysFds:
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.word	-1
-	.local	wiringPiMode
-	.comm	wiringPiMode,4,4
-	.comm	robnode,4,4
+	.file	"oink.c"
+	.comm	fd,4,4
+	.comm	rev,4,4
+	.comm	device,4,4
 	.section	.rodata
 	.align	2
-.LC0:
-	.ascii	"Unable to open I2C device: %s\012\000"
-	.align	2
-.LC1:
-	.ascii	"Unable to select I2C device: %s\012\000"
-	.text
-	.align	2
-	.global	rwiringPiI2CSetupInterface
-	.type	rwiringPiI2CSetupInterface, %function
-rwiringPiI2CSetupInterface:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {r4, fp, lr}
-	add	fp, sp, #8
-	sub	sp, sp, #20
-	str	r0, [fp, #-24]
-	str	r1, [fp, #-28]
-	ldr	r0, [fp, #-24]
-	mov	r1, #2
-	bl	open
-	str	r0, [fp, #-16]
-	ldr	r3, [fp, #-16]
-	cmp	r3, #0
-	bge	.L2
-	ldr	r4, .L4
-	bl	__errno_location
-	mov	r3, r0
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	bl	strerror
-	mov	r3, r0
-	mov	r0, r4
-	mov	r1, r3
-	bl	printf
-	mvn	r0, #0
-	bl	exit
-.L2:
-	ldr	r0, [fp, #-16]
-	ldr	r1, .L4+4
-	ldr	r2, [fp, #-28]
-	bl	ioctl
-	mov	r3, r0
-	cmp	r3, #0
-	bge	.L3
-	ldr	r4, .L4+8
-	bl	__errno_location
-	mov	r3, r0
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	bl	strerror
-	mov	r3, r0
-	mov	r0, r4
-	mov	r1, r3
-	bl	printf
-	mvn	r0, #0
-	bl	exit
-.L3:
-	ldr	r3, [fp, #-16]
-	mov	r0, r3
-	sub	sp, fp, #8
-	ldmfd	sp!, {r4, fp, pc}
-.L5:
-	.align	2
-.L4:
-	.word	.LC0
-	.word	1795
-	.word	.LC1
-	.size	rwiringPiI2CSetupInterface, .-rwiringPiI2CSetupInterface
-	.section	.rodata
-	.align	2
-.LC2:
-	.ascii	"/dev/i2c-0\000"
-	.align	2
-.LC3:
-	.ascii	"/dev/i2c-1\000"
-	.text
-	.align	2
-	.global	rwiringPiI2CSetup
-	.type	rwiringPiI2CSetup, %function
-rwiringPiI2CSetup:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #16
 
-	str	r0, [fp, #-16]
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ getWager
+@
+@ registers
+@	a1 user prompt
+@	a2 minimum wager
+@	a3 maximum wager
+@
+@ returns
+@	r0 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L3_getsBuffer:		.skip inputBufferSize
+.L3_scanf:		.asciz "%d"
+.L3_scanfResult:	.word 0
+
+	.text
+	.align 2
+
+getWager:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	bl printf	@ display the prompt that has been set up for us
+
+	ldr	a1, =.L3_getsBuffer
+	bl	gets
+
+	ldr	a1, =.L3_getsBuffer
+	ldr	a2, =.L3_scanf
+	ldr	a3, =.L3_scanfResult
+	bl	sscanf
+
+	ldr	r1, =.L3_scanfResult
+	ldr	r0, [r1]	@ return user's wager
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ I2CSetup
+@
+@ returns
+@	r0 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.data
+	.align 2
+
+.L1_devicePath:		.ascii "/dev/i2c-"
+.L1_deviceNumber:	.asciz "0"
+
+.L1_msgUnableToOpen:	.asciz "Unable to open %s; error = %s\n"
+.L1_msgUnableToSelect:	.asciz "Unable to select %s: error = %s\n"
+
+	.text
+	.align	2
+	.global	I2CSetup
+
+.L1_I2CSlaveID:		.word 0x703
+
+	rFileDescriptor	.req v1
+	rBoardRevision	.req v2
+
+	.type	I2CSetup, %function
+I2CSetup:
+
+	mFunctionSetup	@ Setup stack frame and local variables
+
 	bl	rpiBoardRev
-	str	r0, [fp, #-12]
-	ldr	r3, [fp, #-12]
-	cmp	r3, #1
-	bne	.L7
-	ldr	r3, .L9
-	str	r3, [fp, #-8]
-	b	.L8
-.L7:
-	ldr	r3, .L9+4
-	str	r3, [fp, #-8]
-.L8:
-	ldr	r0, [fp, #-8]
-	ldr	r1, [fp, #-16]
-	bl	rwiringPiI2CSetupInterface
-	mov	r3, r0
-	mov	r0, r3
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-.L10:
+
+	mov	rBoardRevision, r0
+	ldr	r0, =.L1_deviceNumber
+	add	r1, rBoardRevision, #'0' - 1	@ 0-based, plus make it ascii
+	strb	r1, [r0]			@ device path ready to use
+
+	ldr	a1, =.L1_devicePath
+	mov	a2, #2				@ O_RDWR for open
+	bl	open
+
+	mov	rFileDescriptor, r0
+	cmp	rFileDescriptor, #0
+	bge	.L1_openOk
+
+	bl	__errno_location
+	ldr	a1, [r0]
+	bl	strerror
+	mov	a3, r0
+	ldr	a2, =.L1_devicePath
+	ldr	a1, =.L1_msgUnableToOpen
+	bl	printf
+	mvn	r0, #0
+	bl	exit
+
+.L1_openOk:
+	mov	a1, rFileDescriptor
+	ldr	a2, .L1_I2CSlaveID
+	mov	a3, #0x54		@ magic number from wiringPi library
+	bl	ioctl
+
+	cmp	r0, #0
+	bge	.L1_ioctlOk
+
+	bl	__errno_location
+	ldr	a1, [r0]
+	bl	strerror
+	mov	a3, r0
+	ldr	a2, =.L1_devicePath
+	ldr	a1, =.L1_msgUnableToSelect
+	bl	printf
+	mvn	r0, #0
+	bl	exit
+
+.L1_ioctlOk:
+	mov	r0, rFileDescriptor
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rBoardRevision
+	.unreq rFileDescriptor
+
 	.align	2
-.L9:
-	.word	.LC2
-	.word	.LC3
-	.size	rwiringPiI2CSetup, .-rwiringPiI2CSetup
-	.align	2
-	.type	pinModeDummy, %function
-pinModeDummy:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	@ link register save eliminated.
-	str	fp, [sp, #-4]!
-	add	fp, sp, #0
-	sub	sp, sp, #20
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	str	r2, [fp, #-16]
-	add	sp, fp, #0
-	ldmfd	sp!, {fp}
-	bx	lr
-	.size	pinModeDummy, .-pinModeDummy
-	.align	2
-	.type	pullUpDnControlDummy, %function
-pullUpDnControlDummy:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	@ link register save eliminated.
-	str	fp, [sp, #-4]!
-	add	fp, sp, #0
-	sub	sp, sp, #20
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	str	r2, [fp, #-16]
-	add	sp, fp, #0
-	ldmfd	sp!, {fp}
-	bx	lr
-	.size	pullUpDnControlDummy, .-pullUpDnControlDummy
-	.align	2
-	.type	digitalReadDummy, %function
-digitalReadDummy:
-	@ args = 0, pretend = 0, frame = 8
-	@ frame_needed = 1, uses_anonymous_args = 0
-	@ link register save eliminated.
-	str	fp, [sp, #-4]!
-	add	fp, sp, #0
-	sub	sp, sp, #12
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	mov	r3, #0
-	mov	r0, r3
-	add	sp, fp, #0
-	ldmfd	sp!, {fp}
-	bx	lr
-	.size	digitalReadDummy, .-digitalReadDummy
-	.align	2
-	.type	digitalWriteDummy, %function
-digitalWriteDummy:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	@ link register save eliminated.
-	str	fp, [sp, #-4]!
-	add	fp, sp, #0
-	sub	sp, sp, #20
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	str	r2, [fp, #-16]
-	add	sp, fp, #0
-	ldmfd	sp!, {fp}
-	bx	lr
-	.size	digitalWriteDummy, .-digitalWriteDummy
-	.align	2
-	.type	pwmWriteDummy, %function
-pwmWriteDummy:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	@ link register save eliminated.
-	str	fp, [sp, #-4]!
-	add	fp, sp, #0
-	sub	sp, sp, #20
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	str	r2, [fp, #-16]
-	add	sp, fp, #0
-	ldmfd	sp!, {fp}
-	bx	lr
-	.size	pwmWriteDummy, .-pwmWriteDummy
-	.align	2
-	.type	analogReadDummy, %function
-analogReadDummy:
-	@ args = 0, pretend = 0, frame = 8
-	@ frame_needed = 1, uses_anonymous_args = 0
-	@ link register save eliminated.
-	str	fp, [sp, #-4]!
-	add	fp, sp, #0
-	sub	sp, sp, #12
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	mov	r3, #0
-	mov	r0, r3
-	add	sp, fp, #0
-	ldmfd	sp!, {fp}
-	bx	lr
-	.size	analogReadDummy, .-analogReadDummy
-	.align	2
-	.type	analogWriteDummy, %function
-analogWriteDummy:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	@ link register save eliminated.
-	str	fp, [sp, #-4]!
-	add	fp, sp, #0
-	sub	sp, sp, #20
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	str	r2, [fp, #-16]
-	add	sp, fp, #0
-	ldmfd	sp!, {fp}
-	bx	lr
-	.size	analogWriteDummy, .-analogWriteDummy
 	.section	.rodata
 	.align	2
 .LC4:
@@ -640,30 +203,30 @@ rpiBoardRevOops:
 	add	fp, sp, #4
 	sub	sp, sp, #8
 	str	r0, [fp, #-8]
-	ldr	r2, .L19
-	ldr	r3, .L19+4
+	ldr	r2, .L9
+	ldr	r3, .L9+4
 	ldr	r3, [r3, #0]
 	mov	r0, r2
 	mov	r1, #1
 	mov	r2, #66
 	bl	fwrite
-	ldr	r3, .L19+4
+	ldr	r3, .L9+4
 	ldr	r3, [r3, #0]
 	mov	r2, r3
-	ldr	r3, .L19+8
+	ldr	r3, .L9+8
 	mov	r0, r2
 	mov	r1, r3
 	ldr	r2, [fp, #-8]
 	bl	fprintf
-	ldr	r2, .L19+12
-	ldr	r3, .L19+4
+	ldr	r2, .L9+12
+	ldr	r3, .L9+4
 	ldr	r3, [r3, #0]
 	mov	r0, r2
 	mov	r1, #1
 	mov	r2, #28
 	bl	fwrite
-	ldr	r2, .L19+16
-	ldr	r3, .L19+4
+	ldr	r2, .L9+16
+	ldr	r3, .L9+4
 	ldr	r3, [r3, #0]
 	mov	r0, r2
 	mov	r1, #1
@@ -671,15 +234,26 @@ rpiBoardRevOops:
 	bl	fwrite
 	mov	r0, #1
 	bl	exit
-.L20:
+.L10:
 	.align	2
-.L19:
+.L9:
 	.word	.LC4
 	.word	stderr
 	.word	.LC5
 	.word	.LC6
 	.word	.LC7
 	.size	rpiBoardRevOops, .-rpiBoardRevOops
+	.comm	cpuFd,4,4
+	.comm	line,120,4
+	.comm	c,4,4
+	.comm	lastChar,1,1
+	.global	boardRev
+	.data
+	.align	2
+	.type	boardRev, %object
+	.size	boardRev, 4
+boardRev:
+	.word	-1
 	.section	.rodata
 	.align	2
 .LC8:
@@ -716,704 +290,583 @@ rpiBoardRevOops:
 	.global	rpiBoardRev
 	.type	rpiBoardRev, %function
 rpiBoardRev:
-	@ args = 0, pretend = 0, frame = 136
+	@ args = 0, pretend = 0, frame = 0
 	@ frame_needed = 1, uses_anonymous_args = 0
 	stmfd	sp!, {fp, lr}
 	add	fp, sp, #4
-	sub	sp, sp, #136
-
-	ldr	r3, .L46	@ board rev static var
-	ldr	r3, [r3, #0]	@ get board rev in r3
+	ldr	r3, .L33
+	ldr	r3, [r3, #0]
 	cmn	r3, #1
-	beq	.L22		@ if it hasn't been initialized
-	ldr	r3, .L46	@ board rev static var
-	ldr	r3, [r3, #0]	@ get board rev in r3
-	b	.L23		@ return r3
-.L22:
-	ldr	r2, .L46+4	@ "proc/cpuinfo"
-	ldr	r3, .L46+8	@ "r"
+	beq	.L12
+	ldr	r3, .L33
+	ldr	r3, [r3, #0]
+	b	.L13
+.L12:
+	ldr	r2, .L33+4
+	ldr	r3, .L33+8
 	mov	r0, r2
 	mov	r1, r3
 	bl	fopen
-	str	r0, [fp, #-12]	@ store file descriptor
-	ldr	r3, [fp, #-12]
+	mov	r2, r0
+	ldr	r3, .L33+12
+	str	r2, [r3, #0]
+	ldr	r3, .L33+12
+	ldr	r3, [r3, #0]
 	cmp	r3, #0
-	bne	.L43		@ good file descriptor
-	ldr	r0, .L46+12
+	bne	.L30
+	ldr	r0, .L33+16
 	bl	rpiBoardRevOops
-	b	.L43
-.L27:
-	sub	r3, fp, #136
-	mov	r0, r3
-	ldr	r1, .L46+16
+	b	.L30
+.L17:
+	ldr	r0, .L33+20
+	ldr	r1, .L33+24
 	mov	r2, #8
 	bl	strncmp
 	mov	r3, r0
 	cmp	r3, #0
-	beq	.L44
-	b	.L25
-.L43:
+	beq	.L31
+	b	.L15
+.L30:
 	mov	r0, r0	@ nop
-.L25:
-	sub	r3, fp, #136
-	mov	r0, r3
+.L15:
+	ldr	r3, .L33+12
+	ldr	r3, [r3, #0]
+	ldr	r0, .L33+20
 	mov	r1, #120
-	ldr	r2, [fp, #-12]
+	mov	r2, r3
 	bl	fgets
 	mov	r3, r0
 	cmp	r3, #0
-	bne	.L27
-	b	.L26
-.L44:
+	bne	.L17
+	b	.L16
+.L31:
 	mov	r0, r0	@ nop
-.L26:
-	ldr	r0, [fp, #-12]
-	bl	fclose
-	sub	r3, fp, #136
+.L16:
+	ldr	r3, .L33+12
+	ldr	r3, [r3, #0]
 	mov	r0, r3
-	ldr	r1, .L46+16
+	bl	fclose
+	ldr	r0, .L33+20
+	ldr	r1, .L33+24
 	mov	r2, #8
 	bl	strncmp
 	mov	r3, r0
 	cmp	r3, #0
-	beq	.L28
-	ldr	r0, .L46+20
+	beq	.L18
+	ldr	r0, .L33+28
 	bl	rpiBoardRevOops
-.L28:
-	sub	r3, fp, #136
-	mov	r0, r3
-	bl	strlen
-	mov	r3, r0
-	sub	r3, r3, #1
-	sub	r2, fp, #136
-	add	r3, r2, r3
-	str	r3, [fp, #-8]
-	b	.L29
-.L30:
-	ldr	r3, [fp, #-8]
-	mov	r2, #0
-	strb	r2, [r3, #0]
-	ldr	r3, [fp, #-8]
-	sub	r3, r3, #1
-	str	r3, [fp, #-8]
-.L29:
-	ldr	r3, [fp, #-8]
-	ldrb	r3, [r3, #0]	@ zero_extendqisi2
-	cmp	r3, #10
-	beq	.L30
-	ldr	r3, [fp, #-8]
-	ldrb	r3, [r3, #0]	@ zero_extendqisi2
-	cmp	r3, #13
-	beq	.L30
-	ldr	r3, .L46+24
-	ldr	r3, [r3, #0]
-	cmp	r3, #0
-	beq	.L31
-	ldr	r2, .L46+28
-	sub	r3, fp, #136
-	mov	r0, r2
-	mov	r1, r3
-	bl	printf
-.L31:
-	sub	r3, fp, #136
-	str	r3, [fp, #-8]
-	b	.L32
-.L35:
-	bl	__ctype_b_loc
-	mov	r3, r0
-	ldr	r2, [r3, #0]
-	ldr	r3, [fp, #-8]
-	ldrb	r3, [r3, #0]	@ zero_extendqisi2
-	mov	r3, r3, asl #1
-	add	r3, r2, r3
-	ldrh	r3, [r3, #0]
-	and	r3, r3, #2048
-	cmp	r3, #0
-	bne	.L45
-.L33:
-	ldr	r3, [fp, #-8]
-	add	r3, r3, #1
-	str	r3, [fp, #-8]
-.L32:
-	ldr	r3, [fp, #-8]
-	ldrb	r3, [r3, #0]	@ zero_extendqisi2
-	cmp	r3, #0
-	bne	.L35
-	b	.L34
-.L45:
-	mov	r0, r0	@ nop
-.L34:
-	bl	__ctype_b_loc
-	mov	r3, r0
-	ldr	r2, [r3, #0]
-	ldr	r3, [fp, #-8]
-	ldrb	r3, [r3, #0]	@ zero_extendqisi2
-	mov	r3, r3, asl #1
-	add	r3, r2, r3
-	ldrh	r3, [r3, #0]
-	and	r3, r3, #2048
-	cmp	r3, #0
-	bne	.L36
-	ldr	r0, .L46+32
-	bl	rpiBoardRevOops
-.L36:
-	ldr	r3, .L46+24
-	ldr	r3, [r3, #0]
-	cmp	r3, #0
-	beq	.L37
-	ldr	r0, [fp, #-8]
-	bl	strlen
-	mov	r3, r0
-	cmp	r3, #4
-	beq	.L37
-	ldr	r0, .L46+36
-	bl	puts
-.L37:
-	sub	r3, fp, #136
-	mov	r0, r3
+.L18:
+	ldr	r0, .L33+20
 	bl	strlen
 	mov	r3, r0
 	sub	r2, r3, #1
-	mvn	r3, #131
-	sub	r1, fp, #4
-	add	r2, r1, r2
-	add	r3, r2, r3
-	ldrb	r3, [r3, #0]
-	strb	r3, [fp, #-13]
-	ldr	r3, .L46+24
+	ldr	r3, .L33+20
+	add	r2, r2, r3
+	ldr	r3, .L33+32
+	str	r2, [r3, #0]
+	b	.L19
+.L20:
+	ldr	r3, .L33+32
 	ldr	r3, [r3, #0]
-	cmp	r3, #0
-	beq	.L38
-	ldr	r0, .L46+40
-	ldrb	r1, [fp, #-13]	@ zero_extendqisi2
-	ldrb	r2, [fp, #-13]	@ zero_extendqisi2
-	ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+	mov	r2, #0
+	strb	r2, [r3, #0]
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	sub	r2, r3, #1
+	ldr	r3, .L33+32
+	str	r2, [r3, #0]
+.L19:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	cmp	r3, #10
+	beq	.L20
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	cmp	r3, #13
+	beq	.L20
+	ldr	r3, .L33+36
+	mov	r0, r3
+	ldr	r1, .L33+20
 	bl	printf
-.L38:
-	ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+	ldr	r3, .L33+32
+	ldr	r2, .L33+20
+	str	r2, [r3, #0]
+	b	.L21
+.L24:
+	bl	__ctype_b_loc
+	mov	r3, r0
+	ldr	r2, [r3, #0]
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	mov	r3, r3, asl #1
+	add	r3, r2, r3
+	ldrh	r3, [r3, #0]
+	and	r3, r3, #2048
+	cmp	r3, #0
+	bne	.L32
+.L22:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	add	r2, r3, #1
+	ldr	r3, .L33+32
+	str	r2, [r3, #0]
+.L21:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	cmp	r3, #0
+	bne	.L24
+	b	.L23
+.L32:
+	mov	r0, r0	@ nop
+.L23:
+	bl	__ctype_b_loc
+	mov	r3, r0
+	ldr	r2, [r3, #0]
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	mov	r3, r3, asl #1
+	add	r3, r2, r3
+	ldrh	r3, [r3, #0]
+	and	r3, r3, #2048
+	cmp	r3, #0
+	bne	.L25
+	ldr	r0, .L33+40
+	bl	rpiBoardRevOops
+.L25:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	mov	r0, r3
+	bl	strlen
+	mov	r3, r0
+	cmp	r3, #4
+	beq	.L26
+	ldr	r0, .L33+44
+	bl	puts
+.L26:
+	ldr	r0, .L33+20
+	bl	strlen
+	mov	r3, r0
+	sub	r3, r3, #1
+	ldr	r2, .L33+20
+	ldrb	r2, [r2, r3]	@ zero_extendqisi2
+	ldr	r3, .L33+48
+	strb	r2, [r3, #0]
+	ldr	r0, .L33+52
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	mov	r1, r3
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	mov	r2, r3
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	bl	printf
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
 	cmp	r3, #50
-	beq	.L39
-	ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+	beq	.L27
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
 	cmp	r3, #51
-	bne	.L40
-.L39:
-	ldr	r3, .L46
+	bne	.L28
+.L27:
+	ldr	r3, .L33
 	mov	r2, #1
 	str	r2, [r3, #0]
-	b	.L41
-.L40:
-	ldr	r3, .L46
+	b	.L29
+.L28:
+	ldr	r3, .L33
 	mov	r2, #2
 	str	r2, [r3, #0]
-.L41:
-	ldr	r3, .L46+24
-	ldr	r3, [r3, #0]
-	cmp	r3, #0
-	beq	.L42
-	ldr	r2, .L46+44
-	ldr	r3, .L46
+.L29:
+	ldr	r2, .L33+56
+	ldr	r3, .L33
 	ldr	r3, [r3, #0]
 	mov	r0, r2
 	mov	r1, r3
 	bl	printf
-.L42:
-	ldr	r3, .L46
+	ldr	r3, .L33
 	ldr	r3, [r3, #0]
-.L23:
+.L13:
 	mov	r0, r3
-	sub	sp, fp, #4
 	ldmfd	sp!, {fp, pc}
-.L47:
+.L34:
 	.align	2
-.L46:
-	.word	boardRev.4506
+.L33:
+	.word	boardRev
 	.word	.LC8
 	.word	.LC9
+	.word	cpuFd
 	.word	.LC10
+	.word	line
 	.word	.LC11
 	.word	.LC12
-	.word	wiringPiDebug
+	.word	c
 	.word	.LC13
 	.word	.LC14
 	.word	.LC15
+	.word	lastChar
 	.word	.LC16
 	.word	.LC17
 	.size	rpiBoardRev, .-rpiBoardRev
-	.align	2
-	.global	rwiringPiNewNode
-	.type	rwiringPiNewNode, %function
-rwiringPiNewNode:
-	@ args = 0, pretend = 0, frame = 8
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #8
-	str	r0, [fp, #-8]
-	str	r1, [fp, #-12]
-	mov	r0, #67
-	bl	putchar
-	mov	r0, #60
-	mov	r1, #1
-	bl	calloc
-	mov	r3, r0
-	mov	r2, r3
-	ldr	r3, .L49
-	str	r2, [r3, #0]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r2, [fp, #-8]
-	str	r2, [r3, #0]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r1, [fp, #-8]
-	ldr	r2, [fp, #-12]
-	add	r2, r1, r2
-	sub	r2, r2, #1
-	str	r2, [r3, #4]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r2, .L49+4
-	str	r2, [r3, #28]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r2, .L49+8
-	str	r2, [r3, #32]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r2, .L49+12
-	str	r2, [r3, #36]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r2, .L49+16
-	str	r2, [r3, #40]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r2, .L49+20
-	str	r2, [r3, #44]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r2, .L49+24
-	str	r2, [r3, #48]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	ldr	r2, .L49+28
-	str	r2, [r3, #52]
-	ldr	r3, .L49
-	ldr	r3, [r3, #0]
-	mov	r0, r3
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-.L50:
-	.align	2
-.L49:
-	.word	robnode
-	.word	pinModeDummy
-	.word	pullUpDnControlDummy
-	.word	digitalReadDummy
-	.word	digitalWriteDummy
-	.word	pwmWriteDummy
-	.word	analogReadDummy
-	.word	analogWriteDummy
-	.size	rwiringPiNewNode, .-rwiringPiNewNode
+	.comm	theData,1,1
+	.comm	args,12,4
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ writeI2CCommand
+@ writeI2CRegister
 @
 @ registers:
 @	a1 file descriptor
-@	a2 piglow command
-@	a3 I2C transaction type
-@	a4 command parameters
-@
-@ returns:
-@	r0 result of ioctl call
+@	a2 register to write to
+@	a3 value to write
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	.section .data
 	.align 2
 
-.equ I2C_BUS, 0x720
-
-.L1_pigCommandBlock:
-.L1_rwIndicator		= .-.L1_pigCommandBlock;	.byte 0
-.L1_command		= .-.L1_pigCommandBlock;	.byte 0
-							.byte 0
-							.byte 0
-.L1_commandSizeInBytes	= .-.L1_pigCommandBlock;	.word 0
-.L1_commandParameters	= .-.L1_pigCommandBlock;	.word 0
+.L2_PigCommand:	.word 0
+.L2_I2CCommand:	.word 0
+		.word 0
+		.word 0
 
 	.section .text
 	.align	2
+	.global	writeI2CRegister
+	.type	writeI2CRegister, %function
 
 	rFileDescriptor		.req v1
-	rPigCommand		.req v2
-	rI2CTransactionType	.req v3
-	rCommandParameters	.req v4
+	rTargetRegister		.req v2
+	rValueToWrite		.req v3
+	rPigCommand		.req v4
+	rI2CCommand		.req v5
 
-writeI2CCommand:
+writeI2CRegister:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-	ldr	r0, =.L1_pigCommandBlock
-	mov	r1, #0			@ I2C(?) write command -- 1 means read
-	strb	r1,			[r0, #.L1_rwIndicator]
-	strb	rPigCommand,		[r0, #.L1_command]
-	str	rI2CTransactionType,	[r0, #.L1_commandSizeInBytes]
-	str	rCommandParameters,	[r0, #.L1_commandParameters] 
+	ldr	rPigCommand, =.L2_PigCommand
+	ldr	rI2CCommand, =.L2_I2CCommand
 
-	@@@
-	@ ioctl(fd, I2C_SMBUS, &args)
-	@@@
-	mov	a1, rFileDescriptor
-	mov	a2, #I2C_BUS
-	ldr	a3, =.L1_pigCommandBlock
+	strb	rValueToWrite, [rPigCommand]
+
+	mov	r0, #0
+	strb	r0, [rI2CCommand, #0]			@ i2cCommand.rw = I2C_SMBUS_WRITE
+	strb	rTargetRegister, [rI2CCommand, #1]	@ i2cCommand.register = register
+	mov	r0, #2
+	str	r0, [rI2CCommand, #4]			@ i2cCommand. "size" = I2C_SMBUS_BYTE_DATA
+	ldr	r0, =.L2_PigCommand
+	str	r0, [rI2CCommand, #8]			@ i2cCommand.data = &theData
+
+	mov	a1, rFileDescriptor	@ file descriptor
+	mov	a2, #0x720		@ I2C_SMBUS
+	mov	a3, rI2CCommand		@ a3 -> i2cCommand
 	bl	ioctl
+	mov	r3, r0
+	mov	r0, r3
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
 	.unreq rFileDescriptor
+	.unreq rTargetRegister
+	.unreq rValueToWrite
 	.unreq rPigCommand
-	.unreq rI2CTransactionType
-	.unreq rCommandParameters
-
-	.align	2
-	.global	ranalogWrite
-	.type	ranalogWrite, %function
-ranalogWrite:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #16
-	str	r0, [fp, #-16]
-	str	r1, [fp, #-20]
-	ldr	r3, .L53
-	ldr	r3, [r3, #0]
-	str	r3, [fp, #-8]
-	mov	r0, #65
-	bl	putchar
-	ldr	r3, [fp, #-8]
-	ldr	r3, [r3, #52]
-	ldr	r0, [fp, #-8]
-	ldr	r1, [fp, #-16]
-	ldr	r2, [fp, #-20]
-	blx	r3
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-.L54:
-	.align	2
-.L53:
-	.word	robnode
-	.size	ranalogWrite, .-ranalogWrite
-	.section	.rodata
-	.align	2
-.LC18:
-	.ascii	"wiringPi: wiringPiSetupSys called\000"
-	.align	2
-.LC19:
-	.ascii	"/sys/class/gpio/gpio%d/value\000"
-	.text
-	.align	2
-	.global	rwiringPiSetupSys
-	.type	rwiringPiSetupSys, %function
-rwiringPiSetupSys:
-	@ args = 0, pretend = 0, frame = 136
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #136
-	ldr	r3, .L60
-	mov	r2, #1
-	str	r2, [r3, #0]
-	ldr	r3, .L60+4
-	mov	r2, #1
-	str	r2, [r3, #0]
-	ldr	r0, .L60+8
-	bl	puts
-	bl	rpiBoardRev
-	str	r0, [fp, #-12]
-	ldr	r3, [fp, #-12]
-	cmp	r3, #1
-	bne	.L56
-	ldr	r3, .L60+12
-	ldr	r2, .L60+16
-	str	r2, [r3, #0]
-	ldr	r3, .L60+20
-	ldr	r2, .L60+24
-	str	r2, [r3, #0]
-	b	.L57
-.L56:
-	ldr	r3, .L60+12
-	ldr	r2, .L60+28
-	str	r2, [r3, #0]
-	ldr	r3, .L60+20
-	ldr	r2, .L60+32
-	str	r2, [r3, #0]
-.L57:
-	mov	r3, #0
-	str	r3, [fp, #-8]
-	b	.L58
-.L59:
-	ldr	r3, .L60+36
-	sub	r2, fp, #140
-	mov	r0, r2
-	mov	r1, r3
-	ldr	r2, [fp, #-8]
-	bl	sprintf
-	sub	r3, fp, #140
-	mov	r0, r3
-	mov	r1, #2
-	bl	open
-	mov	r1, r0
-	ldr	r3, .L60+40
-	ldr	r2, [fp, #-8]
-	str	r1, [r3, r2, asl #2]
-	ldr	r3, [fp, #-8]
-	add	r3, r3, #1
-	str	r3, [fp, #-8]
-.L58:
-	ldr	r3, [fp, #-8]
-	cmp	r3, #63
-	ble	.L59
-	ldr	r3, .L60+44
-	mov	r2, #2
-	str	r2, [r3, #0]
-	mov	r3, #0
-	mov	r0, r3
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-.L61:
-	.align	2
-.L60:
-	.word	wiringPiDebug
-	.word	wiringPiReturnCodes
-	.word	.LC18
-	.word	pinToGpio
-	.word	pinToGpioR1
-	.word	physToGpio
-	.word	physToGpioR1
-	.word	pinToGpioR2
-	.word	physToGpioR2
-	.word	.LC19
-	.word	sysFds
-	.word	wiringPiMode
-	.size	rwiringPiSetupSys, .-rwiringPiSetupSys
+	.unreq rI2CCommand
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ writeI2CReg8
+@ lightPigLED
 @
 @ registers:
 @	a1 file descriptor
-@	a2 register to write
-@	a3 value to write
-@
-@ returns:
-@	nothing
+@	a2 led to light 0 - 17
+@	a3 intensity 0 - 255
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.equ I2C_SMBUS_BYTE_DATA, 2
 
-	.section .data
-	.align 2
+	rFileDescriptor	.req v1
+	rPinToWrite	.req v2
+	rValueToWrite	.req v3
 
-.L2_I2CTransactionData:
-.L2_valueToWrite	= .-.L2_I2CTransactionData;	.byte 0
-							.fill 31, 1, 0
-
-	.section .text
 	.align	2
-
-writeI2CReg8:
+	.type	lightPigLED, %function
+lightPigLED:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-	ldr	r3, =.L2_I2CTransactionData
-	strb	r2, [r3, #.L2_valueToWrite]
+	mov	a1, rFileDescriptor
+	add	a2, rPinToWrite, #1
+	and	a3, rValueToWrite, #0xFF
+	bl	writeI2CRegister		@ write the value
 
-	mov	a3, #I2C_SMBUS_BYTE_DATA	@ I2C transaction type
-	ldr	a4, =.L2_I2CTransactionData
-	bl	writeI2CCommand
+	mov	a1, rFileDescriptor
+	mov	a2, #0x16
+	mov	a3, #0
+	bl	writeI2CRegister		@ update? commit?
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
-	.align	2
-	.type	rmyAnalogWrite, %function
-rmyAnalogWrite:
-	@ args = 0, pretend = 0, frame = 24
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #24
-	str	r0, [fp, #-16]
-	str	r1, [fp, #-20]
-	str	r2, [fp, #-24]
-	ldr	r3, [fp, #-16]
-	ldr	r3, [r3, #8]
-	str	r3, [fp, #-8]
-	ldr	r3, [fp, #-16]
-	ldr	r3, [r3, #0]
-	ldr	r2, [fp, #-20]
-	rsb	r3, r3, r2
-	add	r3, r3, #1
-	str	r3, [fp, #-12]
-	mov	r0, #69
-	bl	putchar
-	ldr	r3, [fp, #-24]
-	uxtb	r3, r3
-	ldr	r0, [fp, #-8]
-	ldr	r1, [fp, #-12]
-	mov	r2, r3
-	bl	writeI2CReg8
-	ldr	r0, [fp, #-8]
-	mov	r1, #22
-	mov	r2, #0
-	bl	writeI2CReg8
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-	.size	rmyAnalogWrite, .-rmyAnalogWrite
-	.align	2
-	.global	rsn3218Setup
-	.type	rsn3218Setup, %function
-rsn3218Setup:
-	@ args = 0, pretend = 0, frame = 16
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #16
+	.size	lightPigLED, .-lightPigLED
+	.comm	i,4,4
+	.comm	j,4,4
 
-	str	r0, [fp, #-16]	@pinBase
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ pigSetup
+@
+@ returns:
+@	r0 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.align	2
+	.global	pigSetup
+	.type	pigSetup, %function
 
-	mov	r0, #84
-	bl	rwiringPiI2CSetup
-	str	r0, [fp, #-8]	@fd
+	rFileDescriptor	.req v1
 
-	ldr	r3, [fp, #-8]
-	cmp	r3, #0
-	bge	.L65
-	ldr	r3, [fp, #-8]
-	b	.L66
-.L65:
-	ldr	v1, [fp, #-8]
-	mov	r0, v1
-	mov	r1, #0
-	mov	r2, #1
-	bl	writeI2CReg8
-	mov	r0, v1
-	mov	r1, #19
-	mov	r2, #63
-	bl	writeI2CReg8
-	mov	r0, v1
-	mov	r1, #20
-	mov	r2, #63
-	bl	writeI2CReg8
-	mov	r0, v1
-	mov	r1, #21
-	mov	r2, #63
-	bl	writeI2CReg8
-	mov	r0, v1
-	mov	r1, #22
-	mov	r2, #0
-	bl	writeI2CReg8
-	ldr	r0, [fp, #-16]
-	mov	r1, #18
-	bl	rwiringPiNewNode
-	str	r0, [fp, #-12]
-	ldr	r3, [fp, #-12]
-	ldr	r2, [fp, #-8]
-	str	r2, [r3, #8]
-	ldr	r3, [fp, #-12]
-	ldr	r2, .L67
-	str	r2, [r3, #52]
-	mov	r3, #0
-.L66:
-	mov	r0, r3
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-.L68:
-	.align	2
-.L67:
-	.word	rmyAnalogWrite
-	.size	rsn3218Setup, .-rsn3218Setup
-	.align	2
-	.global	main
-	.type	main, %function
-main:
-	@ args = 0, pretend = 0, frame = 8
-	@ frame_needed = 1, uses_anonymous_args = 0
-	stmfd	sp!, {fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #8
-	bl	rwiringPiSetupSys
-	ldr	r0, .L78
-	bl	rsn3218Setup
-	mov	r3, #0
-	str	r3, [fp, #-8]
-	b	.L70
-.L73:
-	mov	r3, #0
-	str	r3, [fp, #-12]
-	b	.L71
-.L72:
-	ldr	r3, [fp, #-12]
-	add	r3, r3, #532
-	add	r3, r3, #1
-	mov	r0, r3
-	ldr	r1, [fp, #-8]
-	bl	ranalogWrite
-	ldr	r3, [fp, #-12]
-	add	r3, r3, #1
-	str	r3, [fp, #-12]
-.L71:
-	ldr	r3, [fp, #-12]
-	cmp	r3, #17
-	ble	.L72
-	ldr	r3, [fp, #-8]
-	add	r3, r3, #1
-	str	r3, [fp, #-8]
-.L70:
-	ldr	r3, [fp, #-8]
-	cmp	r3, #9
-	ble	.L73
-	mov	r3, #10
-	str	r3, [fp, #-8]
-	b	.L74
-.L77:
-	mov	r3, #0
-	str	r3, [fp, #-12]
-	b	.L75
-.L76:
-	ldr	r3, [fp, #-12]
-	add	r3, r3, #532
-	add	r3, r3, #1
-	mov	r0, r3
-	ldr	r1, [fp, #-8]
-	bl	ranalogWrite
-	ldr	r3, [fp, #-12]
-	add	r3, r3, #1
-	str	r3, [fp, #-12]
-.L75:
-	ldr	r3, [fp, #-12]
-	cmp	r3, #17
-	ble	.L76
-	ldr	r3, [fp, #-8]
-	sub	r3, r3, #1
-	str	r3, [fp, #-8]
-.L74:
-	ldr	r3, [fp, #-8]
-	cmp	r3, #0
-	bge	.L77
-	mov	r3, #0
-	mov	r0, r3
-	sub	sp, fp, #4
-	ldmfd	sp!, {fp, pc}
-.L79:
-	.align	2
-.L78:
-	.word	533
-	.size	main, .-main
+pigSetup:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	bl	I2CSetup
+	mov	rFileDescriptor, r0
+	cmp	rFileDescriptor, #0
+	blo	.L41
+
+	@ wiringPi lib says "not shutdown" -- reset?
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	mov	a3, #1
+	bl	writeI2CRegister
+
+	@ enable LEDs 0 - 5
+	mov	a1, rFileDescriptor
+	mov	a2, #0x13
+	mov	a3, #0x3F
+	bl	writeI2CRegister
+
+	@ enable LEDs 6 - 11
+	mov	a1, rFileDescriptor
+	mov	a2, #0x14
+	mov	a3, #0x3F
+	bl	writeI2CRegister
+
+	@ enable LEDs 12 - 17
+	mov	a1, rFileDescriptor
+	mov	a2, #0x15
+	mov	a3, #0x3F
+	bl	writeI2CRegister
+
+	@ update
+	mov	a1, rFileDescriptor
+	mov	a2, #0x16
+	mov	a3, #0
+	bl	writeI2CRegister
+
+.L41:
+	mov	r0, rFileDescriptor
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ spinWheels
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	.data
-	.align	2
-	.type	boardRev.4506, %object
-	.size	boardRev.4506, 4
-boardRev.4506:
-	.word	-1
-	.ident	"GCC: (Debian 4.6.3-14+rpi1) 4.6.3"
-	.section	.note.GNU-stack,"",%progbits
+	.align 2
+
+.L4_limits:
+.L4_whiteLimit:		.word 4294967295	@ 2^32 - 1
+.L4_blueLimit:		.word 3865470566	@ 90%
+.L4_greenLimit:		.word 3221225472	@ 75%
+.L4_yellowLimit:	.word 2362232012	@ 55%
+.L4_orangeLimit:	.word 1288490188	@ 30%
+.L4_redLimit:		.word 0			@ 0% of 2^32
+
+.L4_colors:
+		.word .L4_whiteName
+		.word .L4_blueName
+		.word .L4_greenName
+		.word .L4_yellowName
+		.word .L4_orangeName
+		.word .L4_redName
+
+.L4_whiteName:	.asciz "white"
+.L4_blueName:	.asciz "blue"
+.L4_greenName:	.asciz "green"
+.L4_yellowName:	.asciz "yellow"
+.L4_orangeName:	.asciz "orange"
+.L4_redName:	.asciz "red"
+
+.L4_msgYouLandedOn:	.asciz "You landed on %s\n"
+
+	.text
+	.align 2
+
+	rLoopCounter	.req v1
+	rRandomValue	.req v2
+	rLimitsBase	.req v3
+	rColorsBase	.req v3	@ used only when we're finished with limits
+
+spinWheels:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ Something strange happens with rand that causes me to get all
+	@ positive values when working with 16-bit cells. The ror is there to
+	@ mix things up a bit and hopefully give me both positive and negative
+	@ values in a random, or at least apparently random distribution. 
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	bl	rand			@ returns rand in r0
+	ror	rRandomValue, r0, #1	@ because I want a full range
+
+.L5_loopInit:
+	mov	rLoopCounter, #0
+	ldr	rLimitsBase, =.L4_limits
+
+.L5_loopTop:
+	cmp	rLoopCounter, #5	@ stop at 5 -- red is the bottom
+	bhs	.L5_loopExit
+
+	ldr	r0, [rLimitsBase, rLoopCounter, lsl #2]
+	cmp	rRandomValue, r0
+	bhs	.L5_loopExit
+
+.L5_loopBottom:
+	add	rLoopCounter, #1
+	b	.L5_loopTop
+
+.L5_loopExit:
+	ldr	rColorsBase, =.L4_colors
+	ldr	a1, =.L4_msgYouLandedOn
+	ldr	a2, [rColorsBase, rLoopCounter, lsl #2]
+	bl	printf
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ terminalCommand
+@
+@	a1 the command to send
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+.section .data
+
+.L25_cmdClearScreen:	.asciz "\033[2J\033[H"
+.L25_msgCursorUp:	.asciz "\033[A"
+.L25_msgClearToEOL:	.asciz "\033[K"
+.L25_colorsError:	.asciz "\033[37;41m"
+.L25_colorsNormal:	.asciz "\033[37;40m"
+
+.L25_commands:
+	.word .L25_cmdClearScreen, .L25_msgCursorUp, .L25_msgClearToEOL
+	.word .L25_colorsError, .L25_colorsNormal
+
+.section .text
+
+terminalCommand:
+	push {lr}
+	ldr r1, =.L25_commands
+	ldr a1, [r1, a1, lsl #2]	@ the command to send
+	bl printf
+	pop {lr}
+	bx lr
+
+	.section .data
+	.align 2
+
+	.equ maximumWager, 3
+
+.L0_localVariables:
+
+testMode	= .-.L0_localVariables; .word 0
+currentBankroll	= .-.L0_localVariables; .word 1000
+
+.L0_msgGreeting:	.asciz	"Greetings, big spender\n"
+.L0_msgByeNow:		.asciz "'Bye now!\n"
+.L0_msgEnterYourWager:	.asciz "Enter your wager [%d, %d] -> "
+.L0_msgYouHaveBet:	.asciz "You have bet $%d.\nSpinning..."
+
+	.global	main
+
+	.section .text
+	.align 2
+
+	rFileDescriptor		.req v1
+	rLEDLevel		.req v2
+	rWhichLED		.req v3
+	rCurrentBankroll	.req v4
+	rCurrentWager		.req v5
+	rMaximumWager		.req v6
+
+main:
+	ldr	fp, =.L0_localVariables	@ setup local stack frame
+
+	mov	r1, #1	@ default to test mode
+	cmp	r0, #1	@ number of cmdline args
+	moveq	r1, #0	@ if only one cmdline arg (prog name), not test mode
+	str	r1, [fp, #testMode]
+
+	mov	a1, #0
+	bl	time
+	bl	srand
+
+	bl	pigSetup
+	mov	rFileDescriptor, r0
+
+	mTerminalCommand #terminalCommand_clearScreen
+
+	ldr	a1, =.L0_msgGreeting
+	bl	printf
+
+	ldr	rCurrentBankroll, [fp, #currentBankroll]
+
+.L0_continuePlaying:
+	mov	rMaximumWager, #maximumWager
+	cmp	rCurrentBankroll, #maximumWager
+	movlo	rMaximumWager, rCurrentBankroll
+
+.L0_getWager:
+	ldr	a1, =.L0_msgEnterYourWager
+	mov	a2, #1
+	mov	a3, rMaximumWager
+	bl	getWager
+
+	mov	rCurrentWager, r0
+	ldr	a1, =.L0_msgYouHaveBet
+	mov	a2, rCurrentWager
+	bl	printf
+
+	bl	spinWheels
+	.equ	leg1_red, 0
+	.equ	leg1_orange, 1
+	.equ	leg1_yellow, 2
+	.equ	leg1_green, 3
+	.equ	leg1_white, 12
+	.equ	leg1_blue, 14
+
+	.equ	leg2_blue, 4
+	.equ	leg2_green, 5
+	.equ	leg2_red, 6
+	.equ	leg2_orange, 7
+	.equ	leg2_yellow, 8
+	.equ	leg2_white, 9
+
+	.equ	leg3_white, 10
+	.equ	leg3_blue, 11
+	.equ	leg3_green, 13
+	.equ	leg3_yellow, 15
+	.equ	leg3_orange, 16
+	.equ	leg3_red, 17
+
+	mov	rWhichLED, #leg3_yellow
+	mov	rLEDLevel, #0
+
+	mov	a1, rFileDescriptor
+	mov	a2, rWhichLED
+	mov	a3, rLEDLevel
+	bl	lightPigLED
+	
+	mov	r0, #0
+	bl	exit
