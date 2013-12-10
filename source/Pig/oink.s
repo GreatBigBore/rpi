@@ -626,65 +626,34 @@ main:
 	bl	pigSetup
 	mov	rFileDescriptor, r0
 
-.L0_loopInit:
-	mov	rWhichLED, #0
+	.equ	leg1_red, 0
+	.equ	leg1_orange, 1
+	.equ	leg1_yellow, 2
+	.equ	leg1_green, 3
+	.equ	leg1_white, 12
+	.equ	leg1_blue, 14
 
-.L0_loopTop:
-	cmp	rWhichLED, #18
-	bhs	.L0_loopExit
+	.equ	leg2_blue, 4
+	.equ	leg2_green, 5
+	.equ	leg2_red, 6
+	.equ	leg2_orange, 7
+	.equ	leg2_yellow, 8
+	.equ	leg2_white, 9
 
-.L0_level_loopInit:
-	mov	rLEDLevel, #0
+	.equ	leg3_white, 10
+	.equ	leg3_blue, 11
+	.equ	leg3_green, 13
+	.equ	leg3_yellow, 15
+	.equ	leg3_orange, 16
+	.equ	leg3_red, 17
 
-.L0_level_loopTop:
-	cmp	rLEDLevel, #10
-	bhs	.L0_level_loopExit
-
-	mov	a1, rFileDescriptor
-	mov	a2, rWhichLED
-	mov	a3, rLEDLevel
-	bl	lightPigLED
-
-.L0_level_loopBottom:
-	add	rLEDLevel, #1
-	b	.L0_level_loopTop
-
-.L0_level_loopExit:
-.L0_loopBottom:
-	add	rWhichLED, #1
-	b	.L0_loopTop
-
-.L0_loopExit:
-
-.L0_downloopInit:
 	mov	rWhichLED, #17
-
-.L0_downloopTop:
-	cmp	rWhichLED, #0
-	blt	.L0_downloopExit
-
-.L0_level_downloopInit:
-	mov	rLEDLevel, #10
-
-.L0_level_downloopTop:
-	cmp	rLEDLevel, #0
-	blt	.L0_level_downloopExit
+	mov	rLEDLevel, #1
 
 	mov	a1, rFileDescriptor
 	mov	a2, rWhichLED
 	mov	a3, rLEDLevel
 	bl	lightPigLED
-
-.L0_level_downloopBottom:
-	sub	rLEDLevel, #1
-	b	.L0_level_downloopTop
-
-.L0_level_downloopExit:
-.L0_downloopBottom:
-	sub	rWhichLED, #1
-	b	.L0_downloopTop
-
-.L0_downloopExit:
-	b .L0_loopInit
+	
 	mov	r0, #0
 	bl	exit
