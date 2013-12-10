@@ -886,10 +886,10 @@ pigSetup:
 
 .L7_limits:
 .L7_redLimit:		.word 0			@ 0% of 2^32
-.L7_orangeLimit:	.word 1288490188	@ 30%
-.L7_yellowLimit:	.word 2362232012	@ 55%
-.L7_greenLimit:		.word 3221225472	@ 75%
-.L7_blueLimit:		.word 3865470566	@ 90%
+.L7_orangeLimit:	.word 2147483648	@ 50%
+.L7_yellowLimit:	.word 3006477107	@ 70%
+.L7_greenLimit:		.word 3650722201	@ 85%
+.L7_blueLimit:		.word 4080218931	@ 95%
 .L7_whiteLimit:		.word 4294967295	@ 2^32 - 1
 
 	.text
