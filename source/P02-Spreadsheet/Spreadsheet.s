@@ -2176,6 +2176,7 @@ runMenu:
 .section .data
 
 .L18_yuckMessage:	.asciz "Uhh... %s? Yuck! Try again!\n-> "
+.L18_msgWTF:		.asciz "weird characters"
 
 .section .text
 .align 3
@@ -2186,6 +2187,23 @@ runMenu:
 
 sayYuck:
 	mFunctionSetup	@ Setup stack frame and local variables
+
+.L18_escapeLoopInit:
+	mov r0, v1	@ get yucky value string
+
+.L18_escapeLoopTop:
+	ldrb r1, [r0]	@ get byte
+	cmp r1, #0	@ end of string--all done
+	beq .L18_yuckyStringPreprocessed
+
+	cmp r1, #' '		@ check for anything less than space
+	ldrlo v1, =.L18_msgWTF	@ replace user input completely
+	beq .L18_yuckyStringPreprocessed
+
+	add r0, #1
+	b .L18_escapeLoopTop
+
+.L18_yuckyStringPreprocessed:
 
 	mTerminalCommand #terminalCommand_cursorUp
 	mTerminalCommand #terminalCommand_clearToEOL
