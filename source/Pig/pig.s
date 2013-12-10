@@ -885,12 +885,12 @@ pigSetup:
 	.align 2
 
 .L7_limits:
-.L7_redLimit:		.word 0			@ 0% of 2^32
-.L7_orangeLimit:	.word 2147483648	@ 50%
-.L7_yellowLimit:	.word 3006477107	@ 70%
-.L7_greenLimit:		.word 3650722201	@ 85%
-.L7_blueLimit:		.word 4080218931	@ 95%
-.L7_whiteLimit:		.word 4294967295	@ 2^32 - 1
+.L7_redLimit:		.word 0			@ 0% of 2^31
+.L7_orangeLimit:	.word 1073741824	@ 50%
+.L7_yellowLimit:	.word 1503238553	@ 70%
+.L7_greenLimit:		.word 1825361100	@ 85%
+.L7_blueLimit:		.word 2040109465	@ 95%
+.L7_whiteLimit:		.word 2147483648	@ 2^31 - 1
 
 	.text
 	.align 2
@@ -920,7 +920,7 @@ getSlotForValue:
 	b	.L7_loopTop
 
 .L7_loopExit:
-	mov	r0, rLoopCounter	@ return value is the slot number
+	sub	r0, rLoopCounter, #1	@ return value is the slot number
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
@@ -973,23 +973,17 @@ spinWheels:
 	bl	lightPigAll	@ turn off all the LEDs
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@ Something strange happens with rand that causes me to get all
-	@ positive values when working with 16-bit cells. The ror is there to
-	@ mix things up a bit and hopefully give me both positive and negative
-	@ values in a random, or at least apparently random distribution. 
+	@ rand() seems to return a range of 0 - 2^31
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	bl	rand		@ returns rand in r0
-	ror	r0, #1		@ because I want a full range
 	bl	getSlotForValue	@ convert value to slot, ie, ring #
 	mov	rSlot0, r0
 
 	bl	rand		@ returns rand in r0
-	ror	r0, #1		@ because I want a full range
 	bl	getSlotForValue	@ convert value to slot, ie, ring #
 	mov	rSlot1, r0
 
 	bl	rand		@ returns rand in r0
-	ror	r0, #1		@ because I want a full range
 	bl	getSlotForValue	@ convert value to slot, ie, ring #
 	mov	rSlot2, r0
 

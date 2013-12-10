@@ -1995,13 +1995,15 @@ randomFill:
 	bhs .L6_loopExit
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	@ Something strange happens with rand that causes me to get all
-	@ positive values when working with 16-bit cells. The ror is there to
-	@ mix things up a bit and hopefully give me both positive and negative
-	@ values in a random, or at least apparently random distribution. 
+	@ rand() seems to return a range of 0 - 2^31, which means that I'll
+	@ never get negative values when working with 32 bits. So shift all
+	@ values left by one, then back down with sign extension. That turns
+	@ anything > 2^31 negative, which means that about half the values
+	@ I get back will be negative, which is what I want.
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	bl rand				@ returns rand in a1 (r0)
-	ror a1, #1			@ because I want a full range
+	lsl a1, #1
+	asr a1, #1
 	mov a2, rSheetAddress
 	mov a3, rLoopCounter		@ current cell index
 	mov r3, #operation_store
