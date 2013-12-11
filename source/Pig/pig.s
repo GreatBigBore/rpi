@@ -1047,12 +1047,15 @@ sayYuck:
 .L5_tailChase:		.asciz "Tail chase"
 .L5_pinwheel:		.asciz "Pinwheel"
 .L5_spider:		.asciz "Spider"
+.L5_bullseye:		.asciz "Bullseye"
+.L5_reverseBullseye:	.asciz "Reverse bullseye"
 .L5_blindMe:		.asciz "Blind me!"
 
 .L5_menuOptions:	.word .L5_inwardSpiral, .L5_tailChase
-			.word .L5_pinwheel, .L5_spider, .L5_blindMe
+			.word .L5_pinwheel, .L5_spider, .L5_bullseye
+			.word .L5_reverseBullseye, .L5_blindMe
 
-.equ .L5_menuOptionsCount, 5
+.equ .L5_menuOptionsCount, 7
 
 	.text
 	.align 2
@@ -1557,6 +1560,208 @@ demoPinwheel:
 	.unreq rIntensity
 	.unreq rLoopCounter
 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoReverseBullseye
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rRingDelta	.req v2
+	rWaitMinimum	.req v3
+	rWaitTime	.req v4
+	rPreviousRing	.req v5
+	rWhichRing	.req v6
+	rLoopCounter	.req v7
+
+demoReverseBullseye:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	rWaitTime, #61		@ start off slow, about...
+	lsl	rWaitTime, #10		@ 250ms per jump
+
+	mov	rWaitMinimum, #200	@ minimum wait is
+	lsl	rWaitMinimum, #7	@ about 25ms per jump
+
+.L16_downloopInit:
+	mov	rLoopCounter, #5
+
+.L16_downloopTop:
+	cmp	rLoopCounter, #0
+	blt	.L16_downloopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, #5			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L16_downloopSleep
+
+	bl	getchar		@ eat the key
+	b	.L16_epilogue
+
+.L16_downloopSleep:
+	mov	a1, rWaitTime
+	bl	usleep
+
+.L16_downloopBottom:
+	sub	rLoopCounter, #1
+	b	.L16_downloopTop
+
+.L16_downloopExit:
+.L16_uploopInit:
+	mov	rLoopCounter, #0
+
+.L16_uploopTop:
+	cmp	rLoopCounter, #6
+	bhs	.L16_uploopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L16_uploopSleep
+
+	bl	getchar		@ eat the key
+	b	.L16_epilogue
+
+.L16_uploopSleep:
+	mov	a1, rWaitTime
+	bl	usleep
+
+.L16_upLoopBottom:
+	add	rLoopCounter, #1
+	b	.L16_uploopTop
+
+.L16_uploopExit:
+	cmp	rWaitTime, rWaitMinimum	@ at full speed yet?
+	subhs	rWaitTime, #4000	@ no, accelerate
+
+	b	.L16_downloopInit
+
+.L16_epilogue:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rRingDelta
+	.unreq rWaitMinimum
+	.unreq rWaitTime
+	.unreq rWhichRing
+	.unreq rLoopCounter
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoBullseye
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rRingDelta	.req v2
+	rWaitMinimum	.req v3
+	rWaitTime	.req v4
+	rPreviousRing	.req v5
+	rWhichRing	.req v6
+	rLoopCounter	.req v7
+
+demoBullseye:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	rWaitTime, #61		@ start off slow, about...
+	lsl	rWaitTime, #10		@ 250ms per jump
+
+	mov	rWaitMinimum, #200	@ minimum wait is
+	lsl	rWaitMinimum, #7	@ about 25ms per jump
+
+.L15_uploopInit:
+	mov	rLoopCounter, #0
+
+.L15_uploopTop:
+	cmp	rLoopCounter, #6
+	bhs	.L15_uploopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, #5			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L15_uploopSleep
+
+	bl	getchar		@ eat the key
+	b	.L15_epilogue
+
+.L15_uploopSleep:
+	mov	a1, rWaitTime
+	bl	usleep
+
+.L15_upLoopBottom:
+	add	rLoopCounter, #1
+	b	.L15_uploopTop
+
+.L15_uploopExit:
+.L15_downloopInit:
+	mov	rLoopCounter, #5
+
+.L15_downloopTop:
+	cmp	rLoopCounter, #0
+	blt	.L15_downloopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L15_downloopSleep
+
+	bl	getchar		@ eat the key
+	b	.L15_epilogue
+
+.L15_downloopSleep:
+	mov	a1, rWaitTime
+	bl	usleep
+
+.L15_downloopBottom:
+	sub	rLoopCounter, #1
+	b	.L15_downloopTop
+
+.L15_downloopExit:
+	cmp	rWaitTime, rWaitMinimum	@ at full speed yet?
+	subhs	rWaitTime, #4000	@ no, accelerate
+
+	b	.L15_uploopInit
+
+.L15_epilogue:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rRingDelta
+	.unreq rWaitMinimum
+	.unreq rWaitTime
+	.unreq rWhichRing
+	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ demoSpider
@@ -1858,6 +2063,8 @@ testMode	= .-.L0_localVariables; .word 0
 		.word .L0_tailChase
 		.word .L0_pinwheel
 		.word .L0_spider
+		.word .L0_bullseye
+		.word .L0_reverseBullseye
 		.word .L0_blindMe
 
 	.global	main
@@ -1901,6 +2108,16 @@ main:
 	add	r0, r1, r0, lsl #2
 	ldr	r0, [r0]
 	bx	r0
+
+.L0_reverseBullseye:
+	mov	a1, rFileDescriptor
+	bl	demoReverseBullseye
+	b	.L0_mainMenu
+
+.L0_bullseye:
+	mov	a1, rFileDescriptor
+	bl	demoBullseye
+	b	.L0_mainMenu
 
 .L0_spider:
 	mov	a1, rFileDescriptor
