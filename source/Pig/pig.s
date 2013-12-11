@@ -1608,6 +1608,10 @@ demoTailChase:
 	mov	rPreviousRing, rWhichRing
 	mov	rPreviousLeg, rWhichLeg
 
+	bl	kbhit
+	cmp	r0, #1
+	beq	.L11_epilogue
+
 .L11_legLoopBottom:
 	mov	a1, #0x10
 	lsl	a1, #12
@@ -1632,11 +1636,14 @@ demoTailChase:
 	mov	a3, #0			@ intensity
 	bl	lightPigRing
 
-	bl	kbhit
-	cmp	r0, #0
-	beq	.L11_ringLoopInit
+	b	.L11_ringLoopInit
 
+.L11_epilogue:
 	bl	getchar		@ eat the key
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
 
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
@@ -1686,6 +1693,10 @@ demoInwardSpiral:
 	mov	a3, #0			@ intensity
 	bl	lightPigRing
 
+	bl	kbhit
+	cmp	r0, #1
+	beq	.L9_epilogue
+
 .L9_loopBottom:
 	mov	a1, #0x3D
 	lsl	a1, #12			@ get about 250k into a1
@@ -1699,10 +1710,12 @@ demoInwardSpiral:
 	mov	a2, #5			@ turn off the last ring
 	mov	a3, #0			@ intensity
 	bl	lightPigRing
+	b	.L9_loopInit
 
-	bl	kbhit
-	cmp	r0, #0
-	beq	.L9_loopInit
+.L9_epilogue:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
 
 	bl	getchar		@ eat the key
 
