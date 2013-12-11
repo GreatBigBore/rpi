@@ -757,12 +757,42 @@ lightPigAll:
 	.text
 	.align	2
 
+	rFileDescriptor	.req v1
+	rLegToLight	.req v2
+	rIntensity	.req v3
+	rThisLegBase	.req v4
+	rLoopCounter	.req v5
+
 lightPigLeg:
 	mFunctionSetup	@ Setup stack frame and local variables
 
+.L13_loopInit:
+	mov	rLoopCounter, #0
+	ldr	r0, =pigLegs
+	ldr	rThisLegBase, [r0, rLegToLight, lsl #2]
 
+.L13_loopTop:
+	cmp	rLoopCounter, #6
+	bhs	.L13_loopExit
+
+	mov	a1, rFileDescriptor
+	ldr	a2, [rThisLegBase, rLoopCounter, lsl #2]
+	mov	a3, rIntensity
+	bl	setPigLEDRegister
+
+.L13_loopBottom:
+	add	rLoopCounter, #1
+	b	.L13_loopTop
+
+.L13_loopExit:
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rLegToLight
+	.unreq rIntensity
+	.unreq rThisLegBase
+	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ lightPigLED
@@ -1011,11 +1041,13 @@ sayYuck:
 
 .L5_inwardSpiral:	.asciz "Inward spiral"
 .L5_tailChase:		.asciz "Tail chase"
+.L5_pinwheel:		.asciz "Pinwheel"
 .L5_blindMe:		.asciz "Blind me!"
 
-.L5_menuOptions:	.word .L5_inwardSpiral, .L5_tailChase, .L5_blindMe
+.L5_menuOptions:	.word .L5_inwardSpiral, .L5_tailChase
+			.word .L5_pinwheel, .L5_blindMe
 
-.equ .L5_menuOptionsCount, 3
+.equ .L5_menuOptionsCount, 4
 
 	.text
 	.align 2
@@ -1413,6 +1445,112 @@ demoBlindMe:
 	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoPinwheel
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L12_intensityLimit:	.word 150
+
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rIntensityDelta	.req v2
+	rWaitMinimum	.req v3
+	rWaitTime	.req v4
+	rPreviousLeg	.req v5
+	rIntensity	.req v6
+	rLoopCounter	.req v7
+
+demoPinwheel:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	rPreviousLeg, #0
+
+	mov	rWaitTime, #61		@ start off slow, about...
+	lsl	rWaitTime, #12		@ 250ms per jump
+
+	mov	rWaitMinimum, #200	@ minimum wait is
+	lsl	rWaitMinimum, #7	@ about 25ms per jump
+
+	mov	rIntensity, #1
+	mov	rIntensityDelta, #2
+
+.L12_loopInit:
+	mov	rLoopCounter, #2
+
+.L12_loopTop:
+	cmp	rLoopCounter, #0
+	blt	.L12_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rPreviousLeg	@ which leg
+	mov	a3, #0			@ intensity
+	bl	lightPigLeg		@ turn off prevous leg
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which leg
+	mov	a3, rIntensity		@ intensity
+	bl	lightPigLeg
+
+	mov	rPreviousLeg, rLoopCounter
+
+	mov	a1, rWaitTime
+	bl	usleep
+
+	cmp	rWaitTime, rWaitMinimum	@ at full speed yet?
+	subhs	rWaitTime, #4000	@ no, accelerate
+
+	add	rIntensity, rIntensityDelta
+
+	cmp	rIntensityDelta, #0
+	bgt	.L12_goingUp
+
+	cmp	rIntensity, #0
+	bgt	.L12_loopBottom
+	mov	rIntensity, #1		@ restart at minimum intensity
+	b	.L12_negateIntensity
+
+.L12_goingUp:
+	ldr	r0, =.L12_intensityLimit
+	ldr	r0, [r0]
+	cmp	rIntensity, r0	@ intensity > limit, need to adjust
+	blt	.L12_loopBottom
+
+.L12_negateIntensity:
+	mvn	rIntensityDelta, rIntensityDelta
+	add	rIntensityDelta, #1
+
+.L12_loopBottom:
+	sub	rLoopCounter, #1
+	b	.L12_loopTop
+
+.L12_loopExit:
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L12_loopInit
+
+	bl	getchar		@ eat the key
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rIntensityDelta
+	.unreq rWaitMinimum
+	.unreq rWaitTime
+	.unreq rPreviousLeg
+	.unreq rIntensity
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ demoTailChase
 @
 @	a1 file descriptor
@@ -1589,6 +1727,7 @@ testMode	= .-.L0_localVariables; .word 0
 .L0_actionsJumpTable:
 		.word .L0_inwardSpiral
 		.word .L0_tailChase
+		.word .L0_pinwheel
 		.word .L0_blindMe
 
 	.global	main
@@ -1646,6 +1785,11 @@ main:
 .L0_tailChase:
 	mov	a1, rFileDescriptor
 	bl	demoTailChase
+	b	.L0_mainMenu
+
+.L0_pinwheel:
+	mov	a1, rFileDescriptor
+	bl	demoPinwheel
 	b	.L0_mainMenu
 
 .L0_actionQuit:
