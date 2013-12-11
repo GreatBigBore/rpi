@@ -751,7 +751,8 @@ lightPigAll:
 @ registers:
 @	a1 file descriptor
 @	a2 leg to light 0 - 3
-@	a3 intensity 0 - 255
+@	a3 how much of the leg to light 0 - 5
+@	a4 intensity 0 - 255
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	.text
@@ -759,9 +760,10 @@ lightPigAll:
 
 	rFileDescriptor	.req v1
 	rLegToLight	.req v2
-	rIntensity	.req v3
-	rThisLegBase	.req v4
-	rLoopCounter	.req v5
+	rHowMuchLeg	.req v3
+	rIntensity	.req v4
+	rThisLegBase	.req v6
+	rLoopCounter	.req v7
 
 lightPigLeg:
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -772,8 +774,8 @@ lightPigLeg:
 	ldr	rThisLegBase, [r0, rLegToLight, lsl #2]
 
 .L13_loopTop:
-	cmp	rLoopCounter, #6
-	bhs	.L13_loopExit
+	cmp	rLoopCounter, rHowMuchLeg
+	bhi	.L13_loopExit
 
 	mov	a1, rFileDescriptor
 	ldr	a2, [rThisLegBase, rLoopCounter, lsl #2]
@@ -1488,12 +1490,14 @@ demoPinwheel:
 
 	mov	a1, rFileDescriptor
 	mov	a2, rPreviousLeg	@ which leg
-	mov	a3, #0			@ intensity
+	mov	a3, #5			@ light the whole leg
+	mov	a4, #0			@ intensity
 	bl	lightPigLeg		@ turn off prevous leg
 
 	mov	a1, rFileDescriptor
 	mov	a2, rLoopCounter	@ which leg
-	mov	a3, rIntensity		@ intensity
+	mov	a3, #5			@ light the whole leg
+	mov	a4, rIntensity		@ intensity
 	bl	lightPigLeg
 
 	mov	rPreviousLeg, rLoopCounter
