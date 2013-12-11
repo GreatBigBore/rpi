@@ -197,6 +197,8 @@ I2CSetup:
 	.unreq rBoardRevision
 	.unreq rFileDescriptor
 
+	.ltorg	@ for literal pool issue
+
 kbhit:
 	@ args = 0, pretend = 0, frame = 128
 	@ frame_needed = 1, uses_anonymous_args = 0
@@ -1044,12 +1046,13 @@ sayYuck:
 .L5_inwardSpiral:	.asciz "Inward spiral"
 .L5_tailChase:		.asciz "Tail chase"
 .L5_pinwheel:		.asciz "Pinwheel"
+.L5_spider:		.asciz "Spider"
 .L5_blindMe:		.asciz "Blind me!"
 
 .L5_menuOptions:	.word .L5_inwardSpiral, .L5_tailChase
-			.word .L5_pinwheel, .L5_blindMe
+			.word .L5_pinwheel, .L5_spider, .L5_blindMe
 
-.equ .L5_menuOptionsCount, 4
+.equ .L5_menuOptionsCount, 5
 
 	.text
 	.align 2
@@ -1554,6 +1557,115 @@ demoPinwheel:
 	.unreq rIntensity
 	.unreq rLoopCounter
 
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoSpider
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L14_legLimit:	.word 5
+
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rLegDelta	.req v2
+	rWaitMinimum	.req v3
+	rWaitTime	.req v4
+	rPreviousLeg	.req v5
+	rLegLength	.req v6
+	rLoopCounter	.req v7
+
+demoSpider:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	rPreviousLeg, #0
+
+	mov	rWaitTime, #61		@ start off slow, about...
+	lsl	rWaitTime, #12		@ 250ms per jump
+
+	mov	rWaitMinimum, #200	@ minimum wait is
+	lsl	rWaitMinimum, #7	@ about 25ms per jump
+
+	mov	rLegLength, #0
+	mov	rLegDelta, #1
+
+.L14_loopInit:
+	mov	rLoopCounter, #2
+
+.L14_loopTop:
+	cmp	rLoopCounter, #0
+	blt	.L14_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rPreviousLeg	@ which leg
+	mov	a3, #5			@ leg length -- turn off all
+	mov	a4, #0			@ intensity
+	bl	lightPigLeg		@ turn off prevous leg
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which leg
+	mov	a3, rLegLength
+	mov	a4, #5			@ intensity
+	bl	lightPigLeg
+
+	mov	rPreviousLeg, rLoopCounter
+
+	mov	a1, rWaitTime
+	bl	usleep
+
+	cmp	rWaitTime, rWaitMinimum	@ at full speed yet?
+	subhs	rWaitTime, #4000	@ no, accelerate
+
+	add	rLegLength, rLegDelta
+
+	cmp	rLegDelta, #0
+	bgt	.L14_goingUp
+
+	cmp	rLegLength, #0
+	bgt	.L14_loopBottom
+	mov	rLegLength, #0		@ restart at minimum leg length
+	b	.L14_negateLegDelta
+
+.L14_goingUp:
+	ldr	r0, =.L14_legLimit
+	ldr	r0, [r0]
+	cmp	rLegLength, r0	@ length > limit, need to adjust
+	blt	.L14_loopBottom
+
+.L14_negateLegDelta:
+	mvn	rLegDelta, rLegDelta
+	add	rLegDelta, #1
+
+.L14_loopBottom:
+	sub	rLoopCounter, #1
+	b	.L14_loopTop
+
+.L14_loopExit:
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L14_loopInit
+
+	bl	getchar		@ eat the key
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rLegDelta
+	.unreq rWaitMinimum
+	.unreq rWaitTime
+	.unreq rPreviousLeg
+	.unreq rLegLength
+	.unreq rLoopCounter
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ demoTailChase
 @
@@ -1745,6 +1857,7 @@ testMode	= .-.L0_localVariables; .word 0
 		.word .L0_inwardSpiral
 		.word .L0_tailChase
 		.word .L0_pinwheel
+		.word .L0_spider
 		.word .L0_blindMe
 
 	.global	main
@@ -1788,6 +1901,11 @@ main:
 	add	r0, r1, r0, lsl #2
 	ldr	r0, [r0]
 	bx	r0
+
+.L0_spider:
+	mov	a1, rFileDescriptor
+	bl	demoSpider
+	b	.L0_mainMenu
 
 .L0_inwardSpiral:
 	mov	a1, rFileDescriptor
