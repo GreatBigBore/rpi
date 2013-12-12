@@ -32,6 +32,12 @@
 
 .equ inputBufferSize, 100
 
+.equ presentation_dec, 1
+.equ numberOfRows, 6
+.equ numberOfColumns, 3
+.equ numberOfCells, numberOfRows * numberOfColumns
+.equ cellWidthInBytes, 1
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ Some macros to make the code a little bit easier to read
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -104,70 +110,114 @@ terminalCommand:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
 @
-@ stack:
-@	 +4 presentation mode
-@	 +8 formula
-@	 +12 overflow accumulator
-@
 @ registers:
 @	a1 ops function
 @	a2 spreadsheet data
-@	a3 number of cells to display
-@	a4 data width
+@	a3 rows to display
+@	a4 columns to display
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.L1_msgSpreadsheetHeader:	.asciz "Pigsheet\n\n"
-.L1_cellNumber:			.asciz "%9d. "
+.L1_msgSpreadsheetTitle:	.asciz "Pigsheet\n"
+.L1_msgSTSeparator:		.asciz "--------\n"
+.L1_msgSpreadsheetHeader:	.asciz "                    Leg\n"
+
+.L1_msgHeader:			.asciz "                0    1    2\n"
+.L1_msgSeparator:		.asciz "-----------------------------\n"
+
+.L1_ringName:	.asciz "%8s:  |"
+.L1_red:	.asciz "Red"
+.L1_orange:	.asciz "Orange"
+.L1_yellow:	.asciz "Yellow"
+.L1_green:	.asciz "Green"
+.L1_blue:	.asciz "Blue"
+.L1_white:	.asciz "White"
+
+.L1_ringNames:	.word .L1_red, .L1_orange, .L1_yellow
+		.word .L1_green, .L1_blue, .L1_white
 
 .section .text
 .align 3
 
-	rOperationsFunction	.req v1
-	rSpreadsheetAddress	.req v2
-	rNumberOfCellsToDisplay	.req v3
-	rDataWidthInBytes	.req v4
-	rLoopCounter		.req v5
+	rOperationsFunction		.req v1
+	rSpreadsheetAddress		.req v2
+	rNumberOfRowsToDisplay		.req v3
+	rNumberOfColumnsToDisplay	.req v4
+	rColumnCounter			.req v6
+	rRowCounter			.req v7
 
 displaySheet:
-	mFunctionSetup	@ Setup stack frame and local variables
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	ldr a1, =.L1_msgSpreadsheetTitle
+	bl printf
+
+	ldr a1, =.L1_msgSTSeparator
+	bl printf
 
 	ldr a1, =.L1_msgSpreadsheetHeader
 	bl printf
 
-.L1_loopInit:
-	mov rLoopCounter, #0
-
-.L1_loopTop:
-	cmp rLoopCounter, rNumberOfCellsToDisplay
-	bhs .L1_loopExit
-
-	ldr a1, =.L1_cellNumber
-	add a2, rLoopCounter, #1
+	ldr a1, =.L1_msgHeader
 	bl printf
 
-	ldr a1, [fp, #4]		@ a1 = presentation indicator
-	mov a2, rSpreadsheetAddress	@ spreadsheet
-	mov a3, rLoopCounter		@ cell index
-	mov a4, #operation_display
-	blx rOperationsFunction		@ display current cell per data width 
+	ldr a1, =.L1_msgSeparator
+	bl printf
+
+.L1_rowloopInit:
+	mov rRowCounter, #0
+
+.L1_rowloopTop:
+	cmp rRowCounter, rNumberOfRowsToDisplay
+	bhs .L1_rowloopExit
+
+	ldr a1, =.L1_ringName
+	ldr a2, =.L1_ringNames
+	ldr a2, [a2, rRowCounter, lsl #2]
+	bl printf
+
+.L1_columnLoopInit:
+	mov	rColumnCounter, #0
+
+.L1_columnLoopTop:
+	cmp	rColumnCounter, rNumberOfColumnsToDisplay
+	bhs	.L1_columnLoopExit
+
+	mov	a1, #presentation_dec
+	mov	a2, rSpreadsheetAddress	@ spreadsheet
+
+	mov	a3, #3
+	cmp	rColumnCounter, #0
+	moveq	a3, #0			@ no offset for column zero
+	lslne	a3, rColumnCounter	@ col1 offset is 6, col2 is 12
+	add	a3, rRowCounter		@ a3 is cell offset in buffer
+
+	mov	a4, #operation_display
+	blx	rOperationsFunction	@ display current cell per data width 
+
+.L1_columnLoopBottom:
+	add	rColumnCounter, #1
+	b	.L1_columnLoopTop
+
+.L1_columnLoopExit:
+	bl	newline
+
+.L1_rowloopBottom:
+	add rRowCounter, rRowCounter, #1
+	b .L1_rowloopTop
+
+.L1_rowloopExit:
 	bl newline
 
-.L1_loopBottom:
-	add rLoopCounter, rLoopCounter, #1
-	b .L1_loopTop
-
-.L1_loopExit:
-	bl newline
-
-	mFunctionBreakdown 3	@ restore caller's locals and stack frame
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
 	.unreq rOperationsFunction
 	.unreq rSpreadsheetAddress
-	.unreq rNumberOfCellsToDisplay
-	.unreq rDataWidthInBytes
-	.unreq rLoopCounter
+	.unreq rNumberOfRowsToDisplay
+	.unreq rNumberOfColumnsToDisplay
+	.unreq rRowCounter
+	.unreq rColumnCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellToEdit
@@ -687,7 +737,7 @@ menuGetCellValueDec:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-.ops8_formatDec: .asciz "% 4d"
+.ops8_formatDec: .asciz " % 4u"
 .ops8_formatHex: .asciz "$%02X"
 
 .ops8_jumpTable:	.word .ops8_store, .ops8_display, .ops8_initAForMin
@@ -743,7 +793,7 @@ operations8:
 	b .ops8_epilogue
 
 .ops8_display:
-	ldrsb rCellContents, [rSheetBaseAddress, rCellIndex]
+	ldrb rCellContents, [rSheetBaseAddress, rCellIndex]
 
 	ldr a1, =.ops8_formatDec	@ default to decimal
 	bl printf
@@ -812,19 +862,21 @@ promptForSelection:
 	pop {pc}
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ randomFill
+@ fillCells
 @
-@	a1 = operations function
-@	a2 = sheet base address
-@	a3 = cell count
+@	a1 operations function
+@	a2 sheet base address
+@	a3 cell count
+@	a4 1 = random values, 0 = zeroes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	rOperationsFunction	.req v1
 	rSheetAddress		.req v2
 	rCellCount		.req v3
-	rLoopCounter		.req v4
+	rUseRandomValues	.req v4
+	rLoopCounter		.req v5
 
-randomFill:
+fillCells:
 	mFunctionSetup	@ Setup stack frame and local variables
 
 .L6_loopInit:
@@ -841,9 +893,14 @@ randomFill:
 	@ anything > 2^31 negative, which means that about half the values
 	@ I get back will be negative, which is what I want.
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	mov a1, #0
+	cmp rUseRandomValues, #0
+	beq .L6_haveValueToStore
 	bl rand				@ returns rand in a1 (r0)
 	lsl a1, #1
 	asr a1, #1
+
+.L6_haveValueToStore:
 	mov a2, rSheetAddress
 	mov a3, rLoopCounter		@ current cell index
 	mov r3, #operation_store
@@ -861,6 +918,7 @@ randomFill:
 	.unreq rSheetAddress
 	.unreq rCellCount
 	.unreq rLoopCounter
+	.unreq rUseRandomValues
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ resetSheet
@@ -1117,10 +1175,6 @@ showList:
 
 .section .data
 
-.equ presentation_dec, 1
-.equ numberOfCells, 6
-.equ cellWidthInBytes, 1
-
 .L0_localVariables:
 
 testMode	= .-.L0_localVariables; .word 0
@@ -1187,11 +1241,11 @@ greet:
 redisplaySheet:
 	mTerminalCommand #terminalCommand_clearScreen
 
-	mov a1, rOperationsFunction
-	mov a2, rSpreadsheetAddress
-	mov a3, #numberOfCells
-	mov a4, #cellWidthInBytes
-	bl displaySheet
+	mov	a1, rOperationsFunction
+	mov	a2, rSpreadsheetAddress
+	mov	a3, #numberOfRows
+	mov	a4, #numberOfColumns
+	bl	displaySheet
 
 	ldr r1, =menuModeJumpTable
 	ldr r0, [r1, rMenuMode, lsl #2]
@@ -1270,16 +1324,19 @@ actionEditCell:
 	b redisplaySheet
 
 actionResetSpreadsheet:
-	mov a1, rSpreadsheetAddress
-	bl free
-	mTerminalCommand #terminalCommand_clearScreen
-	b redisplaySheet
+	mov	a1, rOperationsFunction
+	mov	a2, rSpreadsheetAddress
+	mov	a3, #numberOfCells
+	mov	a4, #0			@ fill with zeros
+	bl	fillCells
+	b	returnToMain
 
 actionFillRandom:
 	mov a1, rOperationsFunction
 	mov a2, rSpreadsheetAddress
 	mov a3, #numberOfCells
-	bl randomFill
+	mov a4, #1		@ fill with random values
+	bl fillCells
 	b returnToMain
 
 returnToMain:
