@@ -123,7 +123,7 @@ terminalCommand:
 .L1_msgSpreadsheetHeader:	.asciz "                    Leg\n"
 
 .L1_msgHeader:			.asciz "                0    1    2\n"
-.L1_msgSeparator:		.asciz "-----------------------------\n"
+.L1_msgSeparator:		.asciz "            -----------------\n"
 
 .L1_ringName:	.asciz "%8s:  |"
 .L1_red:	.asciz "Red"
@@ -886,6 +886,10 @@ fillCells:
 	cmp rLoopCounter, rCellCount
 	bhs .L6_loopExit
 
+	mov a1, #0			@ default is to store zeros
+	cmp rUseRandomValues, #0
+	beq .L6_haveValueToStore
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@ rand() seems to return a range of 0 - 2^31, which means that I'll
 	@ never get negative values when working with 32 bits. So shift all
@@ -893,9 +897,6 @@ fillCells:
 	@ anything > 2^31 negative, which means that about half the values
 	@ I get back will be negative, which is what I want.
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	mov a1, #0
-	cmp rUseRandomValues, #0
-	beq .L6_haveValueToStore
 	bl rand				@ returns rand in a1 (r0)
 	lsl a1, #1
 	asr a1, #1
