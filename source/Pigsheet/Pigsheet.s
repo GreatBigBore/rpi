@@ -817,6 +817,8 @@ lightPigLeg:
 	mov	a1, rFileDescriptor
 	ldr	a2, [rThisLegBase, rLoopCounter, lsl #2]
 	mov	a3, rIntensity
+	cmp	rLoopCounter, #5			@ set white ring to low intensity
+	andeq	a3, #3
 	bl	setPigLEDRegister
 
 .L13_loopBottom:
@@ -1310,7 +1312,9 @@ demoBullseye:
 
 	mov	a1, rFileDescriptor
 	mov	a2, rLoopCounter	@ which ring
-	mov	a3, #5			@ intensity
+	mov	a3, #20			@ intensity
+	cmp	a2, #5			@ set white ring to low intensity
+	moveq	a3, #1
 	bl	lightPigRing
 
 	bl	kbhit
