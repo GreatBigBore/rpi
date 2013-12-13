@@ -5314,6 +5314,8 @@ Enter up to 8 binary digits; underscores optional, but complete
 nybbles required after each: 11_1111 ok, but not 11_111 or 11_11_1111
 
 New value for cell 1
+-> %[A[KUhh... 00110101011? Yuck! Try again!
+-> %[A[K[A[KUhh... 111110111? Yuck! Try again!
 -> %[2J[HSimple spreadsheet
 8-bit signed integer mode
 

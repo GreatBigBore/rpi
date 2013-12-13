@@ -253,11 +253,11 @@ calcSheetSumAverage:
 @	a2 data width in bytes
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-	rDataWidthInBytes	.req r1
+	rBinaryDigitCounter	.req r1
 	rNumberOfBitsToCapture	.req r2
 	rMaxDigitsAllowed	.req r3
 	rStringToConvert	.req v1
-	rBinaryDigitCounter	.req v2
+	rDataWidthInBytes	.req v2
 	rDigitTempStore		.req v3
 	rLoopCounter		.req v4
 	rBitsBetweenUnderscores	.req v5
@@ -346,8 +346,8 @@ convertBitStringToNumber:
 
 .L17_checkMaxDigits:
 	mov r0, rAccumulator		@ default to everything ok
-	mov r1, #inputStatus_inputOk
 	cmp rBinaryDigitCounter, rMaxDigitsAllowed
+	movls r1, #inputStatus_inputOk
 	bls .L17_epilogue
 
 .L17_badCharacter:
@@ -674,10 +674,10 @@ getCellToEdit:
 .section .text
 .align 3
 
-	rTestMode		.req v1
-	rOperationsFunction	.req v2
-	rDataWidthInBytes	.req v3
-	rFirstPass		.req v4
+	rOperationsFunction	.req v1
+	rDataWidthInBytes	.req v2
+	rFirstPass		.req v6
+	rTestMode		.req v7
 
 getCellValueBin:
 	mFunctionSetup	@ Setup stack frame and local variables
