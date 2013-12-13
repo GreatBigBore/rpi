@@ -2579,6 +2579,10 @@ promptForSelection:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ fillCells
 @
+@ stack:
+@	+4 pig file descriptor
+@
+@ registers:
 @	a1 operations function
 @	a2 sheet base address
 @	a3 cell count
@@ -2589,7 +2593,8 @@ promptForSelection:
 	rSheetAddress		.req v2
 	rCellCount		.req v3
 	rUseRandomValues	.req v4
-	rLoopCounter		.req v5
+	rFileDescriptor		.req v6
+	rLoopCounter		.req v7
 
 fillCells:
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -2618,10 +2623,8 @@ fillCells:
 	and a1, #0x0F	@ force to 0 - 15 range
 
 .L21_haveValueToStore:
-	push	{a1}
-	mov	r0, #0
-	push	{r0}	@ file descriptor not needed for this op
-	pop	{a1}
+	mov	rFileDescriptor, #0
+	push	{rFileDescriptor}
 	mov a2, rSheetAddress
 	mov a3, rLoopCounter		@ current cell index
 	mov r3, #operation_store
@@ -2632,7 +2635,7 @@ fillCells:
 	b .L21_loopTop
 
 .L21_loopExit:
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
 
 	.unreq rOperationsFunction
@@ -2640,51 +2643,7 @@ fillCells:
 	.unreq rCellCount
 	.unreq rLoopCounter
 	.unreq rUseRandomValues
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ resetSheet
-@
-@	a1 = operations function
-@	a2 = sheet base address
-@	a3 = cell count
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-.section .text
-
-	rOperationsFunction	.req v1
-	rSheetAddress		.req v2
-	rCellCount		.req v3
-	rLoopCounter		.req v4
-
-resetSheet:
-	mFunctionSetup	@ Setup stack frame and local variables
-
-.L4_init:
-	mov rLoopCounter, #0
-
-.L4_top:
-	cmp rLoopCounter, rCellCount
-	bhs .L4_loopExit
-
-	mov	r0, #0
-	push	{r0}	@ file descriptor not needed for this op
-	mov a1, #0		@ data to store
-	mov a2, rSheetAddress	@ base address of array
-	mov a3, rLoopCounter	@ index of target cell
-	mov a4, #operation_store
-	blx rOperationsFunction	@ store the zero
-
-.L4_loopBottom:
-	add rLoopCounter, #1
-	b .L4_top
-
-.L4_loopExit:
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
-	bx lr
-
-	.unreq rOperationsFunction
-	.unreq rSheetAddress
-	.unreq rCellCount
-	.unreq rLoopCounter
+	.unreq rFileDescriptor
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ runGetCellValueMenu
@@ -2958,7 +2917,6 @@ msgByeNow:	.asciz "'Bye now!\n"
 	rSpreadsheetAddress	.req v2
 	rOperationsFunction	.req v3
 	rFileDescriptor		.req v4
-	rTempStoreBeCareful	.req v5
 
 main:
 	ldr fp, =.L0_localVariables	@ setup local stack frame
@@ -2988,14 +2946,10 @@ greet:
 
 	mov rMenuMode, #menuMode_main
 
-	mov a1, #numberOfCells
-	bl malloc
-	mov rSpreadsheetAddress, r0
-
-	mov a1, rOperationsFunction
-	mov a2, rSpreadsheetAddress
-	mov a3, #numberOfCells
-	bl resetSheet
+	mov	a1, #numberOfCells
+	bl	malloc
+	mov	rSpreadsheetAddress, r0
+	b	actionResetSpreadsheet
 
 redisplaySheet:
 	mTerminalCommand #terminalCommand_clearScreen
@@ -3065,8 +3019,7 @@ menuGetNewValueForCell:
 	b actionEditCell @ control char not 'q', so 'r' -- return to cell select
 
 gotNewValueForCell:	@ r0/a1 = new value for cell
-	mov	rTempStoreBeCareful, #0
-	push	{r0}	@ file descriptor not needed for this op
+	push	{rFileDescriptor}
 	mov a2, rSpreadsheetAddress
 	ldr a3, [fp, #cellToEdit]
 	mov a4, #operation_store
@@ -3085,6 +3038,7 @@ actionEditCell:
 	b redisplaySheet
 
 actionResetSpreadsheet:
+	push	{rFileDescriptor}
 	mov	a1, rOperationsFunction
 	mov	a2, rSpreadsheetAddress
 	mov	a3, #numberOfCells
@@ -3093,6 +3047,7 @@ actionResetSpreadsheet:
 	b	returnToMain
 
 actionFillRandom:
+	push	{rFileDescriptor}
 	mov a1, rOperationsFunction
 	mov a2, rSpreadsheetAddress
 	mov a3, #numberOfCells
@@ -3165,7 +3120,6 @@ actionQuit:
 	.unreq rSpreadsheetAddress
 	.unreq rOperationsFunction
 	.unreq rFileDescriptor
-	.unreq rTempStoreBeCareful
 
 	.end
 
