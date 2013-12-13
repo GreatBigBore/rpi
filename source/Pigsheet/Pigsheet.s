@@ -67,13 +67,28 @@
 	bl terminalCommand
 .endm
 
+	.data
+	.align 2
+
+ringNameRed:	.asciz "Red"
+ringNameOrange:	.asciz "Orange"
+ringNameYellow:	.asciz "Yellow"
+ringNameGreen:	.asciz "Green"
+ringNameBlue:	.asciz "Blue"
+ringNameWhite:	.asciz "White"
+
+ringNames:	.word ringNameRed, ringNameOrange, ringNameYellow
+		.word ringNameGreen, ringNameBlue, ringNameWhite
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ newline
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 msgNewline: .asciz "\n"
 
-.section .text
+	.text
+	.align 2
+
 newline:
 	push {lr}
 	ldr r0, =msgNewline
@@ -108,6 +123,60 @@ terminalCommand:
 	bx lr
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ convertColorInitialToRowNumber
+@
+@ registers:
+@	a1 first letter of color
+@
+@ returns:
+@	r0 row number for color initial -- -1 if not found
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rColorInitial	.req v1
+	rRingNames	.req v2
+	rReturnValue	.req v6
+	rLoopCounter	.req v7
+
+convertColorInitialToRowNumber:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+.L7_loopInit:
+	mov	rReturnValue, #-1
+	ldr	rRingNames, =ringNames
+	mov	rLoopCounter, #0
+
+.L7_loopTop:
+	cmp	rLoopCounter, #numberOfRows
+	bhs	.L7_loopExit
+
+	ldr	r0, [rRingNames, rLoopCounter, lsl #2]	@ r0 -> color name
+	ldrb	r0, [r0]
+	orr	r0, #0x20
+	uxtb	r0, r0
+	and	rColorInitial, #0xFF		@ caller should do this?
+	orr	rColorInitial, #0x20		@ convert to lowercase
+	cmp	rColorInitial, r0		@ found corresponding color
+	moveq	rReturnValue, rLoopCounter
+	beq	.L7_loopExit
+
+.L7_loopBottom:
+	add	rLoopCounter, #1
+	b	.L7_loopTop
+
+.L7_loopExit:
+	mov	r0, rReturnValue
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rColorInitial
+	.unreq rRingNames
+	.unreq rLoopCounter
+	.unreq rReturnValue
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
 @
 @ registers:
@@ -126,15 +195,6 @@ terminalCommand:
 .L1_msgSeparator:		.asciz "            -----------------\n"
 
 .L1_ringName:	.asciz "%8s:  |"
-.L1_red:	.asciz "Red"
-.L1_orange:	.asciz "Orange"
-.L1_yellow:	.asciz "Yellow"
-.L1_green:	.asciz "Green"
-.L1_blue:	.asciz "Blue"
-.L1_white:	.asciz "White"
-
-.L1_ringNames:	.word .L1_red, .L1_orange, .L1_yellow
-		.word .L1_green, .L1_blue, .L1_white
 
 .section .text
 .align 3
@@ -172,7 +232,7 @@ displaySheet:
 	bhs .L1_rowloopExit
 
 	ldr a1, =.L1_ringName
-	ldr a2, =.L1_ringNames
+	ldr a2, =ringNames
 	ldr a2, [a2, rRowCounter, lsl #2]
 	bl printf
 
@@ -237,13 +297,21 @@ displaySheet:
 	.asciz "---------------------------------------------------------------\n"
 
 .L12_msgSelectCell:
-	.asciz "Select the cell to edit [%d, %d]\n"
+	.asciz "Select the cell to edit [R0, W2]\n"
+
+.L12_getsBuffer:
+	.skip inputBufferSize
+
+.L12_msgYouEntered:
+	.asciz "You entered %s\n"
 
 .section .text
 .align 3
 
 	rMinimumCellNumber	.req v1
 	rMaximumCellNumber	.req v2
+	rRowNumber		.req v3
+	rColumnNumber		.req v4
 
 getCellToEdit:
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -260,19 +328,47 @@ getCellToEdit:
 
 	bl promptForSelection
 
-	ldr r0, [fp, #4]		@ test mode
-	push {r0}
-	mov a1, rMinimumCellNumber
-	mov a2, rMaximumCellNumber
-	mov a3, #q_accept		@ accept 'q' for quit
-	mov a4, #r_accept		@ accept 'r' to go up a menu
-	bl getMenuSelection
+.L12_loopTop:
+	ldr	a1, =.L12_getsBuffer
+	bl	gets
+
+	ldr	r1, =.L12_getsBuffer
+	ldrb	a1, [r1]
+	bl	convertColorInitialToRowNumber
+
+	mov	rRowNumber, r0
+	cmp	rRowNumber, #0
+	blt	.L12_yuck
+
+	ldr	r0, =.L12_getsBuffer
+	ldrb	rColumnNumber, [r1, #1]
+	subs	rColumnNumber, #'0'	@ convert alpha to number
+	bmi	.L12_yuck		@ negative is no good
+	cmp	rColumnNumber, #2	@ range is [0, 2]
+	bhi	.L12_yuck
+
+	mov	r0, #0			@ default to 0 for column 0
+	cmp	rColumnNumber, #0
+	movne	r0, #3			@ multiplier for column 1 or 2
+	lsl	r0, rColumnNumber	@ 0, 6, or 12
+	add	r0, r0, rRowNumber	@ cell number in sheet buffer
+	b	.L12_epilogue
+
+.L12_yuck:
+	ldr	a1, =.L12_getsBuffer
+	bl	sayYuck
+	b	.L12_loopTop
+
+.L12_epilogue:	@ r0 has cell number
+	mov	r1, #inputStatus_inputOk
 
 	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
 
 	.unreq rMinimumCellNumber
 	.unreq rMaximumCellNumber
+	.unreq rRowNumber
+	.unreq rColumnNumber
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellValueDec
@@ -1174,15 +1270,13 @@ showList:
 @ main
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-.section .data
+	.section .data
+	.align 2
 
 .L0_localVariables:
 
 testMode	= .-.L0_localVariables; .word 0
 cellToEdit	= .-.L0_localVariables; .word 0
-
-msgGreeting:	.asciz "Greetings, experimental subject.\n\n"
-msgByeNow:	.asciz "'Bye now!\n"
 
 actionsJumpTable:
 		.word actionEditCell
@@ -1200,8 +1294,12 @@ menuModeJumpTable:
 		.word menuGetCellToEdit
 		.word menuGetNewValueForCell
 
-.section .text
-.global main
+msgGreeting:	.asciz "Greetings, experimental subject.\n\n"
+msgByeNow:	.asciz "'Bye now!\n"
+
+	.text
+	.align 2
+	.global main
 
 	rMenuMode			.req v1
 	rSpreadsheetAddress		.req v2
@@ -1308,7 +1406,6 @@ menuGetNewValueForCell:
 gotNewValueForCell:	@ r0/a1 = new value for cell
 	mov a2, rSpreadsheetAddress
 	ldr a3, [fp, #cellToEdit]
-	sub a3, #1	@ cell to edit, zero-based
 	mov a4, #operation_store
 	blx rOperationsFunction
 	b returnToMain
