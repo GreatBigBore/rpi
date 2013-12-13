@@ -1781,6 +1781,7 @@ convertColorInitialToRowNumber:
 	rSpreadsheetAddress		.req v2
 	rNumberOfRowsToDisplay		.req v3
 	rNumberOfColumnsToDisplay	.req v4
+	rCellOffset			.req v5
 	rColumnCounter			.req v6
 	rRowCounter			.req v7
 
@@ -1821,15 +1822,15 @@ displaySheet:
 	cmp	rColumnCounter, rNumberOfColumnsToDisplay
 	bhs	.L1_columnLoopExit
 
+	mov	rCellOffset, #3
+	cmp	rColumnCounter, #0
+	moveq	rCellOffset, #0			@ no offset for column zero
+	lsl	rCellOffset, rColumnCounter	@ col1 offset is 6, col2 is 12
+	add	rCellOffset, rRowCounter	@ rCellOffset is cell offset in buffer
+
 	mov	a1, #presentation_dec
 	mov	a2, rSpreadsheetAddress	@ spreadsheet
-
-	mov	a3, #3
-	cmp	rColumnCounter, #0
-	moveq	a3, #0			@ no offset for column zero
-	lslne	a3, rColumnCounter	@ col1 offset is 6, col2 is 12
-	add	a3, rRowCounter		@ a3 is cell offset in buffer
-
+	mov	a3, rCellOffset
 	mov	a4, #operation_display
 	blx	rOperationsFunction	@ display current cell per data width 
 
@@ -1856,6 +1857,7 @@ displaySheet:
 	.unreq rNumberOfColumnsToDisplay
 	.unreq rRowCounter
 	.unreq rColumnCounter
+	.unreq rCellOffset
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ getCellToEdit
