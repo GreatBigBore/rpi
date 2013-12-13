@@ -167,14 +167,12 @@ pigRingWhite:	.word leg0_white, leg1_white, leg2_white
 
 	.text
 	.align	2
-	.global	I2CSetup
 
 .L1_I2CSlaveID:		.word 0x703
 
 	rFileDescriptor	.req v1
 	rBoardRevision	.req v2
 
-	.type	I2CSetup, %function
 I2CSetup:
 
 	mFunctionSetup	@ Setup stack frame and local variables
@@ -1839,6 +1837,8 @@ displaySheet:
 	lsl	rCellOffset, rColumnCounter	@ col1 offset is 6, col2 is 12
 	add	rCellOffset, rRowCounter	@ rCellOffset is cell offset in buffer
 
+	ldr	r0, [fp, #4]		@ pig file descriptor
+	push	{r0}
 	mov	a1, #presentation_dec
 	mov	a2, rSpreadsheetAddress	@ spreadsheet
 	mov	a3, rCellOffset
@@ -2043,6 +2043,8 @@ getCellValueDec:
 	cmp r1, #inputStatus_inputNotOk
 	beq .L19_yuck
 
+	mov	r0, #0
+	push	{r0}	@ file descriptor not needed for this op
 	ldr a1, =.L19_scanfResult
 	ldr a1, [a1]
 	mov a4, #operation_validateRange
@@ -2405,10 +2407,14 @@ matchInputToResult:
 menuGetCellValueDec:
 	mFunctionSetup	@ Setup stack frame and local variables
 
+	mov	r0, #0
+	push	{r0}	@ file descriptor not needed for this op
 	mov a4, #operation_initAForMax
 	blx rOperationsFunction
 	mov v4, r0
 
+	mov	r0, #0
+	push	{r0}	@ file descriptor not needed for this op
 	mov a4, #operation_initAForMin
 	blx rOperationsFunction
 	mov v5, r0
@@ -2434,12 +2440,15 @@ menuGetCellValueDec:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ operations8
 @
-@	a1 = accumulator/source
+@ stack:
+@	+4 pig file descriptor
+@
+@ registers:
+@	a1 accumulator/source
 @		except for operation_display -- there it's presentation mode
-@	a2 = sheet base address
-@	a3 = multi-purpose --
-@		usually index of target cell
-@	a4 = operation
+@	a2 sheet base address
+@	a3 multi-purpose -- usually index of target cell
+@	a4 operation
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
@@ -2533,7 +2542,7 @@ operations8:
 	b .ops8_epilogue
 
 .ops8_epilogue:
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
 
 	.unreq rOperationResult
@@ -2609,6 +2618,10 @@ fillCells:
 	and a1, #0x0F	@ force to 0 - 15 range
 
 .L21_haveValueToStore:
+	push	{a1}
+	mov	r0, #0
+	push	{r0}	@ file descriptor not needed for this op
+	pop	{a1}
 	mov a2, rSheetAddress
 	mov a3, rLoopCounter		@ current cell index
 	mov r3, #operation_store
@@ -2652,6 +2665,8 @@ resetSheet:
 	cmp rLoopCounter, rCellCount
 	bhs .L4_loopExit
 
+	mov	r0, #0
+	push	{r0}	@ file descriptor not needed for this op
 	mov a1, #0		@ data to store
 	mov a2, rSheetAddress	@ base address of array
 	mov a3, rLoopCounter	@ index of target cell
@@ -2943,10 +2958,13 @@ msgByeNow:	.asciz "'Bye now!\n"
 	rSpreadsheetAddress	.req v2
 	rOperationsFunction	.req v3
 	rFileDescriptor		.req v4
+	rTempStoreBeCareful	.req v5
 
 main:
 	ldr fp, =.L0_localVariables	@ setup local stack frame
 
+	mov	r0, #0
+	push	{r0}	@ file descriptor not needed for this op
 	ldr r0, =operationsJumpTable
 	ldr rOperationsFunction, [r0]
 
@@ -3047,6 +3065,8 @@ menuGetNewValueForCell:
 	b actionEditCell @ control char not 'q', so 'r' -- return to cell select
 
 gotNewValueForCell:	@ r0/a1 = new value for cell
+	mov	rTempStoreBeCareful, #0
+	push	{r0}	@ file descriptor not needed for this op
 	mov a2, rSpreadsheetAddress
 	ldr a3, [fp, #cellToEdit]
 	mov a4, #operation_store
@@ -3145,6 +3165,7 @@ actionQuit:
 	.unreq rSpreadsheetAddress
 	.unreq rOperationsFunction
 	.unreq rFileDescriptor
+	.unreq rTempStoreBeCareful
 
 	.end
 
