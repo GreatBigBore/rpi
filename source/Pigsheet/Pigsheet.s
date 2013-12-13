@@ -1757,6 +1757,9 @@ convertColorInitialToRowNumber:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ displaySheet()
 @
+@ stack:
+@	+4 pig file descriptor
+@
 @ registers:
 @	a1 ops function
 @	a2 spreadsheet data
@@ -1774,8 +1777,8 @@ convertColorInitialToRowNumber:
 
 .L1_ringName:	.asciz "%8s:  |"
 
-.section .text
-.align 3
+	.text
+	.align 3
 
 	rOperationsFunction		.req v1
 	rSpreadsheetAddress		.req v2
@@ -1834,6 +1837,12 @@ displaySheet:
 	mov	a4, #operation_display
 	blx	rOperationsFunction	@ display current cell per data width 
 
+	ldr	a1, [fp, #4]	@ file descriptor
+	mov	a2, rRowCounter
+	mov	a3, rColumnCounter
+	ldrb	a4, [rSpreadsheetAddress, rCellOffset]
+	bl	lightPigLED
+
 .L1_columnLoopBottom:
 	add	rColumnCounter, #1
 	b	.L1_columnLoopTop
@@ -1848,7 +1857,7 @@ displaySheet:
 .L1_rowloopExit:
 	bl newline
 
-	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	mFunctionBreakdown 1	@ restore caller's locals and stack frame
 	bx lr
 
 	.unreq rOperationsFunction
@@ -2964,6 +2973,7 @@ greet:
 redisplaySheet:
 	mTerminalCommand #terminalCommand_clearScreen
 
+	push	{rFileDescriptor}
 	mov	a1, rOperationsFunction
 	mov	a2, rSpreadsheetAddress
 	mov	a3, #numberOfRows
