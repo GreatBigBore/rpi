@@ -1171,6 +1171,10 @@ demoPinwheel:
 	.unreq rLoopCounter
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.ltorg
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ demoReverseBullseye
 @
 @	a1 file descriptor
@@ -2598,6 +2602,7 @@ fillCells:
 	bl rand				@ returns rand in a1 (r0)
 	lsl a1, #1
 	asr a1, #1
+	and a1, #0x0F	@ force to 0 - 15 range
 
 .L21_haveValueToStore:
 	mov a2, rSheetAddress
@@ -3075,49 +3080,55 @@ actionReverseBullseye:
 	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoReverseBullseye
-	b	returnToMain
+	b	actionResetSpreadsheet
 
 actionBullseye:
 	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoBullseye
-	b	returnToMain
+	b	actionResetSpreadsheet
 
 actionSpider:
 	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoSpider
-	b	returnToMain
+	b	actionResetSpreadsheet
 
 actionInwardSpiral:
 	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoInwardSpiral
-	b	returnToMain
+	b	actionResetSpreadsheet
 
 actionBlindMe:
 	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoBlindMe
-	b	returnToMain
+	b	actionResetSpreadsheet
 
 actionTailChase:
 	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoTailChase
-	b	returnToMain
+	b	actionResetSpreadsheet
 
 actionPinwheel:
 	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoPinwheel
-	b	returnToMain
+	b	actionResetSpreadsheet
 
 returnToMain:
 	mov rMenuMode, #menuMode_main
 	b redisplaySheet
 
 actionQuit:
+	mTerminalCommand #terminalCommand_clearScreen
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll
+
 	ldr r0, =msgByeNow
 	bl printf
 	mov r0, #0
