@@ -81,6 +81,1584 @@ ringNames:	.word ringNameRed, ringNameOrange, ringNameYellow
 		.word ringNameGreen, ringNameBlue, ringNameWhite
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ Control stuff for the lightPig functions
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.equ	leg0_red, 0
+	.equ	leg0_orange, 1
+	.equ	leg0_yellow, 2
+	.equ	leg0_green, 3
+	.equ	leg0_white, 12
+	.equ	leg0_blue, 14
+
+	.equ	leg1_blue, 4
+	.equ	leg1_green, 5
+	.equ	leg1_red, 6
+	.equ	leg1_orange, 7
+	.equ	leg1_yellow, 8
+	.equ	leg1_white, 9
+
+	.equ	leg2_white, 10
+	.equ	leg2_blue, 11
+	.equ	leg2_green, 13
+	.equ	leg2_yellow, 15
+	.equ	leg2_orange, 16
+	.equ	leg2_red, 17
+
+pigLegs:	.word pigLeg0, pigLeg1, pigLeg2
+pigRings:	.word pigRingRed, pigRingOrange, pigRingYellow
+		.word pigRingGreen, pigRingBlue, pigRingWhite
+
+pigLeg0:	.word leg0_red, leg0_orange, leg0_yellow, leg0_green, leg0_blue, leg0_white
+pigLeg1:	.word leg1_red, leg1_orange, leg1_yellow, leg1_green, leg1_blue, leg1_white
+pigLeg2:	.word leg2_red, leg2_orange, leg2_yellow, leg2_green, leg2_blue, leg2_white
+
+pigRing0:
+pigRingRed:	.word leg0_red, leg1_red, leg2_red
+
+pigRing1:
+pigRingOrange:	.word leg0_orange, leg1_orange, leg2_orange
+
+pigRing2:
+pigRingYellow:	.word leg0_yellow, leg1_yellow, leg2_yellow
+
+pigRing3:
+pigRingGreen:	.word leg0_green, leg1_green, leg2_green
+
+pigRing4:
+pigRingBlue:	.word leg0_blue, leg1_blue, leg2_blue
+
+pigRing5:
+pigRingWhite:	.word leg0_white, leg1_white, leg2_white
+
+	.arch armv6
+	.eabi_attribute 27, 3
+	.eabi_attribute 28, 1
+	.fpu vfp
+	.eabi_attribute 20, 1
+	.eabi_attribute 21, 1
+	.eabi_attribute 23, 3
+	.eabi_attribute 24, 1
+	.eabi_attribute 25, 1
+	.eabi_attribute 26, 2
+	.eabi_attribute 30, 6
+	.eabi_attribute 18, 4
+	.file	"oink.c"
+	.comm	fd,4,4
+	.comm	rev,4,4
+	.comm	device,4,4
+	.section	.rodata
+	.align	2
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ I2CSetup
+@
+@ returns
+@	r0 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.data
+	.align 2
+
+.L1_devicePath:		.ascii "/dev/i2c-"
+.L1_deviceNumber:	.asciz "0"
+
+.L1_msgUnableToOpen:	.asciz "Unable to open %s; error = %s\n"
+.L1_msgUnableToSelect:	.asciz "Unable to select %s: error = %s\n"
+
+	.text
+	.align	2
+	.global	I2CSetup
+
+.L1_I2CSlaveID:		.word 0x703
+
+	rFileDescriptor	.req v1
+	rBoardRevision	.req v2
+
+	.type	I2CSetup, %function
+I2CSetup:
+
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	bl	rpiBoardRev
+
+	mov	rBoardRevision, r0
+	ldr	r0, =.L1_deviceNumber
+	add	r1, rBoardRevision, #'0' - 1	@ 0-based, plus make it ascii
+	strb	r1, [r0]			@ device path ready to use
+
+	ldr	a1, =.L1_devicePath
+	mov	a2, #2				@ O_RDWR for open
+	bl	open
+
+	mov	rFileDescriptor, r0
+	cmp	rFileDescriptor, #0
+	bge	.L1_openOk
+
+	bl	__errno_location
+	ldr	a1, [r0]
+	bl	strerror
+	mov	a3, r0
+	ldr	a2, =.L1_devicePath
+	ldr	a1, =.L1_msgUnableToOpen
+	bl	printf
+	mvn	r0, #0
+	bl	exit
+
+.L1_openOk:
+	mov	a1, rFileDescriptor
+	ldr	a2, .L1_I2CSlaveID
+	mov	a3, #0x54		@ magic number from wiringPi library
+	bl	ioctl
+
+	cmp	r0, #0
+	bge	.L1_ioctlOk
+
+	bl	__errno_location
+	ldr	a1, [r0]
+	bl	strerror
+	mov	a3, r0
+	ldr	a2, =.L1_devicePath
+	ldr	a1, =.L1_msgUnableToSelect
+	bl	printf
+	mvn	r0, #0
+	bl	exit
+
+.L1_ioctlOk:
+	mov	r0, rFileDescriptor
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rBoardRevision
+	.unreq rFileDescriptor
+
+	.ltorg	@ for literal pool issue
+
+kbhit:
+	@ args = 0, pretend = 0, frame = 128
+	@ frame_needed = 1, uses_anonymous_args = 0
+	stmfd	sp!, {fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #128
+	sub	r3, fp, #72
+	mov	r0, #0
+	mov	r1, r3
+	bl	tcgetattr
+	sub	ip, fp, #132
+	sub	lr, fp, #72
+	ldmia	lr!, {r0, r1, r2, r3}
+	stmia	ip!, {r0, r1, r2, r3}
+	ldmia	lr!, {r0, r1, r2, r3}
+	stmia	ip!, {r0, r1, r2, r3}
+	ldmia	lr!, {r0, r1, r2, r3}
+	stmia	ip!, {r0, r1, r2, r3}
+	ldmia	lr, {r0, r1, r2}
+	stmia	ip, {r0, r1, r2}
+	ldr	r3, [fp, #-120]
+	bic	r3, r3, #10
+	str	r3, [fp, #-120]
+	sub	r3, fp, #132
+	mov	r0, #0
+	mov	r1, #0
+	mov	r2, r3
+	bl	tcsetattr
+	mov	r0, #0
+	mov	r1, #3
+	mov	r2, #0
+	bl	fcntl
+	str	r0, [fp, #-8]
+	ldr	r3, [fp, #-8]
+	orr	r3, r3, #2048
+	mov	r0, #0
+	mov	r1, #4
+	mov	r2, r3
+	bl	fcntl
+	bl	getchar
+	str	r0, [fp, #-12]
+	sub	r3, fp, #72
+	mov	r0, #0
+	mov	r1, #0
+	mov	r2, r3
+	bl	tcsetattr
+	mov	r0, #0
+	mov	r1, #4
+	ldr	r2, [fp, #-8]
+	bl	fcntl
+	ldr	r3, [fp, #-12]
+	cmn	r3, #1
+	beq	.L2
+	ldr	r3, .L4
+	ldr	r3, [r3, #0]
+	ldr	r0, [fp, #-12]
+	mov	r1, r3
+	bl	ungetc
+	mov	r3, #1
+	b	.L3
+.L2:
+	mov	r3, #0
+.L3:
+	mov	r0, r3
+	sub	sp, fp, #4
+	ldmfd	sp!, {fp, pc}
+.L5:
+	.align	2
+.L4:
+	.word	stdin
+	.size	kbhit, .-kbhit
+
+	.align	2
+	.section	.rodata
+	.align	2
+.LC4:
+	.ascii	"piBoardRev: Unable to determine board revision from"
+	.ascii	" /proc/cpuinfo\012\000"
+	.align	2
+.LC5:
+	.ascii	" -> %s\012\000"
+	.align	2
+.LC6:
+	.ascii	" ->  You may want to check:\012\000"
+	.align	2
+.LC7:
+	.ascii	" ->  http://www.raspberrypi.org/phpBB3/viewtopic.ph"
+	.ascii	"p?p=184410#p184410\012\000"
+	.text
+	.align	2
+	.type	rpiBoardRevOops, %function
+rpiBoardRevOops:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	stmfd	sp!, {fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #8
+	str	r0, [fp, #-8]
+	ldr	r2, .L9
+	ldr	r3, .L9+4
+	ldr	r3, [r3, #0]
+	mov	r0, r2
+	mov	r1, #1
+	mov	r2, #66
+	bl	fwrite
+	ldr	r3, .L9+4
+	ldr	r3, [r3, #0]
+	mov	r2, r3
+	ldr	r3, .L9+8
+	mov	r0, r2
+	mov	r1, r3
+	ldr	r2, [fp, #-8]
+	bl	fprintf
+	ldr	r2, .L9+12
+	ldr	r3, .L9+4
+	ldr	r3, [r3, #0]
+	mov	r0, r2
+	mov	r1, #1
+	mov	r2, #28
+	bl	fwrite
+	ldr	r2, .L9+16
+	ldr	r3, .L9+4
+	ldr	r3, [r3, #0]
+	mov	r0, r2
+	mov	r1, #1
+	mov	r2, #70
+	bl	fwrite
+	mov	r0, #1
+	bl	exit
+.L10:
+	.align	2
+.L9:
+	.word	.LC4
+	.word	stderr
+	.word	.LC5
+	.word	.LC6
+	.word	.LC7
+	.size	rpiBoardRevOops, .-rpiBoardRevOops
+	.comm	cpuFd,4,4
+	.comm	line,120,4
+	.comm	c,4,4
+	.comm	lastChar,1,1
+	.global	boardRev
+	.data
+	.align	2
+	.type	boardRev, %object
+	.size	boardRev, 4
+boardRev:
+	.word	-1
+	.section	.rodata
+	.align	2
+.LC8:
+	.ascii	"/proc/cpuinfo\000"
+	.align	2
+.LC9:
+	.ascii	"r\000"
+	.align	2
+.LC10:
+	.ascii	"Unable to open /proc/cpuinfo\000"
+	.align	2
+.LC11:
+	.ascii	"Revision\000"
+	.align	2
+.LC12:
+	.ascii	"No \"Revision\" line\000"
+	.align	2
+.LC13:
+	.ascii	"piboardRev: Revision string: %s\012\000"
+	.align	2
+.LC14:
+	.ascii	"No numeric revision string\000"
+	.align	2
+.LC15:
+	.ascii	"piboardRev: This Pi has/is overvolted!\000"
+	.align	2
+.LC16:
+	.ascii	"piboardRev: lastChar is: '%c' (%d, 0x%02X)\012\000"
+	.align	2
+.LC17:
+	.ascii	"piBoardRev: Returning revision: %d\012\000"
+	.text
+	.align	2
+	.global	rpiBoardRev
+	.type	rpiBoardRev, %function
+rpiBoardRev:
+	@ args = 0, pretend = 0, frame = 0
+	@ frame_needed = 1, uses_anonymous_args = 0
+	stmfd	sp!, {fp, lr}
+	add	fp, sp, #4
+	ldr	r3, .L33
+	ldr	r3, [r3, #0]
+	cmn	r3, #1
+	beq	.L12
+	ldr	r3, .L33
+	ldr	r3, [r3, #0]
+	b	.L13
+.L12:
+	ldr	r2, .L33+4
+	ldr	r3, .L33+8
+	mov	r0, r2
+	mov	r1, r3
+	bl	fopen
+	mov	r2, r0
+	ldr	r3, .L33+12
+	str	r2, [r3, #0]
+	ldr	r3, .L33+12
+	ldr	r3, [r3, #0]
+	cmp	r3, #0
+	bne	.L30
+	ldr	r0, .L33+16
+	bl	rpiBoardRevOops
+	b	.L30
+.L17:
+	ldr	r0, .L33+20
+	ldr	r1, .L33+24
+	mov	r2, #8
+	bl	strncmp
+	mov	r3, r0
+	cmp	r3, #0
+	beq	.L31
+	b	.L15
+.L30:
+	mov	r0, r0	@ nop
+.L15:
+	ldr	r3, .L33+12
+	ldr	r3, [r3, #0]
+	ldr	r0, .L33+20
+	mov	r1, #120
+	mov	r2, r3
+	bl	fgets
+	mov	r3, r0
+	cmp	r3, #0
+	bne	.L17
+	b	.L16
+.L31:
+	mov	r0, r0	@ nop
+.L16:
+	ldr	r3, .L33+12
+	ldr	r3, [r3, #0]
+	mov	r0, r3
+	bl	fclose
+	ldr	r0, .L33+20
+	ldr	r1, .L33+24
+	mov	r2, #8
+	bl	strncmp
+	mov	r3, r0
+	cmp	r3, #0
+	beq	.L18
+	ldr	r0, .L33+28
+	bl	rpiBoardRevOops
+.L18:
+	ldr	r0, .L33+20
+	bl	strlen
+	mov	r3, r0
+	sub	r2, r3, #1
+	ldr	r3, .L33+20
+	add	r2, r2, r3
+	ldr	r3, .L33+32
+	str	r2, [r3, #0]
+	b	.L19
+.L20:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	mov	r2, #0
+	strb	r2, [r3, #0]
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	sub	r2, r3, #1
+	ldr	r3, .L33+32
+	str	r2, [r3, #0]
+.L19:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	cmp	r3, #10
+	beq	.L20
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	cmp	r3, #13
+	beq	.L20
+	ldr	r3, .L33+36
+	mov	r0, r3
+	ldr	r1, .L33+20
+	bl	printf
+	ldr	r3, .L33+32
+	ldr	r2, .L33+20
+	str	r2, [r3, #0]
+	b	.L21
+.L24:
+	bl	__ctype_b_loc
+	mov	r3, r0
+	ldr	r2, [r3, #0]
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	mov	r3, r3, asl #1
+	add	r3, r2, r3
+	ldrh	r3, [r3, #0]
+	and	r3, r3, #2048
+	cmp	r3, #0
+	bne	.L32
+.L22:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	add	r2, r3, #1
+	ldr	r3, .L33+32
+	str	r2, [r3, #0]
+.L21:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	cmp	r3, #0
+	bne	.L24
+	b	.L23
+.L32:
+	mov	r0, r0	@ nop
+.L23:
+	bl	__ctype_b_loc
+	mov	r3, r0
+	ldr	r2, [r3, #0]
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	mov	r3, r3, asl #1
+	add	r3, r2, r3
+	ldrh	r3, [r3, #0]
+	and	r3, r3, #2048
+	cmp	r3, #0
+	bne	.L25
+	ldr	r0, .L33+40
+	bl	rpiBoardRevOops
+.L25:
+	ldr	r3, .L33+32
+	ldr	r3, [r3, #0]
+	mov	r0, r3
+	bl	strlen
+	mov	r3, r0
+	cmp	r3, #4
+	beq	.L26
+	ldr	r0, .L33+44
+	bl	puts
+.L26:
+	ldr	r0, .L33+20
+	bl	strlen
+	mov	r3, r0
+	sub	r3, r3, #1
+	ldr	r2, .L33+20
+	ldrb	r2, [r2, r3]	@ zero_extendqisi2
+	ldr	r3, .L33+48
+	strb	r2, [r3, #0]
+	ldr	r0, .L33+52
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	mov	r1, r3
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	mov	r2, r3
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	bl	printf
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	cmp	r3, #50
+	beq	.L27
+	ldr	r3, .L33+48
+	ldrb	r3, [r3, #0]	@ zero_extendqisi2
+	cmp	r3, #51
+	bne	.L28
+.L27:
+	ldr	r3, .L33
+	mov	r2, #1
+	str	r2, [r3, #0]
+	b	.L29
+.L28:
+	ldr	r3, .L33
+	mov	r2, #2
+	str	r2, [r3, #0]
+.L29:
+	ldr	r2, .L33+56
+	ldr	r3, .L33
+	ldr	r3, [r3, #0]
+	mov	r0, r2
+	mov	r1, r3
+	bl	printf
+	ldr	r3, .L33
+	ldr	r3, [r3, #0]
+.L13:
+	mov	r0, r3
+	ldmfd	sp!, {fp, pc}
+.L34:
+	.align	2
+.L33:
+	.word	boardRev
+	.word	.LC8
+	.word	.LC9
+	.word	cpuFd
+	.word	.LC10
+	.word	line
+	.word	.LC11
+	.word	.LC12
+	.word	c
+	.word	.LC13
+	.word	.LC14
+	.word	.LC15
+	.word	lastChar
+	.word	.LC16
+	.word	.LC17
+	.size	rpiBoardRev, .-rpiBoardRev
+	.comm	theData,1,1
+	.comm	args,12,4
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ writeI2CRegister
+@
+@ registers:
+@	a1 file descriptor
+@	a2 register to write to
+@	a3 value to write
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.section .data
+	.align 2
+
+.L2_PigCommand:	.word 0
+.L2_I2CCommand:	.word 0
+		.word 0
+		.word 0
+
+	.section .text
+	.align	2
+	.global	writeI2CRegister
+	.type	writeI2CRegister, %function
+
+	rFileDescriptor		.req v1
+	rTargetRegister		.req v2
+	rValueToWrite		.req v3
+	rPigCommand		.req v4
+	rI2CCommand		.req v5
+
+writeI2CRegister:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	ldr	rPigCommand, =.L2_PigCommand
+	ldr	rI2CCommand, =.L2_I2CCommand
+
+	strb	rValueToWrite, [rPigCommand]
+
+	mov	r0, #0
+	strb	r0, [rI2CCommand, #0]			@ i2cCommand.rw = I2C_SMBUS_WRITE
+	strb	rTargetRegister, [rI2CCommand, #1]	@ i2cCommand.register = register
+	mov	r0, #2
+	str	r0, [rI2CCommand, #4]			@ i2cCommand. "size" = I2C_SMBUS_BYTE_DATA
+	ldr	r0, =.L2_PigCommand
+	str	r0, [rI2CCommand, #8]			@ i2cCommand.data = &theData
+
+	mov	a1, rFileDescriptor	@ file descriptor
+	mov	a2, #0x720		@ I2C_SMBUS
+	mov	a3, rI2CCommand		@ a3 -> i2cCommand
+	bl	ioctl
+	mov	r3, r0
+	mov	r0, r3
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rTargetRegister
+	.unreq rValueToWrite
+	.unreq rPigCommand
+	.unreq rI2CCommand
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ setPigLEDRegister
+@
+@ registers:
+@	a1 file descriptor
+@	a2 led to light 0 - 17
+@	a3 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	rFileDescriptor	.req v1
+	rPinToWrite	.req v2
+	rValueToWrite	.req v3
+
+	.align	2
+	.type	setPigLEDRegister, %function
+setPigLEDRegister:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	mov	a1, rFileDescriptor
+	add	a2, rPinToWrite, #1
+	and	a3, rValueToWrite, #0xFF
+	bl	writeI2CRegister		@ write the value
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0x16
+	mov	a3, #0
+	bl	writeI2CRegister		@ update? commit?
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rPinToWrite
+	.unreq rValueToWrite
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigAll
+@
+@ registers:
+@	a1 file descriptor
+@	a2 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.text
+	.align	2
+
+	rFileDescriptor	.req v1
+	rIntensity	.req v2
+	rLoopCounter	.req v3
+
+lightPigAll:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+.L8_loopInit:
+	mov	rLoopCounter, #0
+
+.L8_loopTop:
+	cmp	rLoopCounter, #18
+	bhs	.L8_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter
+	mov	a3, rIntensity
+	bl	setPigLEDRegister
+
+.L8_loopBottom:
+	add	rLoopCounter, #1
+	b	.L8_loopTop
+
+.L8_loopExit:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rIntensity
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigLeg
+@
+@ registers:
+@	a1 file descriptor
+@	a2 leg to light 0 - 3
+@	a3 how much of the leg to light 0 - 5
+@	a4 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.text
+	.align	2
+
+	rFileDescriptor	.req v1
+	rLegToLight	.req v2
+	rHowMuchLeg	.req v3
+	rIntensity	.req v4
+	rThisLegBase	.req v6
+	rLoopCounter	.req v7
+
+lightPigLeg:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+.L13_loopInit:
+	mov	rLoopCounter, #0
+	ldr	r0, =pigLegs
+	ldr	rThisLegBase, [r0, rLegToLight, lsl #2]
+
+.L13_loopTop:
+	cmp	rLoopCounter, rHowMuchLeg
+	bhi	.L13_loopExit
+
+	mov	a1, rFileDescriptor
+	ldr	a2, [rThisLegBase, rLoopCounter, lsl #2]
+	mov	a3, rIntensity
+	bl	setPigLEDRegister
+
+.L13_loopBottom:
+	add	rLoopCounter, #1
+	b	.L13_loopTop
+
+.L13_loopExit:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rLegToLight
+	.unreq rIntensity
+	.unreq rThisLegBase
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigLED
+@
+@ registers:
+@	a1 file descriptor
+@	a2 ring to light 0 - 5
+@	a3 leg to lght 0 - 3
+@	a4 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.text
+	.align	2
+
+	rFileDescriptor	.req v1
+	rRingToLight	.req v2
+	rLegToLight	.req v3
+	rIntensity	.req v4
+	rLEDToLight	.req v5
+
+lightPigLED:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	ldr	r0, =pigRings
+	ldr	r0, [r0, rRingToLight, lsl #2]
+	ldr	rLEDToLight, [r0, rLegToLight, lsl #2]
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLEDToLight
+	mov	a3, rIntensity
+	bl	setPigLEDRegister
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rRingToLight
+	.unreq rLegToLight
+	.unreq rLEDToLight
+	.unreq rIntensity
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ lightPigRing
+@
+@ registers:
+@	a1 file descriptor
+@	a2 ring to light 0 - 5
+@	a3 intensity 0 - 255
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	.text
+	.align	2
+
+	rFileDescriptor	.req v1
+	rRingToLight	.req v2
+	rIntensity	.req v3
+	rThisRingBase	.req v4
+	rLoopCounter	.req v5
+
+lightPigRing:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+.L6_loopInit:
+	mov	rLoopCounter, #0
+	ldr	r0, =pigRings
+	ldr	rThisRingBase, [r0, rRingToLight, lsl #2]
+
+.L6_loopTop:
+	cmp	rLoopCounter, #3
+	bhs	.L6_loopExit
+
+	mov	a1, rFileDescriptor
+	ldr	a2, [rThisRingBase, rLoopCounter, lsl #2]
+	mov	a3, rIntensity
+	bl	setPigLEDRegister
+
+.L6_loopBottom:
+	add	rLoopCounter, #1
+	b	.L6_loopTop
+
+.L6_loopExit:
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rRingToLight
+	.unreq rIntensity
+	.unreq rThisRingBase
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.ltorg
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ pigSetup
+@
+@ returns:
+@	r0 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.align	2
+	.global	pigSetup
+	.type	pigSetup, %function
+
+	rFileDescriptor	.req v1
+
+pigSetup:
+	mFunctionSetup	@ Setup stack frame and local variables
+
+	bl	I2CSetup
+	mov	rFileDescriptor, r0
+	cmp	rFileDescriptor, #0
+	blo	.L41
+
+	@ wiringPi lib says "not shutdown" -- reset?
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	mov	a3, #1
+	bl	writeI2CRegister
+
+	@ enable LEDs 0 - 5
+	mov	a1, rFileDescriptor
+	mov	a2, #0x13
+	mov	a3, #0x3F
+	bl	writeI2CRegister
+
+	@ enable LEDs 6 - 11
+	mov	a1, rFileDescriptor
+	mov	a2, #0x14
+	mov	a3, #0x3F
+	bl	writeI2CRegister
+
+	@ enable LEDs 12 - 17
+	mov	a1, rFileDescriptor
+	mov	a2, #0x15
+	mov	a3, #0x3F
+	bl	writeI2CRegister
+
+	@ update
+	mov	a1, rFileDescriptor
+	mov	a2, #0x16
+	mov	a3, #0
+	bl	writeI2CRegister
+
+.L41:
+	mov	r0, rFileDescriptor
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoBlindMe
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rIntensityLimit	.req v2
+	rLoopCounter	.req v7
+
+demoBlindMe:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+.L10_restartFromZero:
+	mov	rIntensityLimit, #1
+
+.L10_upLoopInit:
+	mov	rLoopCounter, #0
+
+.L10_upLoopTop:
+	cmp	rLoopCounter, rIntensityLimit
+	bhs	.L10_upLoopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter
+	bl	lightPigAll
+	
+.L10_upLoopBottom:
+	mov	a1, #0x3D
+	lsl	a1, #8			@ get about 250k into a1
+	bl	usleep			@ sleep for about .25 sec
+
+	add	rLoopCounter, #10
+	b	.L10_upLoopTop
+
+.L10_upLoopExit:
+
+.L10_downLoopInit:
+	sub	rLoopCounter, rIntensityLimit, #1
+
+.L10_downLoopTop:
+	cmp	rLoopCounter, #0
+	blt	.L10_downLoopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter
+	bl	lightPigAll
+
+.L10_downLoopBottom:
+	mov	a1, #0x3D
+	lsl	a1, #8
+	bl	usleep
+
+	sub	rLoopCounter, #10
+	b	.L10_downLoopTop
+
+.L10_downLoopExit:
+	bl	kbhit
+	cmp	r0, #0
+	bne	.L10_finished
+
+	add	rIntensityLimit, #10
+	cmp	rIntensityLimit, #250
+	bhs	.L10_restartFromZero
+	b	.L10_upLoopInit
+
+.L10_finished:
+	bl	getchar		@ eat the key
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rIntensityLimit
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoPinwheel
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L17_intensityLimit:	.word 150
+
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rIntensityDelta	.req v2
+	rWaitMinimum	.req v3
+	rWaitTime	.req v4
+	rPreviousLeg	.req v5
+	rIntensity	.req v6
+	rLoopCounter	.req v7
+
+demoPinwheel:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	rPreviousLeg, #0
+
+	mov	rWaitTime, #61		@ start off slow, about...
+	lsl	rWaitTime, #12		@ 250ms per jump
+
+	mov	rWaitMinimum, #200	@ minimum wait is
+	lsl	rWaitMinimum, #7	@ about 25ms per jump
+
+	mov	rIntensity, #1
+	mov	rIntensityDelta, #2
+
+.L17_loopInit:
+	mov	rLoopCounter, #2
+
+.L17_loopTop:
+	cmp	rLoopCounter, #0
+	blt	.L17_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rPreviousLeg	@ which leg
+	mov	a3, #5			@ light the whole leg
+	mov	a4, #0			@ intensity
+	bl	lightPigLeg		@ turn off prevous leg
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which leg
+	mov	a3, #5			@ light the whole leg
+	mov	a4, rIntensity		@ intensity
+	bl	lightPigLeg
+
+	mov	rPreviousLeg, rLoopCounter
+
+	mov	a1, rWaitTime
+	bl	usleep
+
+	cmp	rWaitTime, rWaitMinimum	@ at full speed yet?
+	subhs	rWaitTime, #4000	@ no, accelerate
+
+	add	rIntensity, rIntensityDelta
+
+	cmp	rIntensityDelta, #0
+	bgt	.L17_goingUp
+
+	cmp	rIntensity, #0
+	bgt	.L17_loopBottom
+	mov	rIntensity, #1		@ restart at minimum intensity
+	b	.L17_negateIntensity
+
+.L17_goingUp:
+	ldr	r0, =.L17_intensityLimit
+	ldr	r0, [r0]
+	cmp	rIntensity, r0	@ intensity > limit, need to adjust
+	blt	.L17_loopBottom
+
+.L17_negateIntensity:
+	mvn	rIntensityDelta, rIntensityDelta
+	add	rIntensityDelta, #1
+
+.L17_loopBottom:
+	sub	rLoopCounter, #1
+	b	.L17_loopTop
+
+.L17_loopExit:
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L17_loopInit
+
+	bl	getchar		@ eat the key
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rIntensityDelta
+	.unreq rWaitMinimum
+	.unreq rWaitTime
+	.unreq rPreviousLeg
+	.unreq rIntensity
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoReverseBullseye
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rRingDelta	.req v2
+	rWaitMinimum	.req v3
+	rWaitTime	.req v4
+	rPreviousRing	.req v5
+	rWhichRing	.req v6
+	rLoopCounter	.req v7
+
+demoReverseBullseye:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	rWaitTime, #61		@ start off slow, about...
+	lsl	rWaitTime, #10		@ 250ms per jump
+
+	mov	rWaitMinimum, #200	@ minimum wait is
+	lsl	rWaitMinimum, #7	@ about 25ms per jump
+
+.L16_downloopInit:
+	mov	rLoopCounter, #5
+
+.L16_downloopTop:
+	cmp	rLoopCounter, #0
+	blt	.L16_downloopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, #5			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L16_downloopSleep
+
+	bl	getchar		@ eat the key
+	b	.L16_epilogue
+
+.L16_downloopSleep:
+	mov	a1, rWaitTime
+	bl	usleep
+
+.L16_downloopBottom:
+	sub	rLoopCounter, #1
+	b	.L16_downloopTop
+
+.L16_downloopExit:
+.L16_uploopInit:
+	mov	rLoopCounter, #0
+
+.L16_uploopTop:
+	cmp	rLoopCounter, #6
+	bhs	.L16_uploopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L16_uploopSleep
+
+	bl	getchar		@ eat the key
+	b	.L16_epilogue
+
+.L16_uploopSleep:
+	mov	a1, rWaitTime
+	bl	usleep
+
+.L16_upLoopBottom:
+	add	rLoopCounter, #1
+	b	.L16_uploopTop
+
+.L16_uploopExit:
+	cmp	rWaitTime, rWaitMinimum	@ at full speed yet?
+	subhs	rWaitTime, #4000	@ no, accelerate
+
+	b	.L16_downloopInit
+
+.L16_epilogue:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rRingDelta
+	.unreq rWaitMinimum
+	.unreq rWaitTime
+	.unreq rWhichRing
+	.unreq rLoopCounter
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoBullseye
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rRingDelta	.req v2
+	rWaitMinimum	.req v3
+	rWaitTime	.req v4
+	rPreviousRing	.req v5
+	rWhichRing	.req v6
+	rLoopCounter	.req v7
+
+demoBullseye:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	rWaitTime, #61		@ start off slow, about...
+	lsl	rWaitTime, #10		@ 250ms per jump
+
+	mov	rWaitMinimum, #200	@ minimum wait is
+	lsl	rWaitMinimum, #7	@ about 25ms per jump
+
+.L15_uploopInit:
+	mov	rLoopCounter, #0
+
+.L15_uploopTop:
+	cmp	rLoopCounter, #6
+	bhs	.L15_uploopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, #5			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L15_uploopSleep
+
+	bl	getchar		@ eat the key
+	b	.L15_epilogue
+
+.L15_uploopSleep:
+	mov	a1, rWaitTime
+	bl	usleep
+
+.L15_upLoopBottom:
+	add	rLoopCounter, #1
+	b	.L15_uploopTop
+
+.L15_uploopExit:
+.L15_downloopInit:
+	mov	rLoopCounter, #5
+
+.L15_downloopTop:
+	cmp	rLoopCounter, #0
+	blt	.L15_downloopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L15_downloopSleep
+
+	bl	getchar		@ eat the key
+	b	.L15_epilogue
+
+.L15_downloopSleep:
+	mov	a1, rWaitTime
+	bl	usleep
+
+.L15_downloopBottom:
+	sub	rLoopCounter, #1
+	b	.L15_downloopTop
+
+.L15_downloopExit:
+	cmp	rWaitTime, rWaitMinimum	@ at full speed yet?
+	subhs	rWaitTime, #4000	@ no, accelerate
+
+	b	.L15_uploopInit
+
+.L15_epilogue:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rRingDelta
+	.unreq rWaitMinimum
+	.unreq rWaitTime
+	.unreq rWhichRing
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoSpider
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L14_legLimit:	.word 5
+
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rLegDelta	.req v2
+	rWaitMinimum	.req v3
+	rWaitTime	.req v4
+	rPreviousLeg	.req v5
+	rLegLength	.req v6
+	rLoopCounter	.req v7
+
+demoSpider:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	rPreviousLeg, #0
+
+	mov	rWaitTime, #61		@ start off slow, about...
+	lsl	rWaitTime, #12		@ 250ms per jump
+
+	mov	rWaitMinimum, #200	@ minimum wait is
+	lsl	rWaitMinimum, #7	@ about 25ms per jump
+
+	mov	rLegLength, #0
+	mov	rLegDelta, #1
+
+.L14_loopInit:
+	mov	rLoopCounter, #2
+
+.L14_loopTop:
+	cmp	rLoopCounter, #0
+	blt	.L14_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rPreviousLeg	@ which leg
+	mov	a3, #5			@ leg length -- turn off all
+	mov	a4, #0			@ intensity
+	bl	lightPigLeg		@ turn off prevous leg
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which leg
+	mov	a3, rLegLength
+	mov	a4, #5			@ intensity
+	bl	lightPigLeg
+
+	mov	rPreviousLeg, rLoopCounter
+
+	mov	a1, rWaitTime
+	bl	usleep
+
+	cmp	rWaitTime, rWaitMinimum	@ at full speed yet?
+	subhs	rWaitTime, #4000	@ no, accelerate
+
+	add	rLegLength, rLegDelta
+
+	cmp	rLegDelta, #0
+	bgt	.L14_goingUp
+
+	cmp	rLegLength, #0
+	bgt	.L14_loopBottom
+	mov	rLegLength, #0		@ restart at minimum leg length
+	b	.L14_negateLegDelta
+
+.L14_goingUp:
+	ldr	r0, =.L14_legLimit
+	ldr	r0, [r0]
+	cmp	rLegLength, r0	@ length > limit, need to adjust
+	blt	.L14_loopBottom
+
+.L14_negateLegDelta:
+	mvn	rLegDelta, rLegDelta
+	add	rLegDelta, #1
+
+.L14_loopBottom:
+	sub	rLoopCounter, #1
+	b	.L14_loopTop
+
+.L14_loopExit:
+	bl	kbhit
+	cmp	r0, #0
+	beq	.L14_loopInit
+
+	bl	getchar		@ eat the key
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rLegDelta
+	.unreq rWaitMinimum
+	.unreq rWaitTime
+	.unreq rPreviousLeg
+	.unreq rLegLength
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoTailChase
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor		.req v1
+	rChaseLoopCounter	.req v2
+	rPreviousLeg		.req v4
+	rPreviousRing		.req v5
+	rWhichLeg		.req v6
+	rWhichRing		.req v7
+
+demoTailChase:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ make sure everything is off to start with
+
+.L11_ringLoopInit:
+	mov	rWhichRing, #0
+
+.L11_ringLoopTop:
+	cmp	rWhichRing, #6
+	bhs	.L11_ringLoopExit
+
+.L11_chaseLoopInit:
+	mov	rChaseLoopCounter, #0
+
+.L11_chaseLoopTop:
+	cmp	rChaseLoopCounter, #5
+	bhs	.L11_chaseLoopExit
+
+.L11_legLoopInit:
+	mov	rWhichLeg, #2
+
+.L11_legLoopTop:
+	cmp	rWhichLeg, #0
+	blt	.L11_legLoopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rPreviousRing
+	mov	a3, rPreviousLeg
+	mov	a4, #0			@ intensity
+	bl	lightPigLED		@ turn off the previous one
+
+	mov	a1, rFileDescriptor
+	mov	a2, rWhichRing
+	mov	a3, rWhichLeg
+	mov	a4, #5			@ intensity
+	bl	lightPigLED
+
+	mov	rPreviousRing, rWhichRing
+	mov	rPreviousLeg, rWhichLeg
+
+	bl	kbhit
+	cmp	r0, #1
+	beq	.L11_epilogue
+
+.L11_legLoopBottom:
+	mov	a1, #0x10
+	lsl	a1, #12
+	bl	usleep
+
+	sub	rWhichLeg, #1
+	b	.L11_legLoopTop
+
+.L11_legLoopExit:
+.L11_chaseLoopBottom:
+	add	rChaseLoopCounter, #1
+	b	.L11_chaseLoopTop
+
+.L11_chaseLoopExit:
+.L11_ringLoopBottom:
+	add	rWhichRing, #1
+	b	.L11_ringLoopTop
+
+.L11_ringLoopExit:
+	mov	a1, rFileDescriptor
+	mov	a2, #5			@ turn off the last ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+	b	.L11_ringLoopInit
+
+.L11_epilogue:
+	bl	getchar		@ eat the key
+
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rChaseLoopCounter
+	.unreq rPreviousLeg
+	.unreq rPreviousRing
+	.unreq rWhichLeg
+	.unreq rWhichRing
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoInwardSpiral
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.text
+	.align 2
+
+	rFileDescriptor	.req v1
+	rLoopCounter	.req v7
+
+demoInwardSpiral:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+.L9_loopInit:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ make sure everything is off to start with
+
+	mov	rLoopCounter, #0
+
+.L9_loopTop:
+	cmp	rLoopCounter, #6
+	bhs	.L9_loopExit
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ ring to light
+	mov	a3, #1			@ intensity
+	bl	lightPigRing
+
+	cmp	rLoopCounter, #0
+	beq	.L9_loopBottom
+
+	mov	a1, rFileDescriptor
+	sub	a2, rLoopCounter, #1	@ ring to extinguish
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+
+	bl	kbhit
+	cmp	r0, #1
+	beq	.L9_epilogue
+
+.L9_loopBottom:
+	mov	a1, #0x3D
+	lsl	a1, #12			@ get about 250k into a1
+	bl	usleep			@ sleep for about .25 sec
+
+	add	rLoopCounter, #1
+	b	.L9_loopTop
+
+.L9_loopExit:
+	mov	a1, rFileDescriptor
+	mov	a2, #5			@ turn off the last ring
+	mov	a3, #0			@ intensity
+	bl	lightPigRing
+	b	.L9_loopInit
+
+.L9_epilogue:
+	mov	a1, rFileDescriptor
+	mov	a2, #0
+	bl	lightPigAll	@ turn all off
+
+	bl	getchar		@ eat the key
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx lr
+
+	.unreq rFileDescriptor
+	.unreq rLoopCounter
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ newline
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
@@ -975,16 +2553,16 @@ promptForSelection:
 fillCells:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-.L6_loopInit:
+.L21_loopInit:
 	mov rLoopCounter, #0
 
-.L6_loopTop:
+.L21_loopTop:
 	cmp rLoopCounter, rCellCount
-	bhs .L6_loopExit
+	bhs .L21_loopExit
 
 	mov a1, #0			@ default is to store zeros
 	cmp rUseRandomValues, #0
-	beq .L6_haveValueToStore
+	beq .L21_haveValueToStore
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@ rand() seems to return a range of 0 - 2^31, which means that I'll
@@ -997,17 +2575,17 @@ fillCells:
 	lsl a1, #1
 	asr a1, #1
 
-.L6_haveValueToStore:
+.L21_haveValueToStore:
 	mov a2, rSheetAddress
 	mov a3, rLoopCounter		@ current cell index
 	mov r3, #operation_store
 	blx rOperationsFunction		@ store a1
 
-.L6_loopBottom:
+.L21_loopBottom:
 	add rLoopCounter, #1
-	b .L6_loopTop
+	b .L21_loopTop
 
-.L6_loopExit:
+.L21_loopExit:
 	mFunctionBreakdown 0	@ restore caller's locals and stack frame
 	bx lr
 
