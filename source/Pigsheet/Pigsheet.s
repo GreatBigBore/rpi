@@ -2823,7 +2823,7 @@ sayYuck:
 	.data
 	.align 2
 
-.L22_msgPrompt	.asciz "Running; press any key to stop..."
+.L22_msgPrompt:	.asciz "Running; press any key to stop..."
 
 	.text
 	.align 2
@@ -2832,6 +2832,8 @@ promptForRepeatingDemo:
 	push	{lr}
 	ldr	a1, =.L22_msgPrompt
 	bl	printf
+	mov	r0, #0
+	bl	fflush		@ does this fix that annoying delay?
 	pop	{lr}
 	bx	lr
 
