@@ -2818,6 +2818,24 @@ sayYuck:
 	.unreq rSkipSecondCursorUp
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ promptForRepeatingDemo
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L22_msgPrompt	.asciz "Running; press any key to stop..."
+
+	.text
+	.align 2
+
+promptForRepeatingDemo:
+	push	{lr}
+	ldr	a1, =.L22_msgPrompt
+	bl	printf
+	pop	{lr}
+	bx	lr
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ showList
 @
 @	a1 list address
@@ -2825,7 +2843,7 @@ sayYuck:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .section .data
 
-msgListElement: .asciz "%d. %s\n"
+msgListElement: .asciz "%2d. %s\n"
 
 .section .text
 
@@ -3040,36 +3058,43 @@ actionFillRandom:
 	b returnToMain
 
 actionReverseBullseye:
+	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoReverseBullseye
 	b	returnToMain
 
 actionBullseye:
+	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoBullseye
 	b	returnToMain
 
 actionSpider:
+	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoSpider
 	b	returnToMain
 
 actionInwardSpiral:
+	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoInwardSpiral
 	b	returnToMain
 
 actionBlindMe:
+	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoBlindMe
 	b	returnToMain
 
 actionTailChase:
+	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoTailChase
 	b	returnToMain
 
 actionPinwheel:
+	bl	promptForRepeatingDemo
 	mov	a1, rFileDescriptor
 	bl	demoPinwheel
 	b	returnToMain
