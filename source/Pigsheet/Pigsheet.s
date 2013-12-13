@@ -2123,13 +2123,26 @@ getNewValueForCell:
 .L5_msgInstructions:	.asciz "Options (enter 'Q' to quit):\n"
 .L5_msgSeparator:	.asciz "----------------------------\n"
 
+menuOptionsLabels:
+
 mo_editCell:		.asciz "Edit cell"
 mo_resetSpreadsheet:	.asciz "Reset"
 mo_randomValues:	.asciz "Fill cells with random values"
+mo_inwardSpiral:	.asciz "Inward spiral"
+mo_tailChase:		.asciz "Tail chase"
+mo_pinwheel:		.asciz "Pinwheel"
+mo_spider:		.asciz "Spider"
+mo_bullseye:		.asciz "Bullseye"
+mo_reverseBullseye:	.asciz "Reverse bullseye"
+mo_blindMe:		.asciz "Blind me!"
 
-menuOptions: .word mo_editCell, mo_resetSpreadsheet, mo_randomValues
+menuOptions:
+	.word mo_editCell, mo_resetSpreadsheet, mo_randomValues
+	.word mo_inwardSpiral, mo_tailChase, mo_pinwheel
+	.word mo_spider, mo_bullseye, mo_reverseBullseye, mo_blindMe
 
-.equ menuOptionsCount, 3
+menuOptionsLength = .-menuOptions
+menuOptionsCount = menuOptionsLength / 4
 
 .section .text
 .align 3
@@ -2860,6 +2873,13 @@ actionsJumpTable:
 		.word actionEditCell
 		.word actionResetSpreadsheet
 		.word actionFillRandom
+		.word actionInwardSpiral
+		.word actionTailChase
+		.word actionPinwheel
+		.word actionSpider
+		.word actionBullseye
+		.word actionReverseBullseye
+		.word actionBlindMe
 
 operationsJumpTable:	.word operations8
 
@@ -2879,9 +2899,10 @@ msgByeNow:	.asciz "'Bye now!\n"
 	.align 2
 	.global main
 
-	rMenuMode			.req v1
-	rSpreadsheetAddress		.req v2
-	rOperationsFunction		.req v3
+	rMenuMode		.req v1
+	rSpreadsheetAddress	.req v2
+	rOperationsFunction	.req v3
+	rFileDescriptor		.req v4
 
 main:
 	ldr fp, =.L0_localVariables	@ setup local stack frame
@@ -2897,6 +2918,9 @@ main:
 	mov a1, #0
 	bl time
 	bl srand
+
+	bl	pigSetup
+	mov	rFileDescriptor, r0
 
 	mTerminalCommand #terminalCommand_clearScreen
 
@@ -3015,6 +3039,41 @@ actionFillRandom:
 	bl fillCells
 	b returnToMain
 
+actionReverseBullseye:
+	mov	a1, rFileDescriptor
+	bl	demoReverseBullseye
+	b	returnToMain
+
+actionBullseye:
+	mov	a1, rFileDescriptor
+	bl	demoBullseye
+	b	returnToMain
+
+actionSpider:
+	mov	a1, rFileDescriptor
+	bl	demoSpider
+	b	returnToMain
+
+actionInwardSpiral:
+	mov	a1, rFileDescriptor
+	bl	demoInwardSpiral
+	b	returnToMain
+
+actionBlindMe:
+	mov	a1, rFileDescriptor
+	bl	demoBlindMe
+	b	returnToMain
+
+actionTailChase:
+	mov	a1, rFileDescriptor
+	bl	demoTailChase
+	b	returnToMain
+
+actionPinwheel:
+	mov	a1, rFileDescriptor
+	bl	demoPinwheel
+	b	returnToMain
+
 returnToMain:
 	mov rMenuMode, #menuMode_main
 	b redisplaySheet
@@ -3030,6 +3089,8 @@ actionQuit:
 
 	.unreq rMenuMode
 	.unreq rSpreadsheetAddress
+	.unreq rOperationsFunction
+	.unreq rFileDescriptor
 
 	.end
 
