@@ -2,7 +2,7 @@
 @*
 @* written by			Rob Bishop
 @* created on			11 December 2013
-@* last modified on		11 December 2013
+@* last modified on		17 December 2013
 @*/
 
 .equ inputStatus_inputOk,			0
