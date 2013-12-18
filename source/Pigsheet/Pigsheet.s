@@ -985,6 +985,131 @@ pigSetup:
 	.unreq rFileDescriptor
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ demoChristmasLights
+@
+@	a1 file descriptor
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.data
+	.align 2
+
+.L26_controls:
+
+@@@@@
+@ timer, timeout, direction, intensity for ring 0, plus offsets for
+@ access to the control info for all rings.
+@@@@@
+
+.L26_timer =		.-.L26_controls;	.word 0
+.L26_timeout =		.-.L26_controls;	.word 0
+.L26_direction =	.-.L26_controls;	.word 0
+.L26_intensity =	.-.L26_controls;	.word 0
+.L26_controlsSize =	.-.L26_controls
+
+	.word 0, 0, 0, 0	@ timer, direction, intensity for ring 1
+	.word 0, 0, 0, 0	@ timer, direction, intensity for ring 2
+	.word 0, 0, 0, 0	@ timer, direction, intensity for ring 3
+	.word 0, 0, 0, 0	@ timer, direction, intensity for ring 4
+	.word 0, 0, 0, 0	@ timer, direction, intensity for ring 5
+
+	.text
+	.align 2
+
+	rFileDescriptor		.req v1
+	rControlsBase		.req v2
+	rControlsForThisRing	.req v3
+	rCurrentIntensity	.req v4
+	rCurrentDirection	.req v5
+	rCurrentTimer		.req v6
+	rLoopCounter		.req v7
+
+demoChristmasLights:
+	mFunctionSetup		@ Setup stack frame and local variables
+
+	ldr	rControlsBase, =.L26_controls
+
+.L26_forever:
+.L26_loopInit:
+	mov	rLoopCounter, #0
+
+.L26_loopTop:
+	cmp	rLoopCounter, #5
+	bhs	.L26_loopExit
+
+	mov	r0, #.L26_controlsSize
+	mul	rControlsForThisRing, rLoopCounter, r0
+	add	rControlsForThisRing, rControlsBase
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ Check timer for this ring. If it hasn't hit zero yet, then
+	@ we don't do anything to the ring's intensity -- just move
+	@ on to the next ring.
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	ldr	rCurrentTimer, [rControlsForThisRing, #.L26_timer]
+	cmp	rCurrentTimer, #0
+	subne	rCurrentTimer, #1
+	strne	rCurrentTimer, [rControlsForThisRing, #.L26_timer]
+	bne	.L26_loopBottom
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ Ring timer has expired. Adjust intensity for this ring.
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	ldr	rCurrentIntensity, [rControlsForThisRing, #.L26_intensity]
+	ldr	rCurrentDirection, [rControlsForThisRing, #.L26_direction]
+
+	cmp	rCurrentIntensity, #30	@ hit intensity limit?
+	mvnhs	rCurrentDirection, #0	@ yes, start downward
+	strhs	rCurrentDirection, [rControlsForThisRing, #.L26_direction]
+	bhs	.L26_adjustIntensity
+
+	cmp	rCurrentIntensity, #1	@ at min?
+	bhi	.L26_adjustIntensity	@ no, keep going in current direction
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ Intensity has counted down to zero. Get a new random interval and
+	@ start back up.
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	mov	rCurrentDirection, #1
+	str	rCurrentDirection, [rControlsForThisRing, #.L26_direction]
+	bl	rand
+	and	r0, #0x07
+	add	r0, #8	@ range is 8 - 15 passes
+	str	r0, [rControlsForThisRing, #.L26_timeout]
+
+.L26_adjustIntensity:
+	ldr	r0, [rControlsForThisRing, #.L26_timeout]
+	str	r0, [rControlsForThisRing, #.L26_timer]	@ reset timer
+	
+	add	rCurrentIntensity, rCurrentDirection
+	str	rCurrentIntensity, [rControlsForThisRing, #.L26_intensity]
+
+	mov	a1, rFileDescriptor
+	mov	a2, rLoopCounter	@ which ring
+	mov	a3, rCurrentIntensity
+	bl	lightPigRing
+
+.L26_loopBottom:
+	add	rLoopCounter, #1
+	b	.L26_loopTop
+
+.L26_loopExit:
+	bl	kbhit
+	cmp	r0, #0
+	bne	.L26_finished
+
+	mov	a1, #0x14	@ ~5ms sleep every time through the loop
+	lsl	a1, #8
+	bl	usleep
+	b	.L26_forever
+
+.L26_finished:
+	bl	getchar		@ eat the key
+
+	mFunctionBreakdown 0	@ restore caller's locals and stack frame
+	bx	lr
+
+	.unreq rFileDescriptor
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ demoBlindMe
 @
 @	a1 file descriptor
@@ -2155,12 +2280,14 @@ mo_pinwheel:		.asciz "Pinwheel"
 mo_spider:		.asciz "Spider"
 mo_bullseye:		.asciz "Bullseye"
 mo_reverseBullseye:	.asciz "Reverse bullseye"
+mo_christmasLights:	.asciz "Christmas lights"
 mo_blindMe:		.asciz "Blind me!"
 
 menuOptions:
 	.word mo_editCell, mo_resetSpreadsheet, mo_randomValues
 	.word mo_inwardSpiral, mo_tailChase, mo_pinwheel
-	.word mo_spider, mo_bullseye, mo_reverseBullseye, mo_blindMe
+	.word mo_spider, mo_bullseye, mo_reverseBullseye, mo_christmasLights
+	.word mo_blindMe
 
 menuOptionsLength = .-menuOptions
 menuOptionsCount = menuOptionsLength / 4
@@ -2893,6 +3020,7 @@ actionsJumpTable:
 		.word actionSpider
 		.word actionBullseye
 		.word actionReverseBullseye
+		.word actionChristmasLights
 		.word actionBlindMe
 
 operationsJumpTable:	.word operations8
@@ -3054,6 +3182,12 @@ actionFillRandom:
 	mov a4, #1		@ fill with random values
 	bl fillCells
 	b returnToMain
+
+actionChristmasLights:
+	bl	promptForRepeatingDemo
+	mov	a1, rFileDescriptor
+	bl	demoChristmasLights
+	b	actionResetSpreadsheet
 
 actionReverseBullseye:
 	bl	promptForRepeatingDemo
