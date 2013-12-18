@@ -1071,8 +1071,9 @@ demoChristmasLights:
 	mov	rCurrentDirection, #1
 	str	rCurrentDirection, [rControlsForThisRing, #.L26_direction]
 	bl	rand
+	orr	r0, #0x01
 	and	r0, #0x07
-	add	r0, #8	@ range is 8 - 15 passes
+@	add	r0, #5	@ range is 5 - 8 passes
 	str	r0, [rControlsForThisRing, #.L26_timeout]
 
 .L26_adjustIntensity:
@@ -2512,7 +2513,7 @@ matchInputToResult:
 .section .data
 
 .L20_msgInstructionsTemplate:
-	.asciz "Enter an integer from %d to %d\n"
+	.asciz "Enter an integer from 0 to 255\n"
 
 .L20_msgInstructionsLength = . - .L20_msgInstructionsTemplate
 
@@ -2534,22 +2535,10 @@ matchInputToResult:
 menuGetCellValueDec:
 	mFunctionSetup	@ Setup stack frame and local variables
 
-	mov	r0, #0
-	push	{r0}	@ file descriptor not needed for this op
-	mov a4, #operation_initAForMax
-	blx rOperationsFunction
-	mov v4, r0
-
-	mov	r0, #0
-	push	{r0}	@ file descriptor not needed for this op
-	mov a4, #operation_initAForMin
-	blx rOperationsFunction
-	mov v5, r0
-
 	ldr a1, =.L20_msgInstructions
 	ldr a2, =.L20_msgInstructionsTemplate
-	mov a3, v4	@ min
-	mov a4, v5	@ max
+	mov a3, #0	@ min
+	mov a4, #255	@ max
 	bl sprintf	@ r0 -> complete instructions string
 
 	ldr a1, =.L20_msgInstructions
@@ -2609,12 +2598,8 @@ operations8:
 
 .ops8_validateRange:
 	mov rInputStatus, #inputStatus_inputNotOk
-	mov r0, #0x80		@ minimum 8-bit value
-	sxtb r0, r0		@ sign-extend
-	cmp rOperand, r0
-	blt .ops8_epilogue
-	cmp rOperand, #0x7F	@ maximum 8-bit value
-	movle rInputStatus, #inputStatus_inputOk
+	cmp rOperand, #0xFF	@ maximum 8-bit value
+	movls rInputStatus, #inputStatus_inputOk
 	b .ops8_epilogue
 
 .ops8_accumulate:
